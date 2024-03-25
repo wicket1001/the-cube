@@ -1,0 +1,49 @@
+Parameterkürzel,Kurzbeschreibung,Beschreibung,Einheit
+cglo,Globalstrahlung Mittelwert,"Globalstrahlung, kalibriert, Mittelwert",W/m²
+cglo_flag,Qualitätsflag für Globalstrahlung Mittelwert,"Qualitätsflag für Globalstrahlung, kalibriert, Mittelwert",code
+chim,Himmelsstrahlung Mittelwert,"Diffusstrahlung, nicht geprüft, kalibriert, Mittelwert",W/m²
+chim_flag,Qualitätsflag für Himmelsstrahlung Mittelwert,"Qualitätsflag für Diffusstrahlung, nicht geprüft, kalibriert, Mittelwert",code
+dd,Windrichtung,"Windrichtung [360°], vektorieller 10-Minuten-Mittelwert",°
+dd_flag,Qualitätsflag für Windrichtung,"Qualitätsflag für Windrichtung [360°], vektorieller 10-Minuten-Mittelwert",code
+ddx,Windrichtung zur Spitzenböe,Windrichtung der maximalen Windgeschwindigkeit (Spitzenböe) [360°],°
+ddx_flag,Qualitätsflag für Windrichtung zur Spitzenböe,Qualitätsflag für Windrichtung der maximalen Windgeschwindigkeit (Spitzenböe) [360°],code
+ff,"Windgeschwindigkeit 10m, vektorieller Mittelwert","Windgeschwindigkeit in 10m Höhe, vektorieller 10-Minuten-Mittelwert",m/s
+ffam,"Windgeschwindigkeit 10m, arithmetischer Mittelwert","Windgeschwindigkeit in 10m Höhe, arithmetischer 10-Minuten-Mittelwert",m/s
+ffam_flag,"Qualitätsflag für Windgeschwindigkeit 10m, arithmetischer Mittelwert","Qualitätsflag für Windgeschwindigkeit in 10m Höhe, arithmetischer 10-Minuten-Mittelwert",code
+ff_flag,"Qualitätsflag für Windgeschwindigkeit 10m, vektorieller Mittelwert","Qualitätsflag für Windgeschwindigkeit in 10m Höhe, vektorieller 10-Minuten-Mittelwert",code
+ffx,Maximale Windgeschwindigkeit (Spitzenböe),"Windgeschwindigkeit in 10m Höhe, 10-Minuten-Maximalwert (Windspitze)",m/s
+ffx_flag,Qualitätsflag für Maximale Windgeschwindigkeit (Spitzenböe),"Qualitätsflag für Windgeschwindigkeit in 10m Höhe, 10-Minuten-Maximalwert (Windspitze)",code
+p,Luftdruck,"Luftdruck, 10-Minuten-Messwert",hPa
+p_flag,Qualitätsflag für Luftdruck,"Qualitätsflag für Luftdruck, 10-Minuten-Messwert",code
+pred,Reduzierter Luftdruck,Reduzierter Luftdruck: berechneter 10-Minutenwert,hPa
+pred_flag,Qualitätsflag für Reduzierter Luftdruck,Qualitätsflag für Reduzierter Luftdruck: berechneter 10-Minutenwert,code
+rf,Relative Feuchte,"Relative Feuchte, 10-Minuten-Messwert",%
+rf_flag,Qualitätsflag für Relative Feuchte,"Qualitätsflag für Relative Feuchte, 10-Minuten-Messwert",code
+rr,Niederschlagssumme,"Niederschlagssumme, berechnet aus 1-Minuten-Niederschlags-Daten",mm
+rr_flag,Qualitätsflag für Niederschlagssumme,"Qualitätsflag für Niederschlagssumme, berechnet aus 1-Minuten-Niederschlags-Daten",code
+rrm,Niederschlagsdauer,"Niederschlagsdauer, berechnet aus 1-Minuten-Niederschlagsmelder-Daten - Codeliste={0: kein Niederschlag gemessen, 1: Niederschlag gemessen}",min
+rrm_flag,Qualitätsflag für Niederschlagsdauer,"Qualitätsflag für Niederschlagsdauer, berechnet aus 1-Minuten-Niederschlagsmelder-Daten",code
+sh,"Gesamtschneehöhe, Schneepegelmessung","Gesamtschneehöhe aus Schneepegelmessung, 10-Minuten-Mittelwert, Offset korrigiert",cm
+sh_flag,"Qualitätsflag für Gesamtschneehöhe, Schneepegelmessung","Qualitätsflag für Gesamtschneehöhe aus Schneepegelmessung, 10-Minuten-Mittelwert, Offset korrigiert",code
+so,Sonnenscheindauer,"Sonnenscheindauer in Sekunden, 10-Minutensumme",s
+so_flag,Qualitätsflag für Sonnenscheindauer,"Qualitätsflag für Sonnenscheindauer in Sekunden, 10-Minutensumme",code
+tb10,Erdbodentemperatur -10cm,"Erdbodentemperatur in 10 cm Tiefe, 10-Minuten-Messwert",°C
+tb10_flag,Qualitätsflag für Erdbodentemperatur -10cm,"Qualitätsflag für Erdbodentemperatur in 10 cm Tiefe, 10-Minuten-Messwert",code
+tb20,Erdbodentemperatur -20cm,"Erdbodentemperatur in 20 cm Tiefe, 10-Minuten-Messwert",°C
+tb20_flag,Qualitätsflag für Erdbodentemperatur -20cm,"Qualitätsflag für Erdbodentemperatur in 20 cm Tiefe, 10-Minuten-Messwert",code
+tb50,Erdbodentemperatur -50cm,"Erdbodentemperatur in 50 cm Tiefe, 10-Minuten-Messwert",°C
+tb50_flag,Qualitätsflag für Erdbodentemperatur -50cm,"Qualitätsflag für Erdbodentemperatur in 50 cm Tiefe, 10-Minuten-Messwert",code
+tl,Lufttemperatur 2m,"Lufttemperatur in 2m Höhe, 10-Minuten-Messwert",°C
+tl_flag,Qualitätsflag für Lufttemperatur 2m,"Qualitätsflag für Lufttemperatur in 2m Höhe, 10-Minuten-Messwert",code
+tlmax,Lufftemperatur 2m Maximalwert,"Lufttemperatur in 2m Höhe, 10-Minuten-Maximalwert",°C
+tlmax_flag,Qualitätsflag für Lufftemperatur 2m Maximalwert,"Qualitätsflag für Lufttemperatur in 2m Höhe, 10-Minuten-Maximalwert",code
+tlmin,Lufftemperatur 2m Minimalwert,"Lufttemperatur in 2m Höhe, 10-Minuten-Minimalwert",°C
+tlmin_flag,Qualitätsflag für Lufftemperatur 2m Minimalwert,"Qualitätsflag für Lufttemperatur in 2m Höhe, 10-Minuten-Minimalwert",code
+ts,Lufttemperatur 5cm,"Lufttemperatur in 5 cm Höhe, 10-Minuten-Messwert",°C
+ts_flag,Qualitätsflag für Lufttemperatur 5cm,"Qualitätsflag für Lufttemperatur in 5 cm Höhe, 10-Minuten-Messwert",code
+tsmax,Lufftemperatur 5cm Maximalwert,"Lufttemperatur in 5 cm Höhe, 10-Minuten-Maximalwert",°C
+tsmax_flag,Qualitätsflag für Lufftemperatur 5cm Maximalwert,"Qualitätsflag für Lufttemperatur in 5 cm Höhe, 10-Minuten-Maximalwert",code
+tsmin,Lufftemperatur 5cm Minimalwert,"Lufttemperatur in 5 cm Höhe, 10-Minuten-Minimalwert",°C
+tsmin_flag,Qualitätsflag für Lufftemperatur 5cm Minimalwert,"Qualitätsflag für Lufttemperatur in 5 cm Höhe, 10-Minuten-Minimalwert",code
+zeitx,Zeitpunkt der maximalen Windgeschwindigkeit (Spitzenböe),"Zeitpunkt der maximalen Windgeschwindigkeit (Spitzenböe) in 10m Höhe, 10-Minuten-Wert", 
+zeitx_flag,Qualitätsflag für Zeitpunkt der maximalen Windgeschwindigkeit (Spitzenböe),"Qualitätsflag für Zeitpunkt der maximalen Windgeschwindigkeit (Spitzenböe) in 10m Höhe, 10-Minuten-Wert",code
