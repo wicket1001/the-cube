@@ -1,10 +1,6 @@
 <template>
   <div class="stats">
     <div>
-      Outside temperature:
-      <div>{{outside}}</div>
-    </div>
-    <div>
       Inside temperature:
       <div>{{inside}}</div>
     </div>

@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { onMounted, reactive, type Ref, ref } from 'vue'
+import { onMounted, reactive, type Ref, ref, watch } from 'vue'
 import { getData } from '@/utils/resources'
 import LineChart from '@/components/LineChart.vue'
 
-let currentIndex = 0;
-let current = new Date();
+let currentIndex = ref(0);
+let current = ref('');
+let outside = ref(0);
 let dates: Date[] = [];
 let dataFetched: Ref<boolean> = ref(false);
 
@@ -19,6 +20,12 @@ onMounted(() => {
   // https://dataset.api.hub.geosphere.at/v1/station/historical/klima-v1-10min?parameters=RR&start=2021-01-01T00%3A00&end=2021-01-01T00%3A00&station_ids=5882&output_format=geojson
 })
 
+watch(currentIndex, async (newValue, oldValue) => {
+  console.log(currentIndex);
+  current.value = dates[newValue].toLocaleTimeString();
+  outside.value = temperatures[newValue];
+})
+
 </script>
 
 <template>
@@ -30,12 +37,21 @@ onMounted(() => {
     <datepicker placeholder="End Date" v-model="end" name="end-date"></datepicker>-->
     <p>{{current}}</p>
   </div>
-  <div class="controls">
+  <div class="controls" v-if="dataFetched">
     <input type="range" min="0" max="144" value="0" v-model="currentIndex" />
   </div>
+  <p>
+    {{currentIndex}}
+  </p>
   <div>
     <LineChart v-if="dataFetched" :keys="dates" :values="temperatures"/>
     <p v-else>Loading...</p>
+  </div>
+  <div class="stats">
+    <div>
+      Outside temperature:
+      <div>{{outside}}</div>
+    </div>
   </div>
 </template>
 
