@@ -1,14 +1,26 @@
 <template>
-  <div class="cube-container">
-    <div class="cube" :style="{ transform: `rotateX(${rotationX}deg) rotateY(${rotationY}deg)` }">
-      <div class="face front" :style="{ backgroundColor: cubeColor }"></div>
-      <div class="face back" :style="{ backgroundColor: cubeColor }"></div>
-      <div class="face left" :style="{ backgroundColor: cubeColor }"></div>
-      <div class="face right" :style="{ backgroundColor: cubeColor }"></div>
-      <div class="face top" :style="{ backgroundColor: cubeColor }"></div>
-      <div class="face bottom" :style="{ backgroundColor: cubeColor }"></div>
+  <div class="stats">
+    <div>
+      Outside temperature:
+      <div>{{outside}}</div>
     </div>
-    <input type="range" v-model="cubeColor" />
+    <div>
+      Inside temperature:
+      <div>{{inside}}</div>
+    </div>
+  </div>
+  <div class="controls">
+    <input type="range" min="0" max="100" value="0" v-model="cubeColor" />
+  </div>
+  <div class="cube-container">
+    <div class="cube">
+      <div class="face front">Front</div>
+      <div class="face back">Back</div>
+      <div class="face left">Left</div>
+      <div class="face right">Right</div>
+      <div class="face top">Top</div>
+      <div class="face bottom">Bottom</div>
+    </div>
   </div>
 </template>
 
@@ -18,18 +30,39 @@ export default {
     return {
       rotationX: 0,
       rotationY: 0,
-      cubeColor: "#ff0000", // Initial color (red)
+      cubeColor: 'hsl(90, 100%, 50%)',
+      outside: 11,
+      inside: 21
     };
   },
   watch: {
-    cubeColor(newColor) {
-      // Update cube color when slider value changes
-      console.log(newColor)
-      console.log(this.$el.querySelector(".cube"))
-      this.$el.querySelector(".cube").style.backgroundColor = `hsl(${newColor}, 100%, 100%)`;
+    cubeColor(time) {
+      let heat = calculateHeat(time, this.inside, this.outside)
+      let color = toColor(heat)
+      let children = document.querySelector(".cube").children
+      for (const child of children) {
+        child.style.backgroundColor = `hsl(${color}, 100%, 50%)`;
+      }
     },
   },
 };
+
+function calculateHeat(time, inside, outside) {
+  let temperature = inside
+  for (let i = 0; i < time; i++) {
+    let delta = (outside - temperature) * 0.1
+    temperature += delta
+  }
+  return temperature
+}
+
+function map(x, in_min, in_max, out_min, out_max) {
+  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
+
+function toColor(heat) {
+  return map(heat, 0, 30, 180, 0)
+}
 </script>
 
 <style scoped>
@@ -47,6 +80,7 @@ export default {
   position: relative;
   transform-style: preserve-3d;
   transition: transform 0.5s;
+  transform: rotateX(-25deg) rotateY(45deg);
 }
 
 .face {
@@ -55,30 +89,31 @@ export default {
   height: 100px;
   border: 1px solid #000;
   opacity: 0.8;
+  background-color: hsl(0, 100%, 50%);
 }
 
 .front {
-  transform: translateZ(50px);
+  transform: rotateY(0deg) translateZ(50px);
 }
 
 .back {
-  transform: translateZ(-50px) rotateY(180deg);
+  transform: rotateY(180deg) translateZ(50px);
 }
 
 .left {
-  transform: rotateY(-90deg) translateX(-50px);
+  transform: rotateY(-90deg) translateZ(50px);
 }
 
 .right {
-  transform: rotateY(90deg) translateX(50px);
+  transform: rotateY(90deg) translateZ(50px);
 }
 
 .top {
-  transform: rotateX(90deg) translateY(-50px);
+  transform: rotateX(90deg) translateZ(50px);
 }
 
 .bottom {
-  transform: rotateX(-90deg) translateY(50px);
+  transform: rotateX(-90deg) translateZ(50px);
 }
 
 input[type="range"] {
