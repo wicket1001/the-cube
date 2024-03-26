@@ -1,0 +1,29 @@
+export interface Geosphere {
+  "media_type": string,
+  "type": string,
+  "version": string,
+  "timestamps": [
+    string
+  ],
+  "features": [
+    {
+      "type": string,
+      "geometry": {
+        "type": string,
+        "coordinates": [
+          number
+        ]
+      },
+      "properties": {
+        "parameters": {
+          "RR": {
+            "name": string,
+            "unit": string,
+            "data": [number]
+          }
+        }
+      },
+      "station": string
+    }
+  ]
+}
