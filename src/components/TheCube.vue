@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import { onMounted, reactive, type Ref, ref, watch } from 'vue'
+import { onMounted, reactive, type Ref, ref, watch, onBeforeUnmounted } from 'vue'
 import { getData } from '@/utils/resources'
 import LineChart from '@/components/LineChart.vue'
+import {toColor, calculateHeat, map} from '@/utils/utils'
 
 let currentIndex = ref(0);
 let current = ref('');
 let outside = ref(0);
 let inside = ref(21);
-let cube = ref(0);
 let dates: Date[] = [];
 let dataFetched: Ref<boolean> = ref(false);
 
@@ -17,11 +17,17 @@ let rotationX = 0;
 let rotationY = 0;
 let cubeColor = ref('hsl(90, 100%, 50%)');
 
+let pause = ref('Pause');
+
 onMounted(() => {
   getData().then(res => {
     temperatures = res.temps;
     dates = res.dates;
     dataFetched.value = true;
+
+    current.value = dates[0].toLocaleTimeString();
+    outside.value = temperatures[0];
+    inside.value = 21;
   });
   // https://dataset.api.hub.geosphere.at/v1/station/historical/klima-v1-10min?parameters=RR&start=2021-01-01T00%3A00&end=2021-01-01T00%3A00&station_ids=5882&output_format=geojson
 })
@@ -31,7 +37,7 @@ watch(currentIndex, async (newValue, oldValue) => {
   outside.value = temperatures[newValue];
 
   let heat = calculateHeat(newValue, inside.value, outside.value);
-  cube.value = heat;
+  inside.value = heat;
   let color = toColor(heat)
   let children = document.querySelector(".cube").children
   for (const child of children) {
@@ -39,21 +45,18 @@ watch(currentIndex, async (newValue, oldValue) => {
   }
 })
 
-function calculateHeat(time, inside, outside) {
-  let temperature = inside
-  for (let i = 0; i < time; i++) {
-    let delta = (outside - temperature) * 0.1
-    temperature += delta
+watch(pause, async(newValue, oldValue) => {
+  
+})
+
+function play() {
+  console.log('BOB', pause.value)
+  if (pause.value === 'Pause') {
+    pause.value = 'Play'
   }
-  return temperature
-}
-
-function map(x, in_min, in_max, out_min, out_max) {
-  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
-}
-
-function toColor(heat) {
-  return map(heat, 0, 30, 180, 0)
+  if (pause.value === 'Play') {
+    pause.value = 'Pause'
+  }
 }
 
 </script>
@@ -65,6 +68,14 @@ function toColor(heat) {
     <p>{{end}}</p>-->
     <!--<datepicker placeholder="Start Date" v-model="start" name="start-date"></datepicker>
     <datepicker placeholder="End Date" v-model="end" name="end-date"></datepicker>-->
+    <div>
+      <button @click="currentIndex++">
+        Step
+      </button>
+      <button @click="play()">
+        {{pause}}
+      </button>
+    </div>
     <p>{{current}}</p>
   </div>
   <div class="controls" v-if="dataFetched">
@@ -80,15 +91,11 @@ function toColor(heat) {
   <div class="stats">
     <div>
       Outside temperature:
-      <div>{{outside}}</div>
+      <div>{{outside}}</div>°C
     </div>
     <div>
       Inside temperature:
-      <div>{{inside}}</div>
-    </div>
-    <div>
-      Cube temperature:
-      <div>{{cube}}</div>
+      <div>{{Math.round(inside * 100) / 100}}</div>°C
     </div>
   </div>
   <div class="cube-container">
