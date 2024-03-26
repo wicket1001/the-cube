@@ -2,29 +2,25 @@ export interface GeosphereRaw {
   "media_type": string,
   "type": string,
   "version": string,
-  "timestamps": [
-    string
-  ],
+  "timestamps": string[],
   "features": [
     {
       "type": string,
       "geometry": {
         "type": string,
-        "coordinates": [
-          number
-        ]
+        "coordinates": number[]
       },
       "properties": {
         "parameters": {
-          "RR": {
+          "rr": {
             "name": string,
             "unit": string,
-            "data": [number]
+            "data": number[]
           },
-          "TL": {
+          "tl": {
             "name": string,
             "unit": string,
-            "data": [number]
+            "data": number[]
           }
         }
       },
@@ -34,31 +30,27 @@ export interface GeosphereRaw {
 }
 
 export interface Dates {
-  "timestamps": [Date]
+  "timestamps": Date[]
 }
 
 export interface Geosphere {
   "media_type": string,
   "type": string,
   "version": string,
-  "timestamps": [
-    Date
-  ],
+  "timestamps": Date[],
   "features": [
     {
       "type": string,
       "geometry": {
         "type": string,
-        "coordinates": [
-          number
-        ]
+        "coordinates": number[]
       },
       "properties": {
         "parameters": {
           "RR": {
             "name": string,
             "unit": string,
-            "data": [number]
+            "data": number[]
           }
         }
       },
