@@ -69,12 +69,12 @@ function play() {
     <!--<datepicker placeholder="Start Date" v-model="start" name="start-date"></datepicker>
     <datepicker placeholder="End Date" v-model="end" name="end-date"></datepicker>-->
     <div>
-      <button @click="currentIndex++">
+      <v-btn variant="outlined" @click="currentIndex++">
         Step
-      </button>
-      <button @click="play()">
+      </v-btn>
+      <v-btn variant="outlined" @click="play()">
         {{pause}}
-      </button>
+      </v-btn>
     </div>
     <p>{{current}}</p>
   </div>
