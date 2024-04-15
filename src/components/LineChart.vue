@@ -28,6 +28,7 @@ ChartJS.register(
 export default {
   name: 'LineChart',
   components: {
+    // eslint-disable-next-line vue/no-reserved-component-names
     Line
   },
   props: ['keys', 'values'],
@@ -35,11 +36,11 @@ export default {
     return {
       data: {
         labels: this.keys.map((date: Date) => {
-          return date.toLocaleTimeString()
+          return date.toLocaleTimeString('de-DE', {timeStyle: 'short'})
         }),
         datasets: [
           {
-            label: 'Data One',
+            label: 'Temperature',
             backgroundColor: '#f87979',
             data: this.values,
           }
@@ -47,7 +48,7 @@ export default {
       },
       options: {
         responsive: true,
-        maintainAspectRatio: true
+        maintainAspectRatio: true,
       }
     }
   },

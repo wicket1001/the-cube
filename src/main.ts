@@ -8,10 +8,23 @@ import 'vuetify/styles'
 import { createVuetify } from 'vuetify'
 import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
+//import { VuetifyDateAdapter } from 'vuetify/date/adapters/vuetify'
+//import { aliases, fa } from 'vuetify/iconsets/fa'
+import { aliases, mdi } from 'vuetify/iconsets/mdi'
 
 const vuetify = createVuetify({
   components,
-  directives
+  directives,
+  /*date: {
+    adapter: VuetifyDateAdapter
+  }*/
+  icons: {
+    defaultSet: 'mdi',
+    aliases,
+    sets: {
+      mdi,
+    },
+  },
 })
 
 const app = createApp(App)

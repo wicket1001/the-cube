@@ -8,6 +8,11 @@ export function calculateHeat(time, inside, outside) {
   return temperature
 }
 
+export function stepHeat(time, inside, outside) {
+  let delta = (outside - inside) * 0.1;
+  return inside + delta;
+}
+
 export function map(x, in_min, in_max, out_min, out_max) {
   return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }

@@ -7,6 +7,7 @@ import HelloWorld from './components/HelloWorld.vue'
   <header>
     <nav>
       <RouterLink to="/">Home</RouterLink>
+      <RouterLink to="/stats">Statistics</RouterLink>
       <RouterLink to="/about">About</RouterLink>
     </nav>
   </header>
@@ -50,7 +51,7 @@ nav a:first-of-type {
   border: 0;
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 4096px) {
   header {
     display: flex;
     place-items: center;
