@@ -1,9 +1,12 @@
 <script setup lang="ts">
-import { onMounted, reactive, type Ref, ref, watch, onBeforeUnmounted, getCurrentInstance } from 'vue'
+import { onMounted, reactive, type Ref, ref, watch, getCurrentInstance } from 'vue'
 import { getData } from '@/utils/resources'
 import LineChart from '@/components/LineChart.vue'
 import LinesChart from '@/components/LinesChart.vue'
 import {toColor, calculateHeat, map, stepHeat} from '@/utils/utils'
+import SolarPanel from '@/components/SolarPanel.vue'
+import Spectator from '@/components/SpectatorFrame.vue'
+import {storeToRefs} from 'pinia'
 
 const INITIAL_HEAT = 21;
 
@@ -64,9 +67,9 @@ watch(currentIndex, async (newValue, oldValue) => {
   inside.value = heat;
   inside_temperatures.push(heat);
   let color = toColor(heat)
-  let cube = document.querySelector('.cube')
+  let cube = document.querySelector<HTMLElement>('.cube')
   if (cube !== null) {
-    let children = cube.children
+    let children = Array.from(cube.children as HTMLCollectionOf<HTMLElement>)
     for (const child of children) {
       child.style.backgroundColor = `hsl(${color}, 100%, 50%)`;
     }
@@ -171,12 +174,13 @@ function step() {
       <div class="face right">Right</div>
       <div class="face top">Top</div>
       <div class="face bottom">Bottom</div>
+      <!--<SolarPanel/>-->
     </div>
   </div>
+  <!--<Spectator/>-->
 </template>
 
 <style scoped>
-
 .greetings h1,
 .greetings h3 {
   text-align: center;
@@ -195,17 +199,19 @@ function step() {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 50vh;
+  height: 600px;
+  border: solid 1px black;
+  width: 100%;
 }
 
 .cube {
-  width: 250px;
-  height: 250px;
+  width: var(--side-length);
+  height: var(--side-length);
   position: relative;
   transform-style: preserve-3d;
   transition: transform 0.5s;
   transform: rotateX(-20deg) rotateY(35deg);
-  //transform: rotateX(-25deg) rotateY(45deg);
+  /*transform: rotateX(-25deg) rotateY(45deg);*/
 }
 
 .face {
