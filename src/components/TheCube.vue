@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import { onMounted, reactive, type Ref, ref, watch, getCurrentInstance } from 'vue'
 import { getData } from '@/utils/resources'
-import LineChart from '@/components/LineChart.vue'
 import LinesChart from '@/components/LinesChart.vue'
 import {toColor, calculateHeat, map, stepHeat} from '@/utils/utils'
-import SolarPanel from '@/components/SolarPanel.vue'
-import Spectator from '@/components/SpectatorFrame.vue'
-import {storeToRefs} from 'pinia'
+import { useGlobalStorage } from '@/stores/globalStorage'
+
+const storage = useGlobalStorage()
 
 const INITIAL_HEAT = 21;
 
@@ -36,8 +35,8 @@ let timer = -1
 
 onMounted(() => {
   getData().then(res => {
-    temperatures = res.temps;
-    temperatures_view.value = res.temps;
+    temperatures = res.temperatures;
+    temperatures_view.value = res.temperatures;
     dates = res.dates;
     dates_view.value = res.dates;
     dataFetched.value = true;
@@ -48,6 +47,7 @@ onMounted(() => {
     outside.value = temperatures[0];
     inside.value = 21;
   });
+  // https://dataset.api.hub.geosphere.at/v1/openapi-docs
   // https://dataset.api.hub.geosphere.at/v1/station/historical/klima-v1-10min?parameters=RR&start=2021-01-01T00%3A00&end=2021-01-01T00%3A00&station_ids=5882&output_format=geojson
 })
 

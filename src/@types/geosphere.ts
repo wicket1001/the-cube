@@ -12,12 +12,22 @@ export interface GeosphereRaw {
       },
       "properties": {
         "parameters": {
-          "rr": {
+          "rr": { // Niederschlag
             "name": string,
             "unit": string,
             "data": number[]
           },
-          "tl": {
+          "tl": { // Lufttemperatur
+            "name": string,
+            "unit": string,
+            "data": number[]
+          },
+          "ff": { // Windrichtung
+            "name": string,
+            "unit": string,
+            "data": number[]
+          },
+          "cglo": { // Strahlung
             "name": string,
             "unit": string,
             "data": number[]
