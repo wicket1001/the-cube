@@ -4,26 +4,11 @@ import { getData } from '@/utils/resources'
 import LinesChart from '@/components/LinesChart.vue'
 import {toColor, calculateHeat, map, stepHeat} from '@/utils/utils'
 import { useGlobalStorage } from '@/stores/globalStorage'
+import { storeToRefs } from 'pinia'
 
 const storage = useGlobalStorage()
-
-const INITIAL_HEAT = 21;
-
-let currentIndex = ref(0);
-let current = ref('');
-let outside = ref(0);
-let inside = ref(INITIAL_HEAT);
-let dataFetched: Ref<boolean> = ref(false);
-let playBtn = ref('Play')
-
-let dates: Date[] = [];
-let dates_view: Ref<Date[]> = ref([]);
-
-let temperatures: number[] = [];
-let temperatures_view: Ref<number[]> = ref([]);
-
-let inside_temperatures: number[] = [];
-let inside_temperatures_view: Ref<number[]> = ref([]);
+let {currentIndex, current, outside, inside, dataFetched, playBtn, dates, dates_view,
+  temperatures, temperatures_view, inside_temperatures, inside_temperatures_view} = storeToRefs(storage)
 
 let rotationX = 0;
 let rotationY = 0;
@@ -35,34 +20,50 @@ let timer = -1
 
 onMounted(() => {
   getData().then(res => {
-    temperatures = res.temperatures;
-    temperatures_view.value = res.temperatures;
-    dates = res.dates;
-    dates_view.value = res.dates;
-    dataFetched.value = true;
-    inside_temperatures = [21];
-    inside_temperatures_view.value = [21];
+    /*console.log('FOO', storage.currentIndex)
+    storage.$patch({currentIndex: 17});
+    console.log('Bar', storage.currentIndex)*/
 
-    current.value = dates[0].toLocaleTimeString();
-    outside.value = temperatures[0];
-    inside.value = 21;
+
+
+    console.log(res.temperatures)
+    console.log(storage.temperatures.length)
+    storage.$patch({temperatures: res.temperatures});
+    console.log('BOB', storage.temperatures.length)
+    storage.$patch({temperatures_view: res.temperatures});
+    storage.$patch({dates: res.dates});
+    storage.$patch({dates_view: res.dates});
+    storage.$patch({dataFetched: true});
+    storage.$patch({inside_temperatures: [21]});
+    storage.$patch({inside_temperatures_view: [21]});
+
+    // storage.$patch({current: dates[0].toLocaleTimeString()});
+    // outside.value = temperatures[0];
+    // inside.value = INITIAL_HEAT;
   });
   // https://dataset.api.hub.geosphere.at/v1/openapi-docs
   // https://dataset.api.hub.geosphere.at/v1/station/historical/klima-v1-10min?parameters=RR&start=2021-01-01T00%3A00&end=2021-01-01T00%3A00&station_ids=5882&output_format=geojson
 })
 
-watch(currentIndex, async (newValue, oldValue) => {
+storage.$subscribe((mutation, state) => {
+  /*console.log(mutation)
+  console.log(state)
+  console.log(mutation.type, mutation.storeId, mutation.payload)*/
+})
+
+watch(() => storage.currentIndex, async (newValue, oldValue) => {
   if (newValue >= 145) {
     currentIndex.value = oldValue
     return
   }
-  current.value = dates[newValue].toLocaleTimeString();
-  outside.value = temperatures[newValue];
+  // current.value = dates[newValue].toLocaleTimeString();
+  // outside.value = temperatures.value[newValue];
+  storage.$patch({outside: temperatures.value[newValue]})
 
   //let heat = calculateHeat(newValue, inside.value, outside.value);
   let heat = stepHeat(newValue, inside.value, outside.value);
   if (newValue == 0) {
-    heat = INITIAL_HEAT;
+    heat = 21;
   }
   inside.value = heat;
   inside_temperatures.push(heat);
@@ -75,11 +76,11 @@ watch(currentIndex, async (newValue, oldValue) => {
     }
   }
 })
-
+/*
 watch(pause, async(newValue, oldValue) => {
 
 })
-
+*/
 function play(timeout = 1000) {
   if (timer !== -1) {
     clearInterval(timer)
@@ -97,21 +98,10 @@ function fast() {
 }
 
 function step() {
-  currentIndex.value ++
-  // document.getElementById("temperature_plot").$forceUpdate();
-  //const instance = getCurrentInstance();
-  //instance.proxy.$forceUpdate();
-  //console.log(temperatures.length)
-  temperatures_view.value = temperatures.slice(0, currentIndex.value)
-  //console.log(temperatures_view.value.length)
-  //dates.push(dates[dates.length - 1])
-  //dates.pop()
-  dates_view.value = dates.slice(0, currentIndex.value)
-  inside_temperatures_view.value = inside_temperatures.slice(0, currentIndex.value)
-  //console.log(inside_temperatures)
-
-  //console.log(dates_view.value)
-  //console.log('BOB')
+  storage.$patch({currentIndex: storage.currentIndex + 1})
+  storage.$patch({temperatures_view: storage.temperatures.slice(0, storage.currentIndex)})
+  storage.$patch({dates_view: storage.dates.slice(0, storage.currentIndex)})
+  storage.$patch({inside_temperatures_view: storage.inside_temperatures.slice(0, storage.currentIndex)})
 }
 
 </script>
@@ -145,15 +135,15 @@ function step() {
     </div>
   </div>
   <div class="controls" v-if="dataFetched">
-    <input type="range" min="0" max="144" value="0" v-model="currentIndex" />
+    <input type="range" min="0" max="144" value="0" v-model="storage.currentIndex" />
   </div>
   <div>
     <LinesChart v-if="dataFetched"
                 id="temperature_plot"
-                :key="currentIndex"
-                :keys="dates"
+                :key="storage.currentIndex"
+                :keys="storage.dates"
                 :axes="['Outside Temperature', 'Inside Temperature']"
-                :values="[temperatures_view, inside_temperatures_view]"/>
+                :values="[storage.temperatures_view, storage.inside_temperatures_view]"/>
     <p v-else>Loading...</p>
   </div>
   <div class="stats">
