@@ -13,6 +13,7 @@ class SolarPanel:
     JOULE_TO_KWH = JOULE_TO_WATT_HOUR * (1 / 1000)
     # JOULE_TO_KWH = 0.000000278
     solar_panel_efficiency = SOLAR_EFFICIENCY * JOULE_TO_WATT_HOUR
+    SECONDS_TO_10_MIN = 600
 
     production = 0
     watt_sum = 0
@@ -34,24 +35,24 @@ class SolarPanel:
             self.production += energy_production
             return round(energy_production, 2)
         else:
-            print(absolute_step)
+            # print(absolute_step)
             energy_production = 0
             radiation = self.radiations[absolute_step]
             self.iterations += 1
-            print('Rad', radiation)
+            # print('Rad', radiation)
 
             watt = radiation * self.area
-            print('WATT', watt)
-            joule = watt * 600 # TODO
-            print('Joule', joule)
+            # print('WATT', watt)
+            joule_per_10min = watt * self.SECONDS_TO_10_MIN
+            # print('Joule', joule_per_10min)
 
             factor = math.sin(t / (144/3))
             # print('Time factor', factor)
             effective_watt = watt * factor
-            effective_joule = joule * factor
+            effective_joule = joule_per_10min * factor
             # print('Effective Joule', effective_joule)
 
-            energy_production = joule * self.solar_panel_efficiency # TODO effective_joule
+            energy_production = joule_per_10min * self.solar_panel_efficiency # TODO effective_joule
             # print('Energy production', energy_production)
 
             self.watt_sum += watt

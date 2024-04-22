@@ -29,7 +29,7 @@ dates = []
 outer_temperatures = []
 radiations = []
 winds = []
-verbosity = DebugLevel.NOTIFICATION
+verbosity = DebugLevel.INFORMATIONAL
 
 
 def get_energy_demand(t: int):
@@ -111,7 +111,7 @@ def calculate_heat_power_demand():
     delta_t = q_value / (area * u_value)
 
 
-if __name__ == '__main__':
+def main():
     with open('res/Messstationen Zehnminutendaten v2 Datensatz_20210101T0000_20240101T0000.csv') as csvfile:
         reader = csv.reader(csvfile, delimiter=',')
         headers = reader.__next__()
@@ -142,20 +142,23 @@ if __name__ == '__main__':
         print(len(winds), ', '.join([str(x) for x in winds]))
     solarPanel.save_weather(radiations)
 
-    for day in range(1):
-        date_to_explore = datetime(2022, 5, 31, 0, 0, 0, 0)
-        day = date_to_explore.timetuple()[7] + 365 - 1
+    for day in range(365):
+        #date_to_explore = datetime(2022, 5, 31, 0, 0, 0, 0)
+        #day = date_to_explore.timetuple()[7] + 365 - 1
         print(f'Day {day}')
         for i in range(STEPS_PER_DAY):
             absolute_step = day * STEPS_PER_DAY + i
             if verbosity >= DebugLevel.NOTIFICATION:
                 print(f'\nDay {day}, relative Step {i}, absolute Step {absolute_step}, {dates[absolute_step]}')
-                print(f'Rad: {radiations[absolute_step]}')
             step(i, absolute_step)
     print('\n---------')
-    grid.print_statistics()
+    grid.print_statistics(verbosity)
     electricHeater.print_statistics()
     solarPanel.print_statistics()
     # fridge.print_statistics()
     # lights.print_statistics()
     print(f'Money: {round(money, 2)}') # 4,18
+
+
+if __name__ == '__main__':
+    main()
