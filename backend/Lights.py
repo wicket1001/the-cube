@@ -1,22 +1,23 @@
 from Appliance import Appliance
+from Physics import Power, Time, Energy
 
 
 class Lights(Appliance):
-    WATTS = 25
+    WATTS = Power(25)
 
     def __init__(self):
         super().__init__()
 
-    def step(self, t: int):
+    def step(self, t: int) -> Energy:
         energy_demand = self.get_energy_demand()
         self.usage += energy_demand
         return energy_demand
 
-    def get_energy_demand(self):
+    def get_energy_demand(self) -> Energy:
         # https://www.beleuchtungdirekt.at/lumen-nach-watt
         # Glühbirne: 25-30Watt
         # Energiesparlampe: 5-6Watt
         # LED: 2-4Watt
 
         # 1Watt -> 24Wh
-        return self.WATTS / self.TO_WATT_HOURS
+        return self.WATTS * Time.from_minutes(10)

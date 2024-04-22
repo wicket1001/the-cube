@@ -1,5 +1,7 @@
 import math
 
+from Physics import Energy, Power, Time
+
 
 class SolarPanel:
     # 52MW
@@ -15,8 +17,8 @@ class SolarPanel:
     solar_panel_efficiency = SOLAR_EFFICIENCY * JOULE_TO_WATT_HOUR
     SECONDS_TO_10_MIN = 600
 
-    production = 0
-    watt_sum = 0
+    production = Energy(0)
+    watt_sum = Power(0)
     iterations = 0
     radiations = []
     area = 1
@@ -27,13 +29,13 @@ class SolarPanel:
     def save_weather(self, array):
         self.radiations = array
 
-    def step(self, t: int, absolute_step: int) -> float:
+    def step(self, t: int, absolute_step: int) -> Energy:
         if len(self.radiations) == 0:
             # return int(math.sin(t) * 1000)
-            energy_production = math.sin(t / (144/3)) * 100
+            energy_production = Energy(math.sin(t / (144/3)) * 100)
             energy_production *= self.area
             self.production += energy_production
-            return round(energy_production, 2)
+            return energy_production
         else:
             # print(absolute_step)
             energy_production = 0
@@ -41,9 +43,9 @@ class SolarPanel:
             self.iterations += 1
             # print('Rad', radiation)
 
-            watt = radiation * self.area
+            watt = Power(radiation * self.area)
             # print('WATT', watt)
-            joule_per_10min = watt * self.SECONDS_TO_10_MIN
+            joule_per_10min = watt * Time.from_minutes(10)
             # print('Joule', joule_per_10min)
 
             factor = math.sin(t / (144/3))
@@ -52,7 +54,8 @@ class SolarPanel:
             effective_joule = joule_per_10min * factor
             # print('Effective Joule', effective_joule)
 
-            energy_production = joule_per_10min * self.solar_panel_efficiency # TODO effective_joule
+            energy_production = joule_per_10min * self.SOLAR_EFFICIENCY * (1/3600)
+            # energy_production = joule_per_10min * self.solar_panel_efficiency # TODO effective_joule
             # print('Energy production', energy_production)
 
             self.watt_sum += watt
@@ -60,12 +63,12 @@ class SolarPanel:
             return energy_production
 
     def print_statistics(self):
-        print(f'Produced: {round(self.production, 2)}Wh')
+        print(f'Produced: {self.production}')
         if self.iterations == 144:
             # print(f'-- Watt Sum: {self.watt_sum}')
             avg_watt = self.watt_sum / self.iterations
-            # print(f'Watt Average: {avg_watt}')
+            print(f'Watt Average: {avg_watt}')
             watt_second = avg_watt * self.solar_panel_efficiency
-            # print(f'Watt seconds: {watt_second}')
+            print(f'Watt seconds: {watt_second}')
             watt_per_day = watt_second * 24 * 3600
-            print(f'watt_per_day: {round(watt_per_day, 2)}Wh')
+            print(f'watt_per_day: {watt_second.format_watt_day()}')

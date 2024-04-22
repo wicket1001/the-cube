@@ -20,12 +20,12 @@ lights = Lights()
 fridge = Fridge()
 grid = Grid()
 room = Room()
-money = 0
-energy_production = 0
-energy_consumption = 0
+money = Money(0)
+energy_production = Energy(0)
+energy_consumption = Energy(0)
 appliances = [electricHeater] #, lights, fridge]
-inner_temperature = 21
-outer_temperature = 3
+inner_temperature = Temperature(21)
+outer_temperature = Temperature(3)
 dates = []
 outer_temperatures = []
 radiations = []
@@ -34,7 +34,7 @@ verbosity = DebugLevel.INFORMATIONAL
 
 
 def get_energy_demand(t: int):
-    energy_demand = 0
+    energy_demand = Energy(0)
     for appliance in appliances:
         energy_demand += appliance.step(t)
     return energy_demand
@@ -45,12 +45,12 @@ def step(step_of_the_day: int, absolute_step: int):
     global energy_consumption, energy_production
     global inner_temperature
     global outer_temperature
-    outer_temperature = 0
+    outer_temperature = Temperature(0)
 
     natural_cooling = room.adapt_to_outside(outer_temperature, inner_temperature)
     inner_temperature += natural_cooling
 
-    if inner_temperature < 19.5:
+    if inner_temperature < Temperature(19.5):
         electricHeater.activate()
         delta_t = room.heating(electricHeater.WATTS)
         inner_temperature += delta_t
@@ -65,8 +65,8 @@ def step(step_of_the_day: int, absolute_step: int):
         print(f'Energy demand: {energy_demand}, energy supply: {energy_supply}')
 
     if energy_demand > energy_supply:
-        over_demand = round(energy_demand - energy_supply, 2)
-        if battery.battery_level > 0:
+        over_demand = energy_demand - energy_supply
+        if battery.battery_level > Energy(0):
             if over_demand > battery.battery_level:
                 over_demand -= battery.battery_level
                 battery.take(battery.battery_level)
@@ -86,7 +86,7 @@ def step(step_of_the_day: int, absolute_step: int):
             electricHeater.generate_heat(energy_demand)
 
     else:
-        energy_overproduction = round(energy_supply - energy_demand, 2)
+        energy_overproduction = energy_supply - energy_demand
         if verbosity >= DebugLevel.DEBUGGING:
             print(f'Energy overproduction: {energy_overproduction}')
         electricHeater.generate_heat(energy_demand)
@@ -158,16 +158,25 @@ def main():
     solarPanel.print_statistics()
     # fridge.print_statistics()
     # lights.print_statistics()
-    print(f'Money: {round(money, 2)}') # 4,18
+    print(f'Money: {money}') # 4,18
+
+    print("""
+Bought: 4216.05kWh for 401.71€
+Sold: 3.42kWh for 0.08€
+Diff: 4212.63kWh for 401.62€
+Used: 4482000.0Wh
+Produced: 269342.67Wh
+Money: -401.62
+    """)
 
 
 def test_physics():
     radiator_watt = Power(2000)
     print(radiator_watt)
-    radiator_watt_hours = radiator_watt * Time.from_hours(1)
-    print(radiator_watt_hours)
+    radiator_watt_hours = Time.from_hours(1) * radiator_watt
+    print(radiator_watt_hours.format_kilo_watt_hours())
 
 
 if __name__ == '__main__':
-    # main()
-    test_physics()
+    main()
+    # test_physics()
