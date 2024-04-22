@@ -2,6 +2,7 @@ import csv
 from datetime import datetime
 
 from DebugLevel import DebugLevel
+from Physics import *
 from Fridge import Fridge
 from Lights import Lights
 from SolarPanel import SolarPanel
@@ -160,5 +161,13 @@ def main():
     print(f'Money: {round(money, 2)}') # 4,18
 
 
+def test_physics():
+    radiator_watt = Power(2000)
+    print(radiator_watt)
+    radiator_watt_hours = radiator_watt * Time.from_hours(1)
+    print(radiator_watt_hours)
+
+
 if __name__ == '__main__':
-    main()
+    # main()
+    test_physics()
