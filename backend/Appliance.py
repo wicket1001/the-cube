@@ -17,4 +17,4 @@ class Appliance:
         return Energy(0)
 
     def print_statistics(self):
-        print(f'Used: {self.usage}')
+        print(f'Used: {self.usage.format_watt_hours()}')

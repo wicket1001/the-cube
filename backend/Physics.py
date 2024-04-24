@@ -28,7 +28,7 @@ class Time:
 
     @staticmethod
     def from_minutes(time: float) -> Time:
-        return Time(time * 60 * 10)
+        return Time(time * 60)
 
     @staticmethod
     def from_hours(time: float) -> Time:
@@ -151,6 +151,8 @@ class Power:
     def __truediv__(self, other):
         if isinstance(other, numbers.Number):
             return Power(self.value / other)
+        if isinstance(other, Time):
+            return Power(self.value / other.value)
         else:
             raise UnsupportedOperation('/')
 

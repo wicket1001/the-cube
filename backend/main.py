@@ -23,7 +23,7 @@ room = Room(5, 8, 2.5)
 money = Money(0)
 energy_production = Energy(0)
 energy_consumption = Energy(0)
-appliances = [electricHeater] #, lights, fridge]
+appliances = [electricHeater, lights, fridge]
 inner_temperature = Temperature(21)
 outer_temperature = Temperature(3)
 dates = []
@@ -143,9 +143,11 @@ def main():
         print(len(winds), ', '.join([str(x) for x in winds]))
     solarPanel.save_weather(radiations)
 
-    for day in range(365):
-        #date_to_explore = datetime(2022, 5, 31, 0, 0, 0, 0)
-        #day = date_to_explore.timetuple()[7] + 365 - 1
+    trying = 365
+    for day in range(trying):
+        date_to_explore = datetime(2022, 5, 31, 0, 0, 0, 0)
+        if trying == 1:
+            day = date_to_explore.timetuple()[7] + 365 - 1
         print(f'Day {day}')
         for i in range(STEPS_PER_DAY):
             absolute_step = day * STEPS_PER_DAY + i
@@ -169,6 +171,14 @@ Diff: 4212.63kWh for 401.62€
 Used: 4482000.0Wh
 Produced: 269342.67Wh
 Money: -401.62
+---------
+RIGHT after physics rework:
+Bought: 5157.42kWh for 491.40€
+Sold: 68.76kWh for 1.64€
+Diff: 5088.66kWh for 489.76€
+Used: 4482000.00Wh
+Produced: 269342.67Wh
+Money: -489.76€
     """)
 
 

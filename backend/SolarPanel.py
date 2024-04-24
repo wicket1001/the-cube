@@ -14,6 +14,7 @@ class SolarPanel:
 
     production = Energy(0)
     watt_sum = Power(0)
+    solar_energy = Energy(0)
     iterations = 0
     radiations = []
     area = 1
@@ -25,9 +26,10 @@ class SolarPanel:
         self.radiations = array
 
     def step(self, t: int, absolute_step: int) -> Energy:
+        self.iterations += 1
         if len(self.radiations) == 0:
             # return int(math.sin(t) * 1000)
-            energy_production = Energy(math.sin(t / (144/3)) * 100)
+            energy_production = Energy(math.sin(t / (144/math.pi)) * 100)
             energy_production *= self.area
             self.production += energy_production
             return energy_production
@@ -35,7 +37,6 @@ class SolarPanel:
             # print(absolute_step)
             energy_production = 0
             radiation = self.radiations[absolute_step]
-            self.iterations += 1
             # print('Rad', radiation)
 
             watt = Power(radiation * self.area)
@@ -49,7 +50,8 @@ class SolarPanel:
             effective_joule = joule_per_10min * factor
             # print('Effective Joule', effective_joule)
 
-            energy_production = joule_per_10min * self.SOLAR_EFFICIENCY * (1/3600)
+            self.solar_energy += joule_per_10min
+            energy_production = joule_per_10min * self.SOLAR_EFFICIENCY #  * (1/3600)
             # energy_production = joule_per_10min * self.solar_panel_efficiency # TODO effective_joule
             # print('Energy production', energy_production)
 
@@ -58,12 +60,12 @@ class SolarPanel:
             return energy_production
 
     def print_statistics(self):
-        print(f'Produced: {self.production}')
+        print(f'Produced: {self.production.format_watt_hours()}')
         if self.iterations == 144:
-            # print(f'-- Watt Sum: {self.watt_sum}')
-            avg_watt = self.watt_sum / self.iterations
+            avg_watt = self.watt_sum / 144
             print(f'Watt Average: {avg_watt}')
-            watt_second = avg_watt * self.SOLAR_EFFICIENCY * (1/3600)
-            print(f'Watt seconds: {watt_second}')
-            watt_per_day = watt_second * 24 * 3600
-            print(f'watt_per_day: {watt_second.format_watt_day()}')
+            watt_second = (avg_watt * self.SOLAR_EFFICIENCY) / Time.from_hours(1)
+            print(f'Watt / seconds: {watt_second}')
+            watt_per_day = watt_second * Time.from_hours(24).value
+            print(f'watt_per_day: {watt_per_day}')
+            print(f'watt_per_day: {watt_per_day.format_kilo_watt()}')

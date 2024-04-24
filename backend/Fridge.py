@@ -9,7 +9,7 @@ class Fridge(Appliance):
         super().__init__()
 
     def step(self, t: int) -> Energy:
-        energy_demand = Power(0)
+        energy_demand = Energy(0)
         if t % self.SPLITTER * 2 < self.SPLITTER:
             energy_demand = self.get_energy_demand()
         self.usage += energy_demand

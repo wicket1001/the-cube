@@ -17,6 +17,20 @@ class TestPhysics(unittest.TestCase):
     def tearDown(self):
         pass
 
+    def test_time(self):
+        time1 = Time(7200)
+        self.assertEqual(time1.value, 7200)
+        self.assertEquals(time1.format_minutes(), '120.00min')
+        self.assertEquals(time1.format_hours(), '2.00h')
+
+        time2 = Time.from_minutes(20)
+        self.assertEquals(time2.value, 1200)
+        self.assertEquals(time2.format_minutes(), '20.00min')
+
+        time3 = Time.from_hours(2)
+        self.assertEquals(time3.value, 7200)
+        self.assertEquals(time3.format_hours(), '2.00h')
+
     def test_power(self):
         radiator_watt = Power(2000)
         self.assertEquals(radiator_watt.value, 2000)
