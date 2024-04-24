@@ -9,13 +9,8 @@ class SolarPanel:
     # 576m^2 Solarpanel
     # 0.003009 MW pro Panel pro Tag
     # 3009 W pro Panel pro Tag
-    # TO_WATT_HOURS = 6
     SOLAR_EFFICIENCY = 0.2
-    # JOULE_TO_WATT_HOUR = 1 / 3600
-    # JOULE_TO_KWH = JOULE_TO_WATT_HOUR * (1 / 1000)
     # JOULE_TO_KWH = 0.000000278
-    # solar_panel_efficiency = SOLAR_EFFICIENCY * JOULE_TO_WATT_HOUR
-    # SECONDS_TO_10_MIN = 600
 
     production = Energy(0)
     watt_sum = Power(0)

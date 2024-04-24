@@ -2,11 +2,6 @@ from Physics import Power, Energy
 
 
 class Appliance:
-    # 10min Timestamps means 6 measurements per hour
-    # TIMESTAMPS = 144
-    # TO_WATT_HOURS = 6
-    # HOURS = 24
-    # MINUTES = 60
     SPLITTER = 8
     WATTS = Power(0)
 

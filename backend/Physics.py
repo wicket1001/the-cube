@@ -212,18 +212,6 @@ class Temperature:
     def format_fahrenheit(self):
         return f'{self.value * (9 / 5) - 459.67:.2f}°F'
 
-    @staticmethod
-    def get_specific_heat_capacity(energy: Energy, specific_heat_capacity: float, weight: float) -> Temperature:
-        """
-        Calculates the specific heat capacity.
-
-        :param energy: in Joule, transforms itself into kJ
-        :param specific_heat_capacity:
-        :param weight: in kg
-        :return:
-        """
-        return Temperature(((energy / 1000) / (specific_heat_capacity * weight)).value)
-
 
 class Weight:
     value = 0
