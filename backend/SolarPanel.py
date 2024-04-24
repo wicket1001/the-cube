@@ -9,13 +9,13 @@ class SolarPanel:
     # 576m^2 Solarpanel
     # 0.003009 MW pro Panel pro Tag
     # 3009 W pro Panel pro Tag
-    TO_WATT_HOURS = 6
+    # TO_WATT_HOURS = 6
     SOLAR_EFFICIENCY = 0.2
-    JOULE_TO_WATT_HOUR = 1 / 3600
-    JOULE_TO_KWH = JOULE_TO_WATT_HOUR * (1 / 1000)
+    # JOULE_TO_WATT_HOUR = 1 / 3600
+    # JOULE_TO_KWH = JOULE_TO_WATT_HOUR * (1 / 1000)
     # JOULE_TO_KWH = 0.000000278
-    solar_panel_efficiency = SOLAR_EFFICIENCY * JOULE_TO_WATT_HOUR
-    SECONDS_TO_10_MIN = 600
+    # solar_panel_efficiency = SOLAR_EFFICIENCY * JOULE_TO_WATT_HOUR
+    # SECONDS_TO_10_MIN = 600
 
     production = Energy(0)
     watt_sum = Power(0)
@@ -68,7 +68,7 @@ class SolarPanel:
             # print(f'-- Watt Sum: {self.watt_sum}')
             avg_watt = self.watt_sum / self.iterations
             print(f'Watt Average: {avg_watt}')
-            watt_second = avg_watt * self.solar_panel_efficiency
+            watt_second = avg_watt * self.SOLAR_EFFICIENCY * (1/3600)
             print(f'Watt seconds: {watt_second}')
             watt_per_day = watt_second * 24 * 3600
             print(f'watt_per_day: {watt_second.format_watt_day()}')

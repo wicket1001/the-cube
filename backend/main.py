@@ -19,7 +19,7 @@ electricHeater = ElectricHeater()
 lights = Lights()
 fridge = Fridge()
 grid = Grid()
-room = Room()
+room = Room(5, 8, 2.5)
 money = Money(0)
 energy_production = Energy(0)
 energy_consumption = Energy(0)
@@ -161,6 +161,8 @@ def main():
     print(f'Money: {money}') # 4,18
 
     print("""
+---------
+RIGHT:
 Bought: 4216.05kWh for 401.71€
 Sold: 3.42kWh for 0.08€
 Diff: 4212.63kWh for 401.62€
@@ -170,13 +172,5 @@ Money: -401.62
     """)
 
 
-def test_physics():
-    radiator_watt = Power(2000)
-    print(radiator_watt)
-    radiator_watt_hours = Time.from_hours(1) * radiator_watt
-    print(radiator_watt_hours.format_kilo_watt_hours())
-
-
 if __name__ == '__main__':
     main()
-    # test_physics()

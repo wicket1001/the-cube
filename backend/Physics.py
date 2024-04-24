@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from enum import IntFlag, auto
 import numbers
 from io import UnsupportedOperation
 
@@ -83,6 +84,10 @@ class Energy:
             raise UnsupportedOperation('<')
 
     @staticmethod
+    def from_kilo_joule(energy: float) -> Energy:
+        return Energy(energy * 1000)
+
+    @staticmethod
     def from_watt_seconds(energy: float) -> Energy:
         return Energy(energy)
 
@@ -94,6 +99,9 @@ class Energy:
     def from_kilo_watt_hours(energy: float) -> Energy:
         return Energy(energy * 3600 * 1000)
 
+    def format_kilo_joule(self):
+        return f'{self.value / 1000:.2f}kJ'
+
     def format_watt_seconds(self):
         return f'{self.value:.2f}Ws'
 
@@ -104,7 +112,10 @@ class Energy:
         return f'{self.value / 3600 / 1000:.2f}kWh'
 
     def format_watt_day(self):
-        return f'{self.value * 24 * 3600:.2f}bob'
+        return f'{self.value / 3600 / 24:.2f}Wd'
+
+    def format_kilo_watt_day(self):
+        return f'{self.value / 3600 / 1000 / 24:.2f}kWd'
 
 
 class Power:
@@ -117,8 +128,8 @@ class Power:
         return f'{self.value:.2f}W'
 
     @staticmethod
-    def from_kilo_watt(energy: float) -> Energy:
-        return Energy(energy * 1000)
+    def from_kilo_watt(energy: float) -> Power:
+        return Power(energy * 1000)
 
     def format_kilo_watt(self):
         return f'{self.value / 1000:.2f}kW'
@@ -214,6 +225,168 @@ class Temperature:
         return Temperature(((energy / 1000) / (specific_heat_capacity * weight)).value)
 
 
+class Weight:
+    value = 0
+
+    def __init__(self, value: float):
+        self.value = value
+
+    def __str__(self):
+        return f'{self.value:.2f}g'
+
+    @staticmethod
+    def from_kilo_gramm(value: float) -> Weight:
+        return Weight(value * 1000)
+
+    def format_kilo_gramm(self):
+        return f'{self.value / 1000:.2f}kg'
+
+
+class Length:
+    value = 0
+
+    def __init__(self, value: float):
+        self.value = value
+
+    def __str__(self):
+        return f'{self.value:.2f}m'
+
+    def __add__(self, other):
+        if isinstance(other, Length):
+            return Length(self.value + other.value)
+        else:
+            raise UnsupportedOperation('*')
+
+    def __mul__(self, other):
+        if isinstance(other, Length):
+            return Length(self.value * other.value)
+        elif isinstance(other, numbers.Number):
+            return Length(self.value * other)
+        else:
+            raise UnsupportedOperation('*')
+
+    def format_square_metres(self):
+        return f'{self.value:.2f}m^2'
+
+    def format_qubic_metres(self):
+        return f'{self.value:.2f}m^3'
+
+
+class Density:
+    value = 0
+
+    # https://de.wikipedia.org/wiki/Dichte
+    __density = {
+        'air': 1.293,
+        'wood': 200,  # 200-1200
+        'water': 1000,
+        'iron': 7874,
+        'concrete': 2400
+    }
+
+    class Predefined(IntFlag):
+        AIR = auto()
+        WOOD = auto()
+        WATER = auto()
+        IRON = auto()
+        CONCRETE = auto()
+
+    def __init__(self, value: float):
+        self.value = value
+
+    def __str__(self):
+        return f'{self.value:.2f}ρ'
+
+    @staticmethod
+    def from_predefined(material: Predefined) -> Density:
+        return Density(Density.__density[
+                           material.name.lower().replace('_', ' ')
+                       ])
+
+    @staticmethod
+    def from_name(name: str) -> Density:
+        return Density(Density.__density[name.lower()])
+
+    def calculate_mass(self, volume: Length) -> Weight:
+        return Weight.from_kilo_gramm(self.value * volume.value)
+
+    def calculate_volume(self, mass: Weight) -> Length:
+        return Length(mass.value / self.value / 1000)
+
+
+class SpecificHeatCapacity:
+    value = 0
+
+    # https://de.wikipedia.org/wiki/Spezifische_W%C3%A4rmekapazit%C3%A4t
+    # c [kJ/(kg*K)]
+    __specific_heat_capacity = {
+        'wood': 1.7,
+        'plaster': 1.09,
+        'glass': 0.67,  # 0.67-0.84
+        'iron': 0.452,  # iron, cast iron 0.452-0.55
+        'water': 4.18,
+        'glycerine': 2.43,
+        'steam': 2.08,  # (100°C)
+        'air': 1.01,  # (dry)
+        'wood fiber insulation': 2.1,  # cellulose flakes
+        'polystyrene': 1.4,
+        'concrete': 0.88
+    }
+
+    class Predefined(IntFlag):
+        WOOD = auto()
+        PLASTER = auto()
+        GLASS = auto()
+        IRON = auto()
+        WATER = auto()
+        GLYCERINE = auto()
+        STEAM = auto()
+        AIR = auto()
+        WOOD_FIBER_INSULATION = auto()
+        POLYSTYRENE = auto()
+        CONCRETE = auto()
+
+    def __init__(self, value: float):
+        self.value = value
+
+    def __str__(self):
+        return f'{self.value:.2f}c'  # [kJ/(kg*K)]
+
+    @staticmethod
+    def from_predefined(material: Predefined) -> SpecificHeatCapacity:
+        return SpecificHeatCapacity(
+            SpecificHeatCapacity.__specific_heat_capacity[
+                material.name.lower().replace('_', ' ')
+            ]
+        )
+
+    @staticmethod
+    def from_name(name: str) -> SpecificHeatCapacity:
+        return SpecificHeatCapacity(
+            SpecificHeatCapacity.__specific_heat_capacity[name.lower()]
+        )
+
+    def calculate_energy(self, temperature: Temperature, mass: Weight) -> Energy:
+        """
+        Calculates the needed energy for a given temperature delta.
+
+        :param temperature:
+        :param mass:
+        :return:
+        """
+        return Energy(self.value * (mass.value / 1000) * temperature.value * 1000)
+
+    def calculate_heat(self, energy: Energy, mass: Weight) -> Temperature:
+        """
+        Calculates the generated heat from the given energy.
+
+        :param energy:
+        :param mass:
+        :return:
+        """
+        return Temperature((energy.value / 1000) / (self.value * (mass.value / 1000)))
+
+
 class Money:
     value = 0
 
@@ -238,8 +411,6 @@ class Money:
     def __mul__(self, other) -> Money:
         if isinstance(other, numbers.Number):
             return Money(self.value * other)
-        elif isinstance(other, Energy):
-            return Money(self.value * other.value)
         else:
             raise UnsupportedOperation('*')
 
@@ -251,3 +422,10 @@ class Money:
 
     def __rdiv__(self, other):
         raise UnsupportedOperation('/')
+
+    @staticmethod
+    def from_cent(value) -> Money:
+        return Money(value / 100)
+
+    def calculate_kWh_cost(self, energy: Energy) -> Money:
+        return Money(self.value * (energy.value / 3600) / 1000)
