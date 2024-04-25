@@ -26,6 +26,12 @@ class Time:
         else:
             raise UnsupportedOperation('*')
 
+    def __truediv__(self, other):
+        if isinstance(other, Time):
+            return self.value / other.value
+        else:
+            raise UnsupportedOperation('/')
+
     @staticmethod
     def from_minutes(time: float) -> Time:
         return Time(time * 60)
@@ -190,6 +196,8 @@ class Temperature:
     def __truediv__(self, other):
         if isinstance(other, Temperature):
             return Temperature(self.value / other.value)
+        if isinstance(other, numbers.Number):
+            return Temperature(self.value / float(other))
         else:
             raise UnsupportedOperation('/')
 

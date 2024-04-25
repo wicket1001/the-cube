@@ -2,9 +2,8 @@ from Physics import Power, Energy
 
 
 class Appliance:
-    SPLITTER = 8
+    name = ''
     WATTS = Power(0)
-
     usage = Energy(0)
 
     def __init__(self):
@@ -17,4 +16,4 @@ class Appliance:
         return Energy(0)
 
     def print_statistics(self):
-        print(f'Used: {self.usage.format_watt_hours()}')
+        print(f'{self.name} used: {self.usage.format_kilo_watt_hours()}')

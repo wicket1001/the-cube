@@ -6,6 +6,7 @@ class ElectricHeater(Appliance):
     WATTS = Power(2000)
     EFFICIENCY = 0.1
     should_activate = False
+    name = 'ElectricHeater'
 
     def __init__(self):
         super().__init__()

@@ -4,6 +4,7 @@ from Physics import Power, Time, Energy
 
 class Lights(Appliance):
     WATTS = Power(25)
+    name = 'Lights'
 
     def __init__(self):
         super().__init__()

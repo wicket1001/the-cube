@@ -13,7 +13,7 @@ from Room import Room
 
 STEPS_PER_DAY = int((24 * 60) / 10)
 
-solarPanel = SolarPanel()
+solarPanel = SolarPanel(1)
 battery = Battery()
 electricHeater = ElectricHeater()
 lights = Lights()
@@ -52,7 +52,7 @@ def step(step_of_the_day: int, absolute_step: int):
 
     if inner_temperature < Temperature(19.5):
         electricHeater.activate()
-        delta_t = room.heating(electricHeater.WATTS)
+        delta_t = room.heat(electricHeater.WATTS)
         inner_temperature += delta_t
     if verbosity >= DebugLevel.DEBUGGING:
         print(f'Inner temperature: {inner_temperature}')
@@ -157,29 +157,29 @@ def main():
     print('\n---------')
     grid.print_statistics(verbosity)
     electricHeater.print_statistics()
-    solarPanel.print_statistics()
+    # solarPanel.print_statistics()
     # fridge.print_statistics()
-    # lights.print_statistics()
+    lights.print_statistics()
     print(f'Money: {money}') # 4,18
 
-    print("""
----------
-RIGHT:
-Bought: 4216.05kWh for 401.71€
-Sold: 3.42kWh for 0.08€
-Diff: 4212.63kWh for 401.62€
-Used: 4482000.0Wh
-Produced: 269342.67Wh
-Money: -401.62
----------
-RIGHT after physics rework:
-Bought: 5157.42kWh for 491.40€
-Sold: 68.76kWh for 1.64€
-Diff: 5088.66kWh for 489.76€
-Used: 4482000.00Wh
-Produced: 269342.67Wh
-Money: -489.76€
-    """)
+#     print("""
+# ---------
+# RIGHT:
+# Bought: 4216.05kWh for 401.71€
+# Sold: 3.42kWh for 0.08€
+# Diff: 4212.63kWh for 401.62€
+# Used: 4482000.0Wh
+# Produced: 269342.67Wh
+# Money: -401.62
+# ---------
+# RIGHT after physics rework:
+# Bought: 5157.42kWh for 491.40€
+# Sold: 68.76kWh for 1.64€
+# Diff: 5088.66kWh for 489.76€
+# Used: 4482000.00Wh
+# Produced: 269342.67Wh
+# Money: -489.76€
+#     """)
 
 
 if __name__ == '__main__':

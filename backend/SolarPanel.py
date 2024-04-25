@@ -1,6 +1,7 @@
 import math
+import numbers
 
-from Physics import Energy, Power, Time
+from Physics import Energy, Power, Time, Length
 
 
 class SolarPanel:
@@ -17,7 +18,16 @@ class SolarPanel:
     solar_energy = Energy(0)
     iterations = 0
     radiations = []
-    area = 1
+    area = Length(1)
+    name = 'SolarPanel'
+
+    def __init__(self, size: [numbers.Number, Length]):
+        if isinstance(size, numbers.Number):
+            self.area = Length(float(size))
+        elif isinstance(size, Length):
+            self.area = size
+        else:
+            raise NotImplementedError('area')
 
     def __str__(self):
         return "SolarPanel"
@@ -30,7 +40,7 @@ class SolarPanel:
         if len(self.radiations) == 0:
             # return int(math.sin(t) * 1000)
             energy_production = Energy(math.sin(t / (144/math.pi)) * 100)
-            energy_production *= self.area
+            energy_production *= self.area.value
             self.production += energy_production
             return energy_production
         else:
@@ -39,7 +49,7 @@ class SolarPanel:
             radiation = self.radiations[absolute_step]
             # print('Rad', radiation)
 
-            watt = Power(radiation * self.area)
+            watt = Power(radiation * self.area.value)
             # print('WATT', watt)
             joule_per_10min = watt * Time.from_minutes(10)
             # print('Joule', joule_per_10min)

@@ -21,20 +21,19 @@ u_value = {
     'Altbau vor 1949 (Ziegelvollmauerwerk)': 5.24
 }
 
-# WEIGHT_AIR = 1.293
-SPECIFIC_HEAT_CAPACITY = SpecificHeatCapacity.from_predefined(SpecificHeatCapacity.Predefined.AIR) # 1.01
-# https://de.wikipedia.org/wiki/Spezifische_W%C3%A4rmekapazit%C3%A4t
-# TO_WATT_HOURS = 6
-# SECONDS = 60
-# HOURS = 60
-
 
 class Room:
-    # quadratic_metres = 40
+    SPECIFIC_HEAT_CAPACITY = SpecificHeatCapacity.from_predefined(SpecificHeatCapacity.Predefined.AIR)  # 1.01
+    # https://de.wikipedia.org/wiki/Spezifische_W%C3%A4rmekapazit%C3%A4t
+
+    u_value = 3.10
+    p_value = 1 / u_value
+
     length = Length(0)
     width = Length(0)
     room_height = Length(0)
     mass = Weight(0)
+    SIMULATION_TIME_STEP = Time.from_minutes(10)
 
     def __init__(self,
                  length: [numbers.Number, Length],
@@ -62,9 +61,9 @@ class Room:
             raise NotImplementedError('room_height')
 
         air = Density.from_predefined(Density.Predefined.AIR)
-        print(self.get_volume())
+        # print(self.get_volume())
         self.mass = air.calculate_mass(self.get_volume())
-        print(self.mass)
+        # print(self.mass)
 
     def get_quadratic_metres(self):
         return self.length * self.width
@@ -87,9 +86,23 @@ class Room:
     def __str__(self):
         return 'Room'
 
-    def heating(self, heat_power: Power) -> Temperature:  # in Watts
+    def lossy_heat(self, heat_power: Power, outside: Temperature, inside: Temperature) -> Temperature:
+        return self.lossy_heat_hour(heat_power, outside, inside) / (Time.from_hours(1) / self.SIMULATION_TIME_STEP)
+
+    def lossy_heat_hour(self, heat_power: Power, outside: Temperature, inside: Temperature) -> Temperature:
+        return self.heat_hour(heat_power) - self.heat_loss_hour(outside, inside)
+
+    def heat_loss(self, outside: Temperature, inside: Temperature) -> Temperature:
+        return self.heat_loss_hour(outside, inside) / (Time.from_hours(1) / self.SIMULATION_TIME_STEP)
+
+    def heat_loss_hour(self, outside: Temperature, inside: Temperature) -> Temperature:
+        delta_t = outside - inside
+        heat_loss_power = self.get_heat_loss_power(delta_t)
+        return self.heat_hour(heat_loss_power)
+
+    def heat_hour(self, heat_power: Power) -> Temperature:
         """
-        Heats a room with a given power
+        Heats a room with a given power for an hour.
 
         :param heat_power: in Watts
         :return: delta T in Kelvin
@@ -99,21 +112,19 @@ class Room:
         # kilo_joule = self.joule_10min(heat_power) / 1000
         # delta_t = kilo_joule / (SPECIFIC_HEAT_CAPACITY * self.weight_air())
         # return delta_t
-        return SPECIFIC_HEAT_CAPACITY.calculate_heat(heat_power * Time.from_minutes(10), self.mass)
+        return self.SPECIFIC_HEAT_CAPACITY.calculate_heat(heat_power * Time.from_hours(1), self.mass)
 
-    def joule_10min(self, heat_power: Power) -> Energy:
-        # to_watt_hours = (HOURS * SECONDS) / TO_WATT_HOURS
-        # power = to_watt_hours * heat_power  # WATT * 10min (Wh)
-        return heat_power * Time.from_minutes(10)
+    def heat(self, heat_power: Power) -> Temperature:  # in Watts
+        return self.heat_hour(heat_power) / (Time.from_hours(1) / self.SIMULATION_TIME_STEP)
 
-    # def weight_air(self) -> float:
-    #     weight = (self.litre_air().value * WEIGHT_AIR / 1000)  # kg
-    #     return weight
-    #
-    # def litre_air(self) -> Length:
-    #     volume = self.get_quadratic_metres() * self.room_height  # m3
-    #     litre = volume * 1000  # dm3 or l
-    #     return litre
+    def get_heat_loss_energy(self, delta_t: Temperature) -> Energy:
+        return self.get_heat_loss_power(delta_t) * Time.from_hours(1)
+
+    def get_heat_loss_power(self, delta_t: Temperature) -> Power:
+        return Power(self.heat_loss_power_per_m2(delta_t).value * self.get_surface().value)
+
+    def heat_loss_power_per_m2(self, delta_t: Temperature) -> Power:
+        return Power(self.p_value * abs(delta_t.value))  # TODO
 
     def adapt_to_outside(self, outside: Temperature, inside: Temperature) -> Temperature:
         delta = (outside - inside) * 0.1
