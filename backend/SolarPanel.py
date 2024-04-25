@@ -13,7 +13,7 @@ class SolarPanel:
     SOLAR_EFFICIENCY = 0.2
     # JOULE_TO_KWH = 0.000000278
 
-    production = Energy(0)
+    generation = Energy(0)
     watt_sum = Power(0)
     solar_energy = Energy(0)
     iterations = 0
@@ -41,7 +41,7 @@ class SolarPanel:
             # return int(math.sin(t) * 1000)
             energy_production = Energy(math.sin(t / (144/math.pi)) * 100)
             energy_production *= self.area.value
-            self.production += energy_production
+            self.generation += energy_production
             return energy_production
         else:
             # print(absolute_step)
@@ -66,11 +66,11 @@ class SolarPanel:
             # print('Energy production', energy_production)
 
             self.watt_sum += watt
-            self.production += energy_production
+            self.generation += energy_production
             return energy_production
 
     def print_statistics(self):
-        print(f'Produced: {self.production.format_watt_hours()}')
+        print(f'Produced: {self.generation.format_watt_hours()}')
         if self.iterations == 144:
             avg_watt = self.watt_sum / 144
             print(f'Watt Average: {avg_watt}')

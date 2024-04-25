@@ -1,0 +1,41 @@
+@startuml
+class Room
+class Heater
+class Battery
+class Grid
+
+House "1" *- "1" Battery : has >
+House "?" *- "1" Grid : has >
+House "1" *-- "n" Generator : has >
+
+House "1" *-- "n" Room : has >
+Room "1" *- "1" Appliance : has >
+
+class Appliance {
+{field} WATTS = Power(0)
+{field} usage = Energy(0)
+{method} def step(self, t: int) -> Energy:
+}
+Appliance <|-- Lights
+Appliance <|-- Fridge
+
+Appliance <|--- Heater
+
+class Heater {
+def generate_heat(self, energy: Energy) -> Temperature:
+}
+Heater <|-- ElectricHeater
+Heater <|--- GasHeater
+GasHeater <|-- Etagenheizung
+GasHeater <|-- Zentralheizung
+Heater <|-- DistrictHeating
+Heater <|-- HeatPump
+
+class Generator {
+{field} generation = Energy(0)
+def step(self, t: int, absolute_step: int) -> Energy:
+}
+Generator <|-- SolarPanel
+Generator <|-- SolarThermic
+Generator <|-- WindGenerator
+@enduml

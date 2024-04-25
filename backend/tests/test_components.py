@@ -72,7 +72,7 @@ class TestComponents(unittest.TestCase):
             if step < len(right_watts):
                 self.assertEqual(production_step.value, right_joule[step])
             energy += production_step
-        self.assertEquals(solar_panel.production.value, solar_energy * solar_panel.SOLAR_EFFICIENCY)
+        self.assertEquals(solar_panel.generation.value, solar_energy * solar_panel.SOLAR_EFFICIENCY)
         self.assertEquals(solar_panel.solar_energy.value, solar_energy)
         watt_average = solar_panel.watt_sum / self.STEPS_PER_DAY
         self.assertAlmostEquals(watt_average.value, 363.93, places=2)

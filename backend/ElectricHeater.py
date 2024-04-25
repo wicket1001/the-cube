@@ -1,5 +1,5 @@
 from Appliance import Appliance
-from Physics import Power, Time, Energy
+from Physics import Power, Time, Energy, Temperature
 
 
 class ElectricHeater(Appliance):
@@ -11,7 +11,7 @@ class ElectricHeater(Appliance):
     def __init__(self):
         super().__init__()
 
-    def generate_heat(self, energy: Energy):
+    def generate_heat(self, energy: Energy) -> Temperature:
         heat = energy * self.EFFICIENCY
         # print(f'Generated Heat: {heat}')
 
