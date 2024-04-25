@@ -1,5 +1,6 @@
 import math
 import numbers
+from typing import List
 
 from Physics import Energy, Power, Time, Length
 
@@ -32,7 +33,7 @@ class SolarPanel:
     def __str__(self):
         return "SolarPanel"
 
-    def save_weather(self, array):
+    def save_weather(self, array: List[float]):
         self.radiations = array
 
     def step(self, t: int, absolute_step: int) -> Energy:

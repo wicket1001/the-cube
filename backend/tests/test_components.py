@@ -21,6 +21,7 @@ class TestComponents(unittest.TestCase):
     dates = []
     radiations = []
     winds = []
+    wind_directions = []
 
     @classmethod
     def setUpClass(cls):
@@ -31,6 +32,7 @@ class TestComponents(unittest.TestCase):
             radiation_index = headers.index('cglo')
             temperature_index = headers.index('tl')
             wind_index = headers.index('ff')
+            wind_direction_index = headers.index('dd')
             for row in reader:
                 cls.dates.append(datetime.fromisoformat(row[date_index]))
                 try:
@@ -39,6 +41,7 @@ class TestComponents(unittest.TestCase):
                     cls.radiations.append(0)
                 cls.outer_temperatures.append(float(row[temperature_index]))
                 cls.winds.append(float(row[wind_index]))
+                cls.wind_directions.append(float(row[wind_direction_index]))
 
     def tearDown(self):
         pass

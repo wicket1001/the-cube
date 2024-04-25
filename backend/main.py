@@ -10,10 +10,12 @@ from Battery import Battery
 from ElectricHeater import ElectricHeater
 from Grid import Grid
 from Room import Room
+from Windturbine import Windturbine
 
 STEPS_PER_DAY = int((24 * 60) / 10)
 
 solarPanel = SolarPanel(1)
+windturbine = Windturbine(37.5, 0)
 battery = Battery()
 electricHeater = ElectricHeater()
 lights = Lights()
@@ -24,13 +26,22 @@ money = Money(0)
 energy_production = Energy(0)
 energy_consumption = Energy(0)
 appliances = [electricHeater, lights, fridge]
+generators = [solarPanel, windturbine]
 inner_temperature = Temperature(21)
 outer_temperature = Temperature(3)
 dates = []
 outer_temperatures = []
 radiations = []
 winds = []
+wind_directions = []
 verbosity = DebugLevel.INFORMATIONAL
+
+
+def get_energy_production(t: int, absolute_step: int):
+    energy_produced = Energy(0)
+    for generator in generators:
+        energy_produced += generator.step(t, absolute_step)
+    return energy_produced
 
 
 def get_energy_demand(t: int):
@@ -59,7 +70,7 @@ def step(step_of_the_day: int, absolute_step: int):
 
     energy_demand = get_energy_demand(step_of_the_day)
     energy_consumption += energy_demand
-    energy_supply = solarPanel.step(step_of_the_day, absolute_step)
+    energy_supply = get_energy_production(step_of_the_day, absolute_step) # solarPanel.step(step_of_the_day, absolute_step)
     energy_production += energy_supply
     if verbosity >= DebugLevel.DEBUGGING:
         print(f'Energy demand: {energy_demand}, energy supply: {energy_supply}')
@@ -121,6 +132,7 @@ def main():
         radiation_index = headers.index('cglo')
         temperature_index = headers.index('tl')
         wind_index = headers.index('ff')
+        wind_direction_index = headers.index('dd')
         if verbosity >= DebugLevel.DEBUGGING:
             print(date_index, radiation_index, temperature_index, wind_index)
         for row in reader:
@@ -132,6 +144,7 @@ def main():
                 radiations.append(0)
             outer_temperatures.append(float(row[temperature_index]))
             winds.append(float(row[wind_index]))
+            wind_directions.append(float(row[wind_direction_index]))
 
     if verbosity >= DebugLevel.DEBUGGING:
         print(len(dates), ', '.join([x.strftime('%d.%m.%Y %H:%M') for x in dates]))
@@ -142,12 +155,14 @@ def main():
     if verbosity >= DebugLevel.DEBUGGING:
         print(len(winds), ', '.join([str(x) for x in winds]))
     solarPanel.save_weather(radiations)
+    windturbine.save_weather(winds, wind_directions)
 
-    trying = 365
+    trying = 1
     for day in range(trying):
         date_to_explore = datetime(2022, 5, 31, 0, 0, 0, 0)
         if trying == 1:
-            day = date_to_explore.timetuple()[7] + 365 - 1
+            # day = date_to_explore.timetuple()[7] + 365 - 1
+            pass
         print(f'Day {day}')
         for i in range(STEPS_PER_DAY):
             absolute_step = day * STEPS_PER_DAY + i
@@ -156,10 +171,11 @@ def main():
             step(i, absolute_step)
     print('\n---------')
     grid.print_statistics(verbosity)
-    electricHeater.print_statistics()
-    # solarPanel.print_statistics()
+    # electricHeater.print_statistics()
+    solarPanel.print_statistics()
+    windturbine.print_statistics()
     # fridge.print_statistics()
-    lights.print_statistics()
+    # lights.print_statistics()
     print(f'Money: {money}') # 4,18
 
 #     print("""
