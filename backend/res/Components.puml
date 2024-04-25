@@ -1,8 +1,11 @@
 @startuml
 class Room
 class Heater
+class Grid #6ED46E
+
 class Battery
-class Grid
+class LiIon #6ED46E
+Battery <|-- LiIon
 
 House "1" *- "1" Battery : has >
 House "?" *- "1" Grid : has >
@@ -11,23 +14,31 @@ House "1" *-- "n" Generator : has >
 House "1" *-- "n" Room : has >
 Room "1" *- "1" Appliance : has >
 
-class Appliance {
+class Appliance #6ED46E {
 {field} WATTS = Power(0)
 {field} usage = Energy(0)
 {method} def step(self, t: int) -> Energy:
 }
+class Fridge #6ED46E
 Appliance <|-- Lights
 Appliance <|-- Fridge
+Appliance <|-- HouseholdAppliance
 
 Appliance <|--- Heater
 
 class Heater {
 def generate_heat(self, energy: Energy) -> Temperature:
 }
+class ElectricHeater #6ED46E
+class GasBoiler
+class FloorBoiler #CCCCCC
+class CentralBoiler #CCCCCC
+class DistrictHeating
+class HeatPump
 Heater <|-- ElectricHeater
-Heater <|--- GasHeater
-GasHeater <|-- Etagenheizung
-GasHeater <|-- Zentralheizung
+Heater <|--- GasBoiler
+GasBoiler <|-- FloorBoiler
+GasBoiler <|-- CentralBoiler
 Heater <|-- DistrictHeating
 Heater <|-- HeatPump
 
@@ -35,7 +46,35 @@ class Generator {
 {field} generation = Energy(0)
 def step(self, t: int, absolute_step: int) -> Energy:
 }
+class SolarPanel #6ED46E
+class SolarThermal
+class WindGenerator
 Generator <|-- SolarPanel
-Generator <|-- SolarThermic
+Generator <|-- SolarThermal
 Generator <|-- WindGenerator
+
+note bottom of WindGenerator
+Differentiate
+Blade and Ridge?
+end note
+
+class ThermalBattery #CCCCCC
+class SandBattery #CCCCCC
+class WaterBattery #CCCCCC
+class WaxBattery #CCCCCC
+ThermalBattery <|-- SandBattery
+ThermalBattery <|-- WaterBattery
+ThermalBattery <|-- WaxBattery
+
+class RadiatorFan #CCCCCC
+Heater <. RadiatorFan : addons <
+class AirCondition #CCCCCC
+class Ventilation #CCCCCC
+class WindowOpening #CCCCCC
+class AirFlowWindowFrame #CCCCCC
+class Plants #CCCCCC
+class Aquariums #CCCCCC
+class FacadeGreening #CCCCCC
+class ReuseHeatedAir #CCCCCC
+Ventilation <. ReuseHeatedAir : addons <
 @enduml
