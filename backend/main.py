@@ -56,7 +56,8 @@ def step(step_of_the_day: int, absolute_step: int):
     global energy_consumption, energy_production
     global inner_temperature
     global outer_temperature
-    outer_temperature = Temperature(0)
+
+
 
     natural_cooling = room.adapt_to_outside(outer_temperature, inner_temperature)
     inner_temperature += natural_cooling
@@ -171,11 +172,11 @@ def main():
             step(i, absolute_step)
     print('\n---------')
     grid.print_statistics(verbosity)
-    # electricHeater.print_statistics()
+    electricHeater.print_statistics()
     solarPanel.print_statistics()
     windturbine.print_statistics()
-    # fridge.print_statistics()
-    # lights.print_statistics()
+    fridge.print_statistics()
+    lights.print_statistics()
     print(f'Money: {money}') # 4,18
 
 #     print("""

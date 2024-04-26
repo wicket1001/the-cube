@@ -3,9 +3,10 @@ import numbers
 from typing import List
 
 from Physics import *
+from Generator import Generator
 
 
-class Windturbine:
+class Windturbine(Generator):
     EFFICIENCY = 0.8
     RHO = 1.295
 
@@ -15,16 +16,8 @@ class Windturbine:
     name = 'Windturbine'
 
     def __init__(self, size: [numbers.Number, Length], angle: numbers.Number):
-        if isinstance(size, numbers.Number):
-            self.area = Length(float(size))
-        elif isinstance(size, Length):
-            self.area = size
-        else:
-            raise NotImplementedError('size')
+        super().__init__(size)
         self.angle = angle
-
-    def __str__(self):
-        return 'Windturbine'
 
     def save_weather(self, array: List[float], array2: List[float]):
         self.winds = array
@@ -50,6 +43,6 @@ class Windturbine:
         return energy
 
     def print_statistics(self):
-        print(f'Produced: {self.generation.format_kilo_watt_hours()}')
-        print(f'Produced: {self.generation.format_watt_hours()}')
+        print(f'{self.name} Produced: {self.generation.format_kilo_watt_hours()}')
+        print(f'{self.name} Produced: {self.generation.format_watt_hours()}')
         print(f'--')

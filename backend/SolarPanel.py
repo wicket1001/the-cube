@@ -3,35 +3,25 @@ import numbers
 from typing import List
 
 from Physics import Energy, Power, Time, Length
+from Generator import Generator
 
 
-class SolarPanel:
+class SolarPanel(Generator):
     # 52MW
     # 26/15 MW pro Tag
     # 576m^2 Solarpanel
     # 0.003009 MW pro Panel pro Tag
     # 3009 W pro Panel pro Tag
-    SOLAR_EFFICIENCY = 0.2
+    EFFICIENCY = 0.2
     # JOULE_TO_KWH = 0.000000278
 
-    generation = Energy(0)
     watt_sum = Power(0)
     solar_energy = Energy(0)
     iterations = 0
     radiations = []
-    area = Length(1)
-    name = 'SolarPanel'
 
     def __init__(self, size: [numbers.Number, Length]):
-        if isinstance(size, numbers.Number):
-            self.area = Length(float(size))
-        elif isinstance(size, Length):
-            self.area = size
-        else:
-            raise NotImplementedError('area')
-
-    def __str__(self):
-        return "SolarPanel"
+        super().__init__(size)
 
     def save_weather(self, array: List[float]):
         self.radiations = array
@@ -62,7 +52,7 @@ class SolarPanel:
             # print('Effective Joule', effective_joule)
 
             self.solar_energy += joule_per_10min
-            energy_production = joule_per_10min * self.SOLAR_EFFICIENCY #  * (1/3600)
+            energy_production = joule_per_10min * self.EFFICIENCY  # * (1/3600)
             # energy_production = joule_per_10min * self.solar_panel_efficiency # TODO effective_joule
             # print('Energy production', energy_production)
 
@@ -71,11 +61,11 @@ class SolarPanel:
             return energy_production
 
     def print_statistics(self):
-        print(f'Produced: {self.generation.format_watt_hours()}')
+        print(f'{self.name} Produced: {self.generation.format_watt_hours()}')
         if self.iterations == 144:
             avg_watt = self.watt_sum / 144
             print(f'Watt Average: {avg_watt}')
-            watt_second = (avg_watt * self.SOLAR_EFFICIENCY) / Time.from_hours(1)
+            watt_second = (avg_watt * self.EFFICIENCY) / Time.from_hours(1)
             print(f'Watt / seconds: {watt_second}')
             watt_per_day = watt_second * Time.from_hours(24).value
             print(f'watt_per_day: {watt_per_day}')

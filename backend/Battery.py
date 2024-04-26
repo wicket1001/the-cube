@@ -2,7 +2,7 @@ from Physics import Power, Energy
 
 
 class Battery:
-    capacity = Energy(80)
+    capacity = Energy.from_kilo_watt_hours(13.5)
     efficiency = 0.85
 
     def __init__(self):
