@@ -2,7 +2,9 @@ import csv
 import json
 from datetime import datetime
 
+import utils
 from DebugLevel import DebugLevel
+from House import House
 from Physics import *
 from Fridge import Fridge
 from Lights import Lights
@@ -15,190 +17,15 @@ from Windturbine import Windturbine
 
 STEPS_PER_DAY = int((24 * 60) / 10)
 
-solarPanel = SolarPanel(1)
-windturbine = Windturbine(37.5, 0)
-battery = Battery()
-electricHeater = ElectricHeater()
-lights = Lights()
-fridge = Fridge()
-grid = Grid()
-room = Room(5, 8, 2.5)
-money = Money(0)
-energy_production = Energy(0)
-energy_consumption = Energy(0)
-appliances = [electricHeater, lights, fridge]
-generators = [solarPanel, windturbine]
-inner_temperature = Temperature(21)
-outer_temperature = Temperature(3)
-dates = []
-outer_temperatures = []
-radiations = []
-winds = []
-wind_directions = []
 verbosity = DebugLevel.INFORMATIONAL
 
 
-def get_energy_production(response: dict, t: int, absolute_step: int):
-    energy_produced = Energy(0)
-    generators_response = []
-    for generator in generators:
-        energy_supply = generator.step(t, absolute_step)
-        energy_produced += energy_supply
-        generators_response.append({
-            'name': generator.name,
-            'supply': energy_supply,
-            'generation': generator.generation
-        })
-    return energy_produced
-
-
-def get_energy_demand(response: dict, t: int, absolute_step: int):
-    energy_demand = Energy(0)
-    appliances_response = []
-    for appliance in appliances:
-        appliance_demand = appliance.step(t)
-        energy_demand += appliance_demand
-        appliances_response.append({
-            'name': appliance.name,
-            'demand': appliance_demand,
-            'usage': appliance.usage,
-            'on': appliance.on
-        })
-    response["appliances"] = appliances_response
-    return energy_demand
-
-
-def step(step_of_the_day: int, absolute_step: int):
-    global money
-    global energy_consumption, energy_production
-    global inner_temperature
-    global outer_temperatures
-    global outer_temperature
-
-    outer_temperature = outer_temperatures[absolute_step]
-
-    response = {
-        'step': step_of_the_day,
-        'absolute_step': absolute_step,
-        'date': dates[absolute_step]
-    }
-    response['environment'] = {
-        'outer_temperature': outer_temperatures[absolute_step],
-        'radiation': radiations[absolute_step],
-        'wind': winds[absolute_step],
-        'wind_direction': wind_directions[absolute_step]
-    }
-
-    outer_temperature = Temperature(outer_temperatures[absolute_step])
-    natural_cooling = room.adapt_to_outside(outer_temperature, inner_temperature)
-    inner_temperature += natural_cooling
-
-    if inner_temperature < Temperature(19.5):
-        electricHeater.activate()
-        delta_t = room.heat(electricHeater.WATTS)
-        inner_temperature += delta_t
-    if verbosity >= DebugLevel.DEBUGGING:
-        print(f'Inner temperature: {inner_temperature}')
-
-    response['environment']['inner_temperature'] = inner_temperature
-
-    energy_demand = get_energy_demand(response, step_of_the_day, absolute_step)
-    energy_consumption += energy_demand
-    energy_supply = get_energy_production(response, step_of_the_day, absolute_step) # solarPanel.step(step_of_the_day, absolute_step)
-    energy_production += energy_supply
-    if verbosity >= DebugLevel.DEBUGGING:
-        print(f'Energy demand: {energy_demand}, energy supply: {energy_supply}')
-
-    if energy_demand > energy_supply:
-        over_demand = energy_demand - energy_supply
-        if battery.battery_level > Energy(0):
-            if over_demand > battery.battery_level:
-                over_demand -= battery.battery_level
-                battery.take(battery.battery_level)
-                money -= grid.buy(over_demand)
-                if verbosity >= DebugLevel.DEBUGGING:
-                    print(f'Bought {over_demand} energy')
-                electricHeater.generate_heat(energy_demand)
-            else:
-                battery.take(over_demand)
-                if verbosity >= DebugLevel.DEBUGGING:
-                    print(f'Took everything from battery {battery}, took {over_demand}')
-                electricHeater.generate_heat(energy_demand)
-        else:
-            money -= grid.buy(over_demand)
-            if verbosity >= DebugLevel.DEBUGGING:
-                print(f'Bought {over_demand} energy because battery is empty')
-            electricHeater.generate_heat(energy_demand)
-
-    else:
-        energy_overproduction = energy_supply - energy_demand
-        if verbosity >= DebugLevel.DEBUGGING:
-            print(f'Energy overproduction: {energy_overproduction}')
-        electricHeater.generate_heat(energy_demand)
-        battery_overfull = battery.store(energy_overproduction)
-        if verbosity >= DebugLevel.DEBUGGING:
-            print(f'Selling: {battery_overfull}')
-        money += grid.sell(battery_overfull)
-    if verbosity >= DebugLevel.DEBUGGING:
-        print(battery)
-
-    # calculate_heat_power_demand()
-
-    electricHeater.reset()
-
-    response['environment']['money'] = money
-    response['battery'] = {
-        'level': battery.battery_level,
-        'stored': battery.stored,
-        'taken': battery.taken
-    }
-
-    return response
-
-
-def calculate_heat_power_demand():
-    area = 20  # m^2
-    # https://www.heizsparer.de/heizung/heiztechnik/heizleistung-berechnen
-    u_value = 3.1
-    delta_t = 3
-    # q_value = area * u_value * delta_t
-    q_value = 2000
-    delta_t = q_value / (area * u_value)
-
-
 def main():
-    with open('res/Messstationen Zehnminutendaten v2 Datensatz_20210101T0000_20240101T0000.csv') as csvfile:
-        reader = csv.reader(csvfile, delimiter=',')
-        headers = reader.__next__()
-        # print(headers)
-        date_index = headers.index('time')
-        radiation_index = headers.index('cglo')
-        temperature_index = headers.index('tl')
-        wind_index = headers.index('ff')
-        wind_direction_index = headers.index('dd')
-        if verbosity >= DebugLevel.DEBUGGING:
-            print(date_index, radiation_index, temperature_index, wind_index)
-        for row in reader:
-            # print(len(row), ', '.join(row))
-            dates.append(datetime.fromisoformat(row[date_index]))
-            try:
-                radiations.append(float(row[radiation_index]))
-            except ValueError:
-                radiations.append(0)
-            outer_temperatures.append(float(row[temperature_index]))
-            winds.append(float(row[wind_index]))
-            wind_directions.append(float(row[wind_direction_index]))
+    weather = utils.read_csv(verbosity)
+    house = House()
 
-    if verbosity >= DebugLevel.DEBUGGING:
-        print(len(dates), ', '.join([x.strftime('%d.%m.%Y %H:%M') for x in dates]))
-    if verbosity >= DebugLevel.DEBUGGING:
-        print(len(radiations), ', '.join([str(x) for x in radiations]))
-    if verbosity >= DebugLevel.DEBUGGING:
-        print(len(outer_temperatures), ', '.join([str(x) for x in outer_temperatures]))
-    if verbosity >= DebugLevel.DEBUGGING:
-        print(len(winds), ', '.join([str(x) for x in winds]))
-    solarPanel.save_weather(radiations)
-    windturbine.save_weather(winds, wind_directions)
+    house.solarPanel.save_weather(weather['radiations'])
+    house.windturbine.save_weather(weather['winds'], weather['wind_directions'])
 
     trying = 1
     for day in range(trying):
@@ -210,17 +37,17 @@ def main():
         for i in range(STEPS_PER_DAY):
             absolute_step = day * STEPS_PER_DAY + i
             if verbosity >= DebugLevel.NOTIFICATION:
-                print(f'\nDay {day}, relative Step {i}, absolute Step {absolute_step}, {dates[absolute_step]}')
-            response = step(i, absolute_step)
+                print(f'\nDay {day}, relative Step {i}, absolute Step {absolute_step}, {weather["dates"][absolute_step]}')
+            response = house.step(i, absolute_step, weather, verbosity)
             print(json.dumps(response, cls=SIEncoder))  # , indent=4
     print('\n---------')
-    grid.print_statistics(verbosity)
-    electricHeater.print_statistics()
-    solarPanel.print_statistics()
-    windturbine.print_statistics()
-    fridge.print_statistics()
-    lights.print_statistics()
-    print(f'Money: {money}') # 4,18
+    house.grid.print_statistics(verbosity)
+    house.electricHeater.print_statistics()
+    house.solarPanel.print_statistics()
+    house.windturbine.print_statistics()
+    house.fridge.print_statistics()
+    house.lights.print_statistics()
+    print(f'Money: {house.money}') # 4,18
 
 #     print("""
 # ---------
