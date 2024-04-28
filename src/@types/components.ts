@@ -54,3 +54,23 @@ export interface IBattery {
   "stored": Energy,
   "taken": Energy
 }
+
+export class Grid implements IGrid {
+  "sold": Energy;
+  "bought": Energy;
+  "sell": Energy;
+  "buy": Energy;
+
+  constructor({sold, bought, sell, buy}: {sold: number, bought: number, sell: number, buy: number}) {
+    this.sold = new Energy(sold);
+    this.bought = new Energy(bought);
+    this.sell = new Energy(sell);
+    this.buy = new Energy(buy);
+  }
+}
+export interface IGrid {
+  "sold": Energy,
+  "bought": Energy,
+  "sell": Energy,
+  "buy": Energy
+}

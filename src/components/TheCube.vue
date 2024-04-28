@@ -3,7 +3,7 @@ import { onMounted, reactive, type Ref, ref, watch, getCurrentInstance } from 'v
 import { getData, simulate } from '@/utils/resources'
 import LinesChart from '@/components/LinesChart.vue'
 import {toColor, calculateHeat, map, stepHeat} from '@/utils/utils'
-import { Appliance, Battery, Generator } from '@/@types/components'
+import { Appliance, Battery, Generator, Grid } from '@/@types/components'
 
 const INITIAL_HEAT = 21;
 
@@ -38,6 +38,11 @@ let generation_view: Ref<{"SolarPanel": number[], "Windturbine": number[]}> = re
 
 let battery_level: number[] = [];
 let battery_level_view: Ref<number[]> = ref([]);
+
+let grid: {"sold": number[], "bought": number[], "sell": number[], "buy": number[]} =
+  {"sold": [], "bought": [], "sell": [], "buy": []};
+let grid_view: Ref<{"sold": number[], "bought": number[], "sell": number[], "buy": number[]}> =
+  ref({"sold": [], "bought": [], "sell": [], "buy": []});
 
 let rotationX = 0;
 let rotationY = 0;
@@ -122,6 +127,10 @@ function step() {
     }
     let battery = new Battery(res['battery']);
     battery_level.push(battery.level.value);
+    let grid_raw = new Grid(res['grid']);
+    for (const gridParameter of ['sold', 'bought', 'sell', 'buy']) {
+      grid[gridParameter].push(grid_raw[gridParameter].value);
+    }
 
     if (currentIndex.value > 2) {
       dataFetched.value = true;
@@ -133,6 +142,9 @@ function step() {
       generation_view.value['SolarPanel'] = generation['SolarPanel'].slice(begin, currentIndex.value);
       generation_view.value['Windturbine'] = generation['Windturbine'].slice(begin, currentIndex.value);
       battery_level_view.value = battery_level.slice(begin, currentIndex.value);
+      for (const gridParameter of ['sold', 'bought', 'sell', 'buy']) {
+        grid_view.value[gridParameter] = grid[gridParameter].slice(begin, currentIndex.value);
+      }
     }
   });
 }

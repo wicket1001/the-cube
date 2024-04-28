@@ -29,6 +29,12 @@ export interface SimulationRaw {
     "level": number,
     "stored": number,
     "taken": number
+  },
+  "grid": {
+    "sold": number,
+    "bought": number,
+    "sell": number,
+    "buy": number
   }
 }
 
