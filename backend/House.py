@@ -60,6 +60,7 @@ class House(object):
         for condition in weather.keys():
             response['environment'][condition] = weather[condition][absolute_step]
 
+        self.grid.reset()
         outer_temperature = Temperature(weather['temperatures'][absolute_step])
         natural_cooling = self.room.adapt_to_outside(outer_temperature, self.inner_temperature)
         self.inner_temperature += natural_cooling
@@ -123,6 +124,12 @@ class House(object):
             'level': self.battery.battery_level,
             'stored': self.battery.stored,
             'taken': self.battery.taken
+        }
+        response['grid'] = {
+            'sold': self.grid.sold,
+            'bought': self.grid.bought,
+            'sell': self.grid.sell,
+            'buy': self.grid.buy
         }
 
         return response
