@@ -32,34 +32,9 @@ const pause = defineModel()
 let timer = -1
 
 onMounted(() => {
-  // dataFetched.value = true;
 })
 
 watch(currentIndex, async (newValue, oldValue) => {
-  /*
-  if (newValue >= 145) {
-    currentIndex.value = oldValue
-    return
-  }
-  current.value = dates[newValue].toLocaleTimeString();
-  outside.value = temperatures[newValue];
-
-  //let heat = calculateHeat(newValue, inside.value, outside.value);
-  let heat = stepHeat(newValue, inside.value, outside.value);
-  if (newValue == 0) {
-    heat = INITIAL_HEAT;
-  }
-  inside.value = heat;
-  inside_temperatures.push(heat);
-  let color = toColor(heat)
-  let cube = document.querySelector<HTMLElement>('.cube')
-  if (cube !== null) {
-    let children = Array.from(cube.children as HTMLCollectionOf<HTMLElement>)
-    for (const child of children) {
-      child.style.backgroundColor = `hsl(${color}, 100%, 50%)`;
-    }
-  }
-   */
 })
 
 watch(pause, async(newValue, oldValue) => {
@@ -83,31 +58,12 @@ function fast() {
 }
 
 function step() {
-  /*
-  currentIndex.value ++
-  // document.getElementById("temperature_plot").$forceUpdate();
-  //const instance = getCurrentInstance();
-  //instance.proxy.$forceUpdate();
-  //console.log(temperatures.length)
-  temperatures_view.value = temperatures.slice(0, currentIndex.value)
-  //console.log(temperatures_view.value.length)
-  //dates.push(dates[dates.length - 1])
-  //dates.pop()
-  dates_view.value = dates.slice(0, currentIndex.value)
-  inside_temperatures_view.value = inside_temperatures.slice(0, currentIndex.value)
-  //console.log(inside_temperatures)
-
-  //console.log(dates_view.value)
-  //console.log('BOB')
-   */
-  // dataFetched = false;
   currentIndex.value ++;
   simulate(currentIndex.value, currentIndex.value).then(res => {
     let date_raw = res['environment']['dates'];
     let date = new Date(date_raw);
     current.value = date.toLocaleTimeString();
     dates.push(date);
-    //dates_view.value.push(date);
 
     let radiation = res['environment']['radiations'];
 

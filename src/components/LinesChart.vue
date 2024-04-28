@@ -58,8 +58,6 @@ export default {
     }
   },
   setup(props) {
-    // console.log('KEYS', props.keys);
-    // console.log('VALUES', props.values);
   },
 
 }
@@ -76,14 +74,6 @@ function transformData(axes: string[], values: [number[]]): {'label': string, 'b
       data: values[i]
     });
   }
-  // console.log('Multiple Axis Data', data)
   return data;
-  /*return [
-          {
-            label: 'Temperature',
-            backgroundColor: '#f87979',
-            data: this.values,
-          }
-        ];*/
 }
 </script>
