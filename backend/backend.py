@@ -37,9 +37,9 @@ class RestAPI(BaseHTTPRequestHandler):
         global weather
 
         url = urlparse(self.path)
-        print(url)
+        #print(url)
         parameters = parse_qs(url.query)
-        print(parameters)
+        #print(parameters)
         if url.path == '' or url.path == '/':
             self.path = '/index.html'
         if self.path == '/index.html':
@@ -59,6 +59,7 @@ class RestAPI(BaseHTTPRequestHandler):
             self.send_response(200)
             self.send_header("Connection", "keep-alive")
             self.send_header("Content-type", "application/json")
+            self.send_header("Access-Control-Allow-Origin", "*")
             self.send_header("Content-Length", str(len(response_data)))
             self.end_headers()
 

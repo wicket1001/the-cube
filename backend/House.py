@@ -26,11 +26,11 @@ class House(object):
     generators = [solarPanel, windturbine]
     inner_temperature = Temperature(21)
 
-    def get_energy_production(self, response: dict, t: int, absolute_step: int):
+    def get_energy_production(self, response: dict, t: int, absolute_step: int, verbosity: DebugLevel):
         energy_produced = Energy(0)
         generators_response = []
         for generator in self.generators:
-            energy_supply = generator.step(t, absolute_step)
+            energy_supply = generator.step(t, absolute_step, verbosity)
             energy_produced += energy_supply
             generators_response.append({
                 'name': generator.name,
@@ -40,11 +40,11 @@ class House(object):
         response["generators"] = generators_response
         return energy_produced
 
-    def get_energy_demand(self, response: dict, t: int, absolute_step: int):
+    def get_energy_demand(self, response: dict, t: int, absolute_step: int, verbosity: DebugLevel):
         energy_demand = Energy(0)
         appliances_response = []
         for appliance in self.appliances:
-            appliance_demand = appliance.step(t)
+            appliance_demand = appliance.step(t, absolute_step, verbosity)
             energy_demand += appliance_demand
             appliances_response.append({
                 'name': appliance.name,
@@ -73,10 +73,10 @@ class House(object):
 
         response['environment']['inner_temperature'] = self.inner_temperature
 
-        energy_demand = self.get_energy_demand(response, step_of_the_day, absolute_step)
+        energy_demand = self.get_energy_demand(response, step_of_the_day, absolute_step, verbosity)
         self.energy_consumption += energy_demand
         energy_supply = self.get_energy_production(response, step_of_the_day,
-                                              absolute_step)  # solarPanel.step(step_of_the_day, absolute_step)
+                                              absolute_step, verbosity)  # solarPanel.step(step_of_the_day, absolute_step)
         self.energy_production += energy_supply
         if verbosity >= DebugLevel.DEBUGGING:
             print(f'Energy demand: {energy_demand}, energy supply: {energy_supply}')

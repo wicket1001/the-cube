@@ -1,3 +1,4 @@
+from DebugLevel import DebugLevel
 from Physics import Power, Energy
 
 
@@ -13,7 +14,7 @@ class Appliance:
     def __str__(self):
         return f'Appliance used {self.usage}'
 
-    def step(self, t: int) -> Energy:
+    def step(self, t: int, absolute_step: int, verbosity: DebugLevel) -> Energy:
         return Energy(0)
 
     def print_statistics(self):

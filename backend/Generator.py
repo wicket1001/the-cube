@@ -2,6 +2,7 @@ import math
 import numbers
 from typing import List
 
+from DebugLevel import DebugLevel
 from Physics import Energy, Power, Time, Length
 
 
@@ -23,7 +24,7 @@ class Generator:
     def __str__(self):
         return self.name
 
-    def step(self, t: int, absolute_step: int) -> Energy:
+    def step(self, t: int, absolute_step: int, verbosity: DebugLevel) -> Energy:
         return Energy(0)
 
     def print_statistics(self):

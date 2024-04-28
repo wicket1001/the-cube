@@ -1,4 +1,5 @@
 from Appliance import Appliance
+from DebugLevel import DebugLevel
 from Physics import Power, Time, Energy
 
 
@@ -9,7 +10,7 @@ class Lights(Appliance):
     def __init__(self):
         super().__init__()
 
-    def step(self, t: int) -> Energy:
+    def step(self, t: int, absolute_step: int, verbosity: DebugLevel) -> Energy:
         self.on = True
         energy_demand = self.get_energy_demand()
         self.usage += energy_demand

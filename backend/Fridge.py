@@ -1,4 +1,5 @@
 from Appliance import Appliance
+from DebugLevel import DebugLevel
 from Physics import Power, Time, Energy
 
 
@@ -14,7 +15,7 @@ class Fridge(Appliance):
     def __init__(self):
         super().__init__()
 
-    def step(self, t: int) -> Energy:
+    def step(self, t: int, absolute_step: int, verbosity: DebugLevel) -> Energy:
         energy_demand = Energy(0)
         self.on = False
         if t % self.SPLITTER * 4 < self.SPLITTER:

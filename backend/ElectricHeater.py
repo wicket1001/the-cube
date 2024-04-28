@@ -1,4 +1,5 @@
 from Appliance import Appliance
+from DebugLevel import DebugLevel
 from Physics import Power, Time, Energy, Temperature
 
 
@@ -15,7 +16,7 @@ class ElectricHeater(Appliance):
         heat = energy * self.EFFICIENCY
         # print(f'Generated Heat: {heat}')
 
-    def step(self, t: int) -> Energy:
+    def step(self, t: int, absolute_step: int, verbosity: DebugLevel) -> Energy:
         self.on = self.should_activate
         if self.should_activate:
             energy_demand = self.get_energy_demand()

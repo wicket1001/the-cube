@@ -2,6 +2,7 @@ import math
 import numbers
 from typing import List
 
+from DebugLevel import DebugLevel
 from Physics import Energy, Power, Time, Length
 from Generator import Generator
 
@@ -20,13 +21,15 @@ class SolarPanel(Generator):
     iterations = 0
     radiations = []
 
+    name = 'SolarPanel'
+
     def __init__(self, size: [numbers.Number, Length]):
         super().__init__(size)
 
     def save_weather(self, array: List[float]):
         self.radiations = array
 
-    def step(self, t: int, absolute_step: int) -> Energy:
+    def step(self, t: int, absolute_step: int, verbosity: DebugLevel) -> Energy:
         self.iterations += 1
         if len(self.radiations) == 0:
             # return int(math.sin(t) * 1000)
