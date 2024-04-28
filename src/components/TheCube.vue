@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, reactive, type Ref, ref, watch, getCurrentInstance } from 'vue'
-import { getData, simulate } from '@/utils/resources'
+import { getData, patching, simulate } from '@/utils/resources'
 import LinesChart from '@/components/LinesChart.vue'
 import {toColor, calculateHeat, map, stepHeat} from '@/utils/utils'
 import { Appliance, Battery, Generator, Grid } from '@/@types/components'
@@ -149,6 +149,12 @@ function step() {
   });
 }
 
+function patch_outside() {
+  patching().then(res => {
+    console.log('Patch worked', res)
+  });
+}
+
 </script>
 
 <template>
@@ -185,6 +191,11 @@ function step() {
   </div>
   <div class="controls" v-if="dataFetched">
     <input type="range" min="0" max="{{lookback}}" value="0" v-model="currentIndex" />
+  </div>
+  <div class="overrides">
+    <v-btn variant="outlined" @click="patch_outside()">
+      heat
+    </v-btn>
   </div>
   <div>
     <LinesChart v-if="dataFetched"

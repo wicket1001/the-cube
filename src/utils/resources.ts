@@ -58,3 +58,11 @@ export async function simulate(step: number, absolute_step: number): Promise<Sim
   const data: SimulationRaw = response.data;
   return data;
 }
+
+export async function patching(): Promise<boolean> {
+  const url = `http://localhost:8080/environment`;
+  const response = await axios.patch(url, {
+    outer_temperature: 30
+  });
+  return true;
+}
