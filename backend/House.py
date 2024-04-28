@@ -37,6 +37,7 @@ class House(object):
                 'supply': energy_supply,
                 'generation': generator.generation
             })
+        response["generators"] = generators_response
         return energy_produced
 
     def get_energy_demand(self, response: dict, t: int, absolute_step: int):

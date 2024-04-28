@@ -6,11 +6,18 @@ import time
 from io import BytesIO
 from urllib.parse import urlparse, parse_qs
 
+import utils
+from DebugLevel import DebugLevel
+from House import House
+from Physics import SIEncoder
+
 hostName = "localhost"
 serverPort = 8080
 
 
-msg_id = 1001
+msg_id = 1
+house = House()
+weather = utils.read_csv(DebugLevel.INFORMATIONAL)
 
 
 class RestAPI(BaseHTTPRequestHandler):
@@ -26,6 +33,8 @@ class RestAPI(BaseHTTPRequestHandler):
 
     def do_GET(self):
         global msg_id
+        global house
+        global weather
 
         url = urlparse(self.path)
         print(url)
@@ -44,11 +53,9 @@ class RestAPI(BaseHTTPRequestHandler):
             # self.wfile.write(bytes("<p>This is an example web server.</p>", "utf-8"))
             # self.wfile.write(bytes("</body></html>", "utf-8"))
         elif url.path == '/step':
-            curr_time = datetime.now()
-            data = {"msgid": str(msg_id), "time": str(curr_time)}
-            response_data = json.dumps(data).encode('utf-8')
+            response = house.step(msg_id, msg_id, weather, DebugLevel.INFORMATIONAL)
+            response_data = json.dumps(response, cls=SIEncoder).encode('utf-8')
 
-            # Send the response
             self.send_response(200)
             self.send_header("Connection", "keep-alive")
             self.send_header("Content-type", "application/json")
@@ -99,6 +106,9 @@ if __name__ == "__main__":
     webServer = HTTPServer((hostName, serverPort), RestAPI)
     # logging.basicConfig(level=logging.DEBUG)
     print(f"Server started http://{hostName}:{serverPort}")
+
+    house.solarPanel.save_weather(weather['radiations'])
+    house.windturbine.save_weather(weather['winds'], weather['wind_directions'])
 
     try:
         webServer.serve_forever()
