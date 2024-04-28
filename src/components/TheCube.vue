@@ -8,20 +8,36 @@ import { Appliance, Battery, Generator } from '@/@types/components'
 const INITIAL_HEAT = 21;
 
 let currentIndex = ref(0);
-let current = ref('');
+let current_time = ref('');
+let current_date = ref('');
 let outside = ref(0);
 let inside = ref(INITIAL_HEAT);
 let dataFetched: Ref<boolean> = ref(false);
 let playBtn = ref('Play')
 
 let dates: Date[] = [];
-let dates_view: Ref<Date[]> = ref([]);
+let dates_view: Date[] = [];
 
 let temperatures: number[] = [];
 let temperatures_view: Ref<number[]> = ref([]);
 
 let inside_temperatures: number[] = [];
 let inside_temperatures_view: Ref<number[]> = ref([]);
+
+let radiations: number[] = [];
+let radiations_view: Ref<number[]> = ref([]);
+
+let winds: number[] = [];
+let winds_view: Ref<number[]> = ref([]);
+
+let money: number[] = [];
+let money_view: Ref<number[]> = ref([]);
+
+let generation: {"SolarPanel": number[], "Windturbine": number[]} = {"SolarPanel": [], "Windturbine": []};
+let generation_view: Ref<{"SolarPanel": number[], "Windturbine": number[]}> = ref({"SolarPanel": [], "Windturbine": []});
+
+let battery_level: number[] = [];
+let battery_level_view: Ref<number[]> = ref([]);
 
 let rotationX = 0;
 let rotationY = 0;
@@ -30,6 +46,7 @@ let cubeColor = ref('hsl(90, 100%, 50%)');
 const pause = defineModel()
 
 let timer = -1
+const lookback = 72
 
 onMounted(() => {
 })
@@ -57,15 +74,28 @@ function fast() {
   play(250)
 }
 
+function show_cube_temperature(inner_temperature: number) {
+  let color = toColor(inner_temperature)
+  let cube = document.querySelector<HTMLElement>('.cube')
+  if (cube !== null) {
+    let children = Array.from(cube.children as HTMLCollectionOf<HTMLElement>)
+    for (const child of children) {
+      child.style.backgroundColor = `hsl(${color}, 100%, 50%)`
+    }
+  }
+}
+
 function step() {
   currentIndex.value ++;
   simulate(currentIndex.value, currentIndex.value).then(res => {
     let date_raw = res['environment']['dates'];
     let date = new Date(date_raw);
-    current.value = date.toLocaleTimeString();
+    current_time.value = date.toLocaleTimeString('de-DE');
+    current_date.value = date.toLocaleDateString('de-DE');
     dates.push(date);
 
     let radiation = res['environment']['radiations'];
+    radiations.push(radiation);
 
     let temperature = res['environment']['temperatures'];
     outside.value = temperature;
@@ -77,6 +107,7 @@ function step() {
     let inner_temperature = res['environment']['inner_temperature'];
     inside.value = inner_temperature;
     inside_temperatures.push(inner_temperature);
+    show_cube_temperature(inner_temperature);
 
     let money = res['environment']['money'];
 
@@ -85,13 +116,23 @@ function step() {
     }
     for (const generator_raw of res['generators']) {
       let generator = new Generator(generator_raw);
+      if (['SolarPanel', 'Windturbine'].includes(generator.name)) {
+        generation[generator.name].push(generator.supply.value);
+      }
     }
     let battery = new Battery(res['battery']);
+    battery_level.push(battery.level.value);
 
     if (currentIndex.value > 2) {
       dataFetched.value = true;
-      temperatures_view.value = temperatures.slice(0, currentIndex.value);
-      inside_temperatures_view.value = inside_temperatures.slice(0, currentIndex.value);
+      let begin = Math.max(0, currentIndex.value - lookback); // only watch back 12h
+      dates_view = dates.slice(begin, currentIndex.value);
+      temperatures_view.value = temperatures.slice(begin, currentIndex.value);
+      inside_temperatures_view.value = inside_temperatures.slice(begin, currentIndex.value);
+      radiations_view.value = radiations.slice(begin, currentIndex.value);
+      generation_view.value['SolarPanel'] = generation['SolarPanel'].slice(begin, currentIndex.value);
+      generation_view.value['Windturbine'] = generation['Windturbine'].slice(begin, currentIndex.value);
+      battery_level_view.value = battery_level.slice(begin, currentIndex.value);
     }
   });
 }
@@ -123,19 +164,44 @@ function step() {
     </div>
      -
     <div class="d-inline">
-      {{current}}
+      {{ current_time }}
+    </div>
+    -
+    <div class="d-inline">
+      {{ current_date }}
     </div>
   </div>
   <div class="controls" v-if="dataFetched">
-    <input type="range" min="0" max="144" value="0" v-model="currentIndex" />
+    <input type="range" min="0" max="{{lookback}}" value="0" v-model="currentIndex" />
   </div>
   <div>
     <LinesChart v-if="dataFetched"
                 id="temperature_plot"
                 :key="currentIndex"
-                :keys="dates"
+                :keys="dates_view"
                 :axes="['Outside Temperature', 'Inside Temperature']"
                 :values="[temperatures_view, inside_temperatures_view]"/>
+
+    <LinesChart v-if="dataFetched"
+                id="radiation_plot"
+                :key="currentIndex"
+                :keys="dates_view"
+                :axes="['Radiation']"
+                :values="[radiations_view]"/>
+
+    <LinesChart v-if="dataFetched"
+                id="solar_plot"
+                :key="currentIndex"
+                :keys="dates_view"
+                :axes="['Solar generation', 'Windturbine generation']"
+                :values="[generation_view['SolarPanel'], generation_view['Windturbine']]"/>
+
+    <LinesChart v-if="dataFetched"
+                id="battery_plot"
+                :key="currentIndex"
+                :keys="dates_view"
+                :axes="['Battery Level']"
+                :values="[battery_level_view]"/>
     <p v-else>Loading...</p>
   </div>
   <div class="stats">

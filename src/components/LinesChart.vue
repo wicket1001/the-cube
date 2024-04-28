@@ -47,8 +47,6 @@ export default {
         maintainAspectRatio: true,
         scales: {
           y: {
-            min: 0,
-            max: 35,
             suggestedMin: 0,
             suggestedMax: 35
           }
