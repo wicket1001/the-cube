@@ -100,22 +100,49 @@ class RestAPI(BaseHTTPRequestHandler):
         self.wfile.write(response_data)
         msg_id += 1
 
+    def do_OPTIONS(self):
+        global house
+        print(self.path)
+        url = urlparse(self.path)
+        print(self.command, url)
+        print(self.headers)
+
+        self.send_response(HTTPStatus.NO_CONTENT)
+        self.send_header("Connection", "keep-alive")
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "PATCH")
+        self.send_header("Access-Control-Allow-Headers", "content-type")
+        self.end_headers()
+
     def do_PATCH(self):
         global house
         url = urlparse(self.path)
         parameters = parse_qs(url.query)
+        print(self.path)
+        print(self.command, url)
+        print(self)
+        print(self.headers)
+        body = {}
+
+        if 'Content-Length' in self.headers:
+            content_length = int(self.headers['Content-Length'])
+            body = self.rfile.read(content_length)
+            body = json.loads(body)
+
+        print('First')
         if url.path == '/environment':
-            if 'outer_temperature' in parameters.keys():
-                house.patch_outer_temperature(parameters['outer_temperature'])
+            print('Second')
+            if 'outer_temperature' in body.keys():
+                print('Third')
+                house.patch_outer_temperature(body['outer_temperature'])
 
                 # response = house.patch()
                 # response_data = json.dumps(response, cls=SIEncoder).encode('utf-8')
 
                 self.send_response(HTTPStatus.NO_CONTENT)
-                self.send_header("Connection", "keep-alive")
                 # self.send_header("Content-type", "application/json")
                 self.send_header("Access-Control-Allow-Origin", "*")
-                # self.send_header("Content-Length", str(len(response_data)))
+                self.send_header("Content-Length", str(0))
                 self.end_headers()
 
                 # self.wfile.write(response_data)
