@@ -1,11 +1,9 @@
 <script setup lang="ts">
 import { onMounted, reactive, type Ref, ref, watch, getCurrentInstance } from 'vue'
-import { getData } from '@/utils/resources'
+import { getData, simulate } from '@/utils/resources'
 import LinesChart from '@/components/LinesChart.vue'
 import {toColor, calculateHeat, map, stepHeat} from '@/utils/utils'
-import { useGlobalStorage } from '@/stores/globalStorage'
-
-const storage = useGlobalStorage()
+import { Appliance, Battery, Generator } from '@/@types/components'
 
 const INITIAL_HEAT = 21;
 
@@ -34,24 +32,11 @@ const pause = defineModel()
 let timer = -1
 
 onMounted(() => {
-  getData().then(res => {
-    temperatures = res.temperatures;
-    temperatures_view.value = res.temperatures;
-    dates = res.dates;
-    dates_view.value = res.dates;
-    dataFetched.value = true;
-    inside_temperatures = [21];
-    inside_temperatures_view.value = [21];
-
-    current.value = dates[0].toLocaleTimeString();
-    outside.value = temperatures[0];
-    inside.value = 21;
-  });
-  // https://dataset.api.hub.geosphere.at/v1/openapi-docs
-  // https://dataset.api.hub.geosphere.at/v1/station/historical/klima-v1-10min?parameters=RR&start=2021-01-01T00%3A00&end=2021-01-01T00%3A00&station_ids=5882&output_format=geojson
+  // dataFetched.value = true;
 })
 
 watch(currentIndex, async (newValue, oldValue) => {
+  /*
   if (newValue >= 145) {
     currentIndex.value = oldValue
     return
@@ -74,6 +59,7 @@ watch(currentIndex, async (newValue, oldValue) => {
       child.style.backgroundColor = `hsl(${color}, 100%, 50%)`;
     }
   }
+   */
 })
 
 watch(pause, async(newValue, oldValue) => {
@@ -97,6 +83,7 @@ function fast() {
 }
 
 function step() {
+  /*
   currentIndex.value ++
   // document.getElementById("temperature_plot").$forceUpdate();
   //const instance = getCurrentInstance();
@@ -112,6 +99,45 @@ function step() {
 
   //console.log(dates_view.value)
   //console.log('BOB')
+   */
+  // dataFetched = false;
+  currentIndex.value ++;
+  simulate(currentIndex.value, currentIndex.value).then(res => {
+    let date_raw = res['environment']['dates'];
+    let date = new Date(date_raw);
+    current.value = date.toLocaleTimeString();
+    dates.push(date);
+    //dates_view.value.push(date);
+
+    let radiation = res['environment']['radiations'];
+
+    let temperature = res['environment']['temperatures'];
+    outside.value = temperature;
+    temperatures.push(temperature);
+
+    let wind = res['environment']['winds'];
+    let wind_direction = res['environment']['wind_directions'];
+
+    let inner_temperature = res['environment']['inner_temperature'];
+    inside.value = inner_temperature;
+    inside_temperatures.push(inner_temperature);
+
+    let money = res['environment']['money'];
+
+    for (const appliance_raw of res['appliances']) {
+      let appliance = new Appliance(appliance_raw);
+    }
+    for (const generator_raw of res['generators']) {
+      let generator = new Generator(generator_raw);
+    }
+    let battery = new Battery(res['battery']);
+
+    if (currentIndex.value > 2) {
+      dataFetched.value = true;
+      temperatures_view.value = temperatures.slice(0, currentIndex.value);
+      inside_temperatures_view.value = inside_temperatures.slice(0, currentIndex.value);
+    }
+  });
 }
 
 </script>
