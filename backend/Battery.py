@@ -27,9 +27,11 @@ class Battery:
             print("Battery full")
             diff = self.capacity - self.battery_level
             self.battery_level += diff
+            self.stored += diff
             return energy - diff
         else:
             self.battery_level += energy
+            self.stored += energy
             return Energy(0)
 
     def take(self, energy: Energy):
@@ -37,5 +39,6 @@ class Battery:
             raise ValueError("Energy")
         if energy > self.battery_level:
             raise ValueError("Battery")
+        self.taken += energy
         self.battery_level -= energy
 

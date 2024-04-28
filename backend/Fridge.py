@@ -16,7 +16,9 @@ class Fridge(Appliance):
 
     def step(self, t: int) -> Energy:
         energy_demand = Energy(0)
+        self.on = False
         if t % self.SPLITTER * 4 < self.SPLITTER:
+            self.on = True
             energy_demand = self.get_energy_demand()
         self.usage += energy_demand
         return energy_demand

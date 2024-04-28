@@ -1,4 +1,5 @@
 import csv
+import json
 from datetime import datetime
 
 from DebugLevel import DebugLevel
@@ -37,17 +38,33 @@ wind_directions = []
 verbosity = DebugLevel.INFORMATIONAL
 
 
-def get_energy_production(t: int, absolute_step: int):
+def get_energy_production(response: dict, t: int, absolute_step: int):
     energy_produced = Energy(0)
+    generators_response = []
     for generator in generators:
-        energy_produced += generator.step(t, absolute_step)
+        energy_supply = generator.step(t, absolute_step)
+        energy_produced += energy_supply
+        generators_response.append({
+            'name': generator.name,
+            'supply': energy_supply,
+            'generation': generator.generation
+        })
     return energy_produced
 
 
-def get_energy_demand(t: int):
+def get_energy_demand(response: dict, t: int, absolute_step: int):
     energy_demand = Energy(0)
+    appliances_response = []
     for appliance in appliances:
-        energy_demand += appliance.step(t)
+        appliance_demand = appliance.step(t)
+        energy_demand += appliance_demand
+        appliances_response.append({
+            'name': appliance.name,
+            'demand': appliance_demand,
+            'usage': appliance.usage,
+            'on': appliance.on
+        })
+    response["appliances"] = appliances_response
     return energy_demand
 
 
@@ -55,10 +72,24 @@ def step(step_of_the_day: int, absolute_step: int):
     global money
     global energy_consumption, energy_production
     global inner_temperature
+    global outer_temperatures
     global outer_temperature
 
+    outer_temperature = outer_temperatures[absolute_step]
 
+    response = {
+        'step': step_of_the_day,
+        'absolute_step': absolute_step,
+        'date': dates[absolute_step]
+    }
+    response['environment'] = {
+        'outer_temperature': outer_temperatures[absolute_step],
+        'radiation': radiations[absolute_step],
+        'wind': winds[absolute_step],
+        'wind_direction': wind_directions[absolute_step]
+    }
 
+    outer_temperature = Temperature(outer_temperatures[absolute_step])
     natural_cooling = room.adapt_to_outside(outer_temperature, inner_temperature)
     inner_temperature += natural_cooling
 
@@ -69,9 +100,11 @@ def step(step_of_the_day: int, absolute_step: int):
     if verbosity >= DebugLevel.DEBUGGING:
         print(f'Inner temperature: {inner_temperature}')
 
-    energy_demand = get_energy_demand(step_of_the_day)
+    response['environment']['inner_temperature'] = inner_temperature
+
+    energy_demand = get_energy_demand(response, step_of_the_day, absolute_step)
     energy_consumption += energy_demand
-    energy_supply = get_energy_production(step_of_the_day, absolute_step) # solarPanel.step(step_of_the_day, absolute_step)
+    energy_supply = get_energy_production(response, step_of_the_day, absolute_step) # solarPanel.step(step_of_the_day, absolute_step)
     energy_production += energy_supply
     if verbosity >= DebugLevel.DEBUGGING:
         print(f'Energy demand: {energy_demand}, energy supply: {energy_supply}')
@@ -112,6 +145,15 @@ def step(step_of_the_day: int, absolute_step: int):
     # calculate_heat_power_demand()
 
     electricHeater.reset()
+
+    response['environment']['money'] = money
+    response['battery'] = {
+        'level': battery.battery_level,
+        'stored': battery.stored,
+        'taken': battery.taken
+    }
+
+    return response
 
 
 def calculate_heat_power_demand():
@@ -169,7 +211,8 @@ def main():
             absolute_step = day * STEPS_PER_DAY + i
             if verbosity >= DebugLevel.NOTIFICATION:
                 print(f'\nDay {day}, relative Step {i}, absolute Step {absolute_step}, {dates[absolute_step]}')
-            step(i, absolute_step)
+            response = step(i, absolute_step)
+            print(json.dumps(response, cls=SIEncoder))  # , indent=4
     print('\n---------')
     grid.print_statistics(verbosity)
     electricHeater.print_statistics()

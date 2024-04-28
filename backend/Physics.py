@@ -1,8 +1,29 @@
 from __future__ import annotations
 
+from datetime import datetime
 from enum import IntFlag, auto
 import numbers
 from io import UnsupportedOperation
+from json import JSONEncoder
+
+
+class SIEncoder(JSONEncoder):
+    # https://stackoverflow.com/questions/3768895/how-to-make-a-class-json-serializable
+    def default(self, o):
+        if isinstance(o, datetime):
+            return str(o)
+        if (isinstance(o, Temperature)
+                or isinstance(o, Time)
+                or isinstance(o, Energy)
+                or isinstance(o, Power)
+                or isinstance(o, Weight)
+                or isinstance(o, Length)
+                or isinstance(o, Density)
+                or isinstance(o, SpecificHeatCapacity)
+                or isinstance(o, Money)):
+            return o.value
+        else:
+            raise UnsupportedOperation(type(o))
 
 
 class Time:

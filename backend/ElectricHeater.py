@@ -16,6 +16,7 @@ class ElectricHeater(Appliance):
         # print(f'Generated Heat: {heat}')
 
     def step(self, t: int) -> Energy:
+        self.on = self.should_activate
         if self.should_activate:
             energy_demand = self.get_energy_demand()
             self.usage += energy_demand

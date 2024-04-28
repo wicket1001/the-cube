@@ -5,6 +5,7 @@ class Appliance:
     name = ''
     WATTS = Power(0)
     usage = Energy(0)
+    on = False
 
     def __init__(self):
         pass

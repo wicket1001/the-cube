@@ -10,6 +10,7 @@ class Lights(Appliance):
         super().__init__()
 
     def step(self, t: int) -> Energy:
+        self.on = True
         energy_demand = self.get_energy_demand()
         self.usage += energy_demand
         return energy_demand
