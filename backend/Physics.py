@@ -196,6 +196,9 @@ class Temperature:
     def __str__(self):
         return f'{self.value:.2f}K'
 
+    def __abs__(self):
+        return Temperature(abs(self.value))
+
     def __add__(self, other):
         if isinstance(other, Temperature):
             return Temperature(self.value + other.value)

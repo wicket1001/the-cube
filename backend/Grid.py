@@ -9,8 +9,8 @@ class Grid(object):
     def __init__(self):
         self.bought = Energy(0)
         self.sold = Energy(0)
-        self.buy = Energy(0)
-        self.sell = Energy(0)
+        self.buying = Energy(0)
+        self.selling = Energy(0)
 
     def __str__(self):
         return 'Grid'
@@ -18,14 +18,14 @@ class Grid(object):
     def buy(self, energy: Energy) -> Money:
         if energy < Energy(0):
             raise ValueError("Energy")
-        self.buy = energy
+        self.buying = energy
         self.bought += energy
         return self.buy_price.calculate_kWh_cost(energy)
 
     def sell(self, energy: Energy) -> Money:
         if energy < Energy(0):
             raise ValueError("Energy")
-        self.sell = energy
+        self.selling = energy
         self.sold += energy
         return self.sell_price.calculate_kWh_cost(energy)
 
@@ -42,5 +42,5 @@ class Grid(object):
             print(f'Diff: {diff.format_kilo_watt_hours()} for {diff_money}')
 
     def reset(self):
-        self.buy = Energy(0)
-        self.sell = Energy(0)
+        self.buying = Energy(0)
+        self.selling = Energy(0)

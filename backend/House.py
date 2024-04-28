@@ -25,6 +25,9 @@ class House(object):
     appliances = [electricHeater, lights, fridge]
     generators = [solarPanel, windturbine]
     inner_temperature = Temperature(21)
+    outer_temperature = Temperature(0)
+    patched_temperature = None
+    outer_temperature_patch = None
 
     def get_energy_production(self, response: dict, t: int, absolute_step: int, verbosity: DebugLevel):
         energy_produced = Energy(0)
@@ -61,8 +64,28 @@ class House(object):
             response['environment'][condition] = weather[condition][absolute_step]
 
         self.grid.reset()
-        outer_temperature = Temperature(weather['temperatures'][absolute_step])
-        natural_cooling = self.room.adapt_to_outside(outer_temperature, self.inner_temperature)
+
+        temp = Temperature(weather['temperatures'][absolute_step])
+        if verbosity >= DebugLevel.DEBUGGING:
+            print(f'temp={temp}')
+            print(f'patched_temperature={self.patched_temperature}')
+            print(f'outer_temperature={self.outer_temperature}')
+            print(f'outer_temperature_patch{self.outer_temperature_patch}')
+        if self.patched_temperature is not None:
+            diff = abs(self.outer_temperature - temp)
+            if verbosity >= DebugLevel.DEBUGGING:
+                print(f'diff={diff}')
+                print(f'evaluate={diff < self.outer_temperature_patch}')
+            if diff < self.outer_temperature_patch:
+                self.patched_temperature = None
+                self.outer_temperature_patch = None
+            else:
+                temp = self.outer_temperature - self.outer_temperature_patch
+
+        self.outer_temperature = temp
+        response['environment']['temperatures'] = self.outer_temperature
+
+        natural_cooling = self.room.adapt_to_outside(self.outer_temperature, self.inner_temperature)
         self.inner_temperature += natural_cooling
 
         if self.inner_temperature < Temperature(19.5):
@@ -128,9 +151,17 @@ class House(object):
         response['grid'] = {
             'sold': self.grid.sold,
             'bought': self.grid.bought,
-            'sell': self.grid.sell,
-            'buy': self.grid.buy
+            'sell': self.grid.selling,
+            'buy': self.grid.buying
         }
 
         return response
 
+    def patch_outer_temperature(self, outer_temp):
+        self.patched_temperature = Temperature(30) + self.outer_temperature
+        self.outer_temperature = self.patched_temperature
+        self.outer_temperature_patch = Temperature(30) / (Time.from_hours(12) / Time.from_minutes(10))  # Goback to normal through 12h
+        print(f'{outer_temp=}')
+        print(f'patched_temperature={self.patched_temperature}')
+        print(f'outer_temperature={self.outer_temperature}')
+        print(f'outer_temperature_patch{self.outer_temperature_patch}')

@@ -2,6 +2,7 @@ import json
 import logging
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from http import HTTPStatus
 import time
 from io import BytesIO
 from urllib.parse import urlparse, parse_qs
@@ -99,8 +100,25 @@ class RestAPI(BaseHTTPRequestHandler):
         self.wfile.write(response_data)
         msg_id += 1
 
-    # def do_PATCH(self):
-    #     pass
+    def do_PATCH(self):
+        global house
+        url = urlparse(self.path)
+        parameters = parse_qs(url.query)
+        if url.path == '/environment':
+            if 'outer_temperature' in parameters.keys():
+                house.patch_outer_temperature(parameters['outer_temperature'])
+
+                # response = house.patch()
+                # response_data = json.dumps(response, cls=SIEncoder).encode('utf-8')
+
+                self.send_response(HTTPStatus.NO_CONTENT)
+                self.send_header("Connection", "keep-alive")
+                # self.send_header("Content-type", "application/json")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                # self.send_header("Content-Length", str(len(response_data)))
+                self.end_headers()
+
+                # self.wfile.write(response_data)
 
 
 if __name__ == "__main__":
@@ -118,3 +136,5 @@ if __name__ == "__main__":
 
     webServer.server_close()
     print("Server stopped.")
+
+# Successful until: 3 - 18:40:00 - 23.2.2021
