@@ -1,4 +1,9 @@
 @startuml
+
+class TapWater
+class WaterBuffer
+TapWater <|-- WaterBuffer
+
 class Room
 class Heater
 class Grid #6ED46E
