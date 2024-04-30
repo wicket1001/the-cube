@@ -16,6 +16,34 @@ export class Energy {
   }
    */
 
+  public add(energy: Energy): Energy {
+    return new Energy(this.value + energy.value);
+  }
+
+  public get_kilo_joule(): number {
+    return this.value / 1000;
+  }
+
+  public get_watt_seconds(): number {
+    return this.value;
+  }
+
+  public get_watt_hours(): number {
+    return this.value / 3600;
+  }
+
+  public get_kilo_watt_hours(): number {
+    return this.value / 3600 / 1000;
+  }
+
+  public get_watt_day(): number {
+    return this.value / 3600 / 24;
+  }
+
+  public get_kilo_watt_day(): number {
+    return this.value / 3600 / 1000 / 24;
+  }
+
   public format_kilo_joule(): string {
     return `${(this.value / 1000).toFixed()}kJ`;
   }
@@ -52,6 +80,10 @@ export class Power {
     return `${this.value.toFixed()}W`;
   }
 
+  public get_kilo_watt(): number {
+    return this.value / 1000;
+  }
+
   public format_kilo_watt(): string {
     return `${(this.value / 1000).toFixed()}kW`;
   }
@@ -66,6 +98,14 @@ export class Temperature {
 
   public toString(): string {
     return `${this.value.toFixed()}K`;
+  }
+
+  public get_celsius(): number {
+    return this.value - 273.15;
+  }
+
+  public get_fahrenheit(): number {
+    return this.value * (9 / 5) - 459.67;
   }
 
   public format_celsius(): string {

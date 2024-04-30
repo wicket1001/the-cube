@@ -14,6 +14,7 @@ import {
   Legend
 } from 'chart.js'
 import { Line } from 'vue-chartjs'
+import { Energy, Money } from '@/@types/physics'
 
 ChartJS.register(
   CategoryScale,
@@ -25,7 +26,8 @@ ChartJS.register(
   Legend
 )
 
-const colors = ["#f87979", "#79f879", "#7979f8"];
+const colors = ["#f87979", "#79f879", "#7979f8", "#f7f679", "#7984f7"];
+// const colors = ["#36a2eb", "#ff6384", "#4bc0c0", "#ff9f40", "#9966ff", "#ffcd56", "#c9cbcf"];
 
 export default {
   name: 'LineChart',
@@ -43,15 +45,34 @@ export default {
         datasets: transformData(this.axes, this.values),
       },
       options: {
+        //responsive: true,
+        //maintainAspectRatio: true,
+        aspectRatio: 2,
         responsive: true,
-        maintainAspectRatio: true,
         scales: {
           y: {
             suggestedMin: 0,
-            suggestedMax: 35
+            suggestedMax: 35,
+            ticks: {
+              callback: formatAxis
+            }
           }
         },
         animation: false,
+        /*resizeDelay: 0,
+        transitions: {
+          active: {
+            animation: {
+              duration: 0
+            }
+          }
+        }*/
+        plugins: {
+          legend: {
+            display: true,
+            position: 'bottom'
+          }
+        }
       },
     }
   },
@@ -60,7 +81,11 @@ export default {
 
 }
 
-function transformData(axes: string[], values: [number[]]): {'label': string, 'backgroundColor': string, data: number[]}[] {
+let formatAxis = function(value: number) {
+  return `${value}`;
+}
+
+function transformData(axes: string[], values: [number[] | Energy[]]): {'label': string, 'backgroundColor': string, data: number[]}[] {
   let data = [];
   if (axes.length !== values.length) {
     console.error('Axes does not match values length', axes, values);
@@ -69,7 +94,28 @@ function transformData(axes: string[], values: [number[]]): {'label': string, 'b
     data.push({
       label: axes[i],
       backgroundColor: colors[i % colors.length],
-      data: values[i]
+      data: values[i].map<number>(item => {
+          if (typeof item === 'number') {
+            formatAxis = function(value: number) {
+              return `${value}`;
+            }
+            return item;
+          } else if (item instanceof Energy) {
+            formatAxis = function(value: number) {
+              return `${value} Wh`;
+            }
+            return item.get_watt_hours();
+          } else if (item instanceof Money) {
+            formatAxis = function(value: number) {
+              return `${value} €`;
+            }
+            return item.value;
+          } else {
+            console.error('In transformData.map occured an error.', item);
+            return item;
+          }
+        }
+      )
     });
   }
   return data;

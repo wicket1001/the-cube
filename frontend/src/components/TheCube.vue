@@ -2,8 +2,10 @@
 import { onMounted, reactive, type Ref, ref, watch, getCurrentInstance } from 'vue'
 import { getData, patching, simulate } from '@/utils/resources'
 import LinesChart from '@/components/LinesChart.vue'
+import WindComponent from '@/components/WindComponent.vue'
 import {toColor, calculateHeat, map, stepHeat} from '@/utils/utils'
 import { Appliance, Battery, Generator, Grid } from '@/@types/components'
+import { Energy, Money } from '@/@types/physics'
 
 const INITIAL_HEAT = 21;
 
@@ -29,19 +31,25 @@ let radiations_view: Ref<number[]> = ref([]);
 
 let winds: number[] = [];
 let winds_view: Ref<number[]> = ref([]);
+let wind_direction = ref(0);
 
-let money: number[] = [];
-let money_view: Ref<number[]> = ref([]);
+let money: Money[] = [];
+let money_view: Ref<Money[]> = ref([]);
 
-let generation: {"SolarPanel": number[], "Windturbine": number[]} = {"SolarPanel": [], "Windturbine": []};
-let generation_view: Ref<{"SolarPanel": number[], "Windturbine": number[]}> = ref({"SolarPanel": [], "Windturbine": []});
+let demand: {"Fridge": Energy[], "Lights": Energy[], "ElectricHeater": Energy[], "Total": Energy[]} = {"Fridge": [], "Lights": [], "ElectricHeater": [], "Total": []};
+let demand_view: Ref<{"Fridge": Energy[], "Lights": Energy[], "ElectricHeater": Energy[], "Total": Energy[]}> =
+  ref({"Fridge": [], "Lights": [], "ElectricHeater": [], "Total": []});
 
-let battery_level: number[] = [];
-let battery_level_view: Ref<number[]> = ref([]);
+let generation: {"SolarPanel": Energy[], "Windturbine": Energy[], "Total": Energy[]} = {"SolarPanel": [], "Windturbine": [], "Total": []};
+let generation_view: Ref<{"SolarPanel": Energy[], "Windturbine": Energy[], "Total": Energy[]}> =
+  ref({"SolarPanel": [], "Windturbine": [], "Total": []});
 
-let grid: {"sold": number[], "bought": number[], "sell": number[], "buy": number[]} =
+let battery_level: Energy[] = [];
+let battery_level_view: Ref<Energy[]> = ref([]);
+
+let grid: {"sold": Energy[], "bought": Energy[], "sell": Energy[], "buy": Energy[]} =
   {"sold": [], "bought": [], "sell": [], "buy": []};
-let grid_view: Ref<{"sold": number[], "bought": number[], "sell": number[], "buy": number[]}> =
+let grid_view: Ref<{"sold": Energy[], "bought": Energy[], "sell": Energy[], "buy": Energy[]}> =
   ref({"sold": [], "bought": [], "sell": [], "buy": []});
 
 let rotationX = 0;
@@ -107,44 +115,62 @@ function step() {
     temperatures.push(temperature);
 
     let wind = res['environment']['winds'];
-    let wind_direction = res['environment']['wind_directions'];
+    wind_direction.value = res['environment']['wind_directions'];
+    winds.push(wind);
 
     let inner_temperature = res['environment']['inner_temperature'];
     inside.value = inner_temperature;
     inside_temperatures.push(inner_temperature);
     show_cube_temperature(inner_temperature);
 
-    let money = res['environment']['money'];
+    let money_value = new Money(res['environment']['money']);
+    money.push(money_value);
 
+    let total = new Energy(0);
     for (const appliance_raw of res['appliances']) {
       let appliance = new Appliance(appliance_raw);
+      if (['Fridge', 'Lights', 'ElectricHeater'].includes(appliance.name)) {
+        demand[appliance.name].push(appliance.demand);
+      }
+      total = total.add(appliance.demand);
     }
+    demand["Total"].push(total);
+    total = new Energy(0);
     for (const generator_raw of res['generators']) {
       let generator = new Generator(generator_raw);
       if (['SolarPanel', 'Windturbine'].includes(generator.name)) {
-        generation[generator.name].push(generator.supply.value);
+        generation[generator.name].push(generator.supply);
       }
+      total = total.add(generator.supply);
     }
+    generation["Total"].push(total);
     let battery = new Battery(res['battery']);
-    battery_level.push(battery.level.value);
+    battery_level.push(battery.level);
     let grid_raw = new Grid(res['grid']);
     for (const gridParameter of ['sold', 'bought', 'sell', 'buy']) {
-      grid[gridParameter].push(grid_raw[gridParameter].value);
+      grid[gridParameter].push(grid_raw[gridParameter]);
     }
 
-    if (currentIndex.value > 2) {
+    if (currentIndex.value >= 3) {
       dataFetched.value = true;
       let begin = Math.max(0, currentIndex.value - lookback); // only watch back 12h
       dates_view = dates.slice(begin, currentIndex.value);
       temperatures_view.value = temperatures.slice(begin, currentIndex.value);
       inside_temperatures_view.value = inside_temperatures.slice(begin, currentIndex.value);
       radiations_view.value = radiations.slice(begin, currentIndex.value);
-      generation_view.value['SolarPanel'] = generation['SolarPanel'].slice(begin, currentIndex.value);
-      generation_view.value['Windturbine'] = generation['Windturbine'].slice(begin, currentIndex.value);
+      winds_view.value = winds.slice(begin, currentIndex.value);
+      for (const applianceParameter of ["Fridge", "Lights", "ElectricHeater", "Total"]) {
+        demand_view.value[applianceParameter] = demand[applianceParameter].slice(begin, currentIndex.value);
+      }
+      for (const generatorParameter of ['SolarPanel', 'Windturbine', 'Total']) {
+        generation_view.value[generatorParameter] = generation[generatorParameter].slice(begin, currentIndex.value);
+      }
+      //generation_view.value['SolarPanel'] = generation['SolarPanel'].slice(begin, currentIndex.value);
       battery_level_view.value = battery_level.slice(begin, currentIndex.value);
       for (const gridParameter of ['sold', 'bought', 'sell', 'buy']) {
         grid_view.value[gridParameter] = grid[gridParameter].slice(begin, currentIndex.value);
       }
+      money_view.value = money.slice(begin, currentIndex.value);
     }
   });
 }
@@ -190,44 +216,109 @@ function patch_outside() {
     </div>
   </div>
   <div class="controls" v-if="dataFetched">
-    <input type="range" min="0" max="{{lookback}}" value="0" v-model="currentIndex" />
+    <input type="range" min="0" :max="lookback" value="0" v-model="currentIndex" />
   </div>
-  <div class="overrides">
+  <div class="overrides mb-16">
     <v-btn variant="outlined" @click="patch_outside()">
       heat
     </v-btn>
   </div>
   <div>
-    <LinesChart v-if="dataFetched"
-                id="temperature_plot"
-                :key="currentIndex"
-                :keys="dates_view"
-                :axes="['Outside Temperature', 'Inside Temperature']"
-                :values="[temperatures_view, inside_temperatures_view]"/>
+    <div class="charts">
+      <div class="singleChart">
+        <LinesChart v-if="dataFetched"
+                    id="temperature_plot"
+                    :key="currentIndex"
+                    :keys="dates_view"
+                    :axes="['Outside Temperature', 'Inside Temperature']"
+                    :values="[temperatures_view, inside_temperatures_view]"/>
+      </div>
 
-    <LinesChart v-if="dataFetched"
-                id="radiation_plot"
-                :key="currentIndex"
-                :keys="dates_view"
-                :axes="['Radiation']"
-                :values="[radiations_view]"/>
+      <div class="singleChart">
+        <LinesChart v-if="dataFetched"
+                    id="radiation_plot"
+                    :key="currentIndex"
+                    :keys="dates_view"
+                    :axes="['Radiation']"
+                    :values="[radiations_view]"/>
+      </div>
+    </div>
 
-    <LinesChart v-if="dataFetched"
-                id="solar_plot"
-                :key="currentIndex"
-                :keys="dates_view"
-                :axes="['Solar generation', 'Windturbine generation']"
-                :values="[generation_view['SolarPanel'], generation_view['Windturbine']]"/>
-
-    <LinesChart v-if="dataFetched"
-                id="battery_plot"
-                :key="currentIndex"
-                :keys="dates_view"
-                :axes="['Battery Level']"
-                :values="[battery_level_view]"/>
-    <p v-else>Loading...</p>
+    <div class="charts">
+      <div class="singleChart">
+        <LinesChart v-if="dataFetched"
+                    id="solar_plot"
+                    :key="currentIndex"
+                    :keys="dates_view"
+                    :axes="['Solar generation', 'Windturbine generation', 'Total']"
+                    :values="[generation_view['SolarPanel'], generation_view['Windturbine'], generation_view['Total']]"/>
+      </div>
+      <div class="singleChart">
+        <LinesChart v-if="dataFetched"
+                    id="battery_plot"
+                    :key="currentIndex"
+                    :keys="dates_view"
+                    :axes="['Battery Level']"
+                    :values="[battery_level_view]"/>
+      </div>
+    </div>
+    <div class="charts">
+      <div class="singleChart">
+        <LinesChart v-if="dataFetched"
+                    id="wind_plot"
+                    :key="currentIndex"
+                    :keys="dates_view"
+                    :axes="['Wind']"
+                    :values="[winds_view]"/>
+      </div>
+      <div class="singleChart">
+        <WindComponent v-if="dataFetched"
+                       id="wind_direction"
+                       :key="currentIndex"
+                       :keys="dates_view"
+                       :axes="'Wind direction'"
+                       :values="wind_direction"/>
+      </div>
+    </div>
+    <div class="charts">
+      <div class="singleChart">
+        <LinesChart v-if="dataFetched"
+                    id="appliances_plot"
+                    :key="currentIndex"
+                    :keys="dates_view"
+                    :axes="['Fridge', 'Lights', 'ElectricHeater', 'Total']"
+                    :values="[demand_view['Fridge'], demand_view['Lights'], demand_view['ElectricHeater'], demand_view['Total']]"/>
+      </div>
+      <div class="singleChart">
+        <LinesChart v-if="dataFetched"
+                    id="money_plot"
+                    :key="currentIndex"
+                    :keys="dates_view"
+                    :axes="['Money']"
+                    :values="[money_view]"/>
+      </div>
+    </div>
+    <div class="charts">
+      <div class="singleChart">
+        <LinesChart v-if="dataFetched"
+                    id="grid_plot"
+                    :key="currentIndex"
+                    :keys="dates_view"
+                    :axes="['Grid bought', 'Grid sold']"
+                    :values="[grid_view['bought'], grid_view['sold']]"/>
+      </div>
+      <div class="singleChart">
+        <LinesChart v-if="dataFetched"
+                    id="grid_cur_plot"
+                    :key="currentIndex"
+                    :keys="dates_view"
+                    :axes="['Grid buying', 'Grid selling']"
+                    :values="[grid_view['buy'], grid_view['sell']]"/>
+      </div>
+    </div>
+    <p v-if="!dataFetched">Loading...</p>
   </div>
-  <div class="stats">
+  <div class="stats mt-16">
     <div>
       Outside temperature:
       <div class="font-weight-bold d-inline">{{outside}}</div>°C
@@ -321,5 +412,19 @@ function patch_outside() {
 input[type="range"] {
   width: 100%;
   margin-top: 20px;
+}
+
+.charts {
+  width: inherit;
+  height: 30vh;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.singleChart {
+  position: relative;
+  width: 40vw;
+  height: 20vw;
 }
 </style>
