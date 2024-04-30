@@ -1,3 +1,6 @@
+import type { IAppliance, IBattery, IGenerator, IGrid } from '@/@types/components'
+import { Appliance, Battery, Generator, Grid } from '@/@types/components'
+
 export interface SimulationRaw {
   "step": number,
   "absolute_step": number,
@@ -11,31 +14,13 @@ export interface SimulationRaw {
     "money": number
   },
   "appliances": [
-    {
-      "name": string,
-      "demand": number,
-      "usage": number,
-      "on": boolean
-    }
+    IAppliance
   ],
   "generators": [
-    {
-      "name": string,
-      "supply": number,
-      "generation": number
-    }
+    IGenerator
   ],
-  "battery": {
-    "level": number,
-    "stored": number,
-    "taken": number
-  },
-  "grid": {
-    "sold": number,
-    "bought": number,
-    "sell": number,
-    "buy": number
-  }
+  "battery": IBattery,
+  "grid": IGrid
 }
 
 export interface Simulation {
@@ -51,23 +36,11 @@ export interface Simulation {
     "money": number
   },
   "appliances": [
-    {
-      "name": string,
-      "demand": number,
-      "usage": number,
-      "on": boolean
-    }
+    Appliance
   ],
   "generators": [
-    {
-      "name": string,
-      "supply": number,
-      "generation": number
-    }
+    Generator
   ],
-  "battery": {
-    "level": number,
-    "stored": number,
-    "taken": number
-  }
+  "battery": Battery,
+  "grid": Grid
 }

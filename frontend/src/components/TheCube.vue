@@ -4,7 +4,7 @@ import { getData, patching, simulate } from '@/utils/resources'
 import LinesChart from '@/components/LinesChart.vue'
 import WindComponent from '@/components/WindComponent.vue'
 import {toColor, calculateHeat, map, stepHeat} from '@/utils/utils'
-import { Appliance, Battery, Generator, Grid } from '@/@types/components'
+import { Appliance, Battery, Generator, Grid, type IAppliance } from '@/@types/components'
 import { Energy, Money } from '@/@types/physics'
 
 const INITIAL_HEAT = 21;
@@ -36,11 +36,13 @@ let wind_direction = ref(0);
 let money: Money[] = [];
 let money_view: Ref<Money[]> = ref([]);
 
-let demand: {"Fridge": Energy[], "Lights": Energy[], "ElectricHeater": Energy[], "Total": Energy[]} = {"Fridge": [], "Lights": [], "ElectricHeater": [], "Total": []};
-let demand_view: Ref<{"Fridge": Energy[], "Lights": Energy[], "ElectricHeater": Energy[], "Total": Energy[]}> =
+let demand: {"Fridge": Appliance[], "Lights": Appliance[], "ElectricHeater": Appliance[], "Total": Appliance[]} =
+  {"Fridge": [], "Lights": [], "ElectricHeater": [], "Total": []};
+let demand_view: Ref<{"Fridge": Appliance[], "Lights": Appliance[], "ElectricHeater": Appliance[], "Total": Appliance[]}> =
   ref({"Fridge": [], "Lights": [], "ElectricHeater": [], "Total": []});
 
-let generation: {"SolarPanel": Energy[], "Windturbine": Energy[], "Total": Energy[]} = {"SolarPanel": [], "Windturbine": [], "Total": []};
+let generation: {"SolarPanel": Energy[], "Windturbine": Energy[], "Total": Energy[]} =
+  {"SolarPanel": [], "Windturbine": [], "Total": []};
 let generation_view: Ref<{"SolarPanel": Energy[], "Windturbine": Energy[], "Total": Energy[]}> =
   ref({"SolarPanel": [], "Windturbine": [], "Total": []});
 
@@ -126,24 +128,24 @@ function step() {
     let money_value = new Money(res['environment']['money']);
     money.push(money_value);
 
-    let total = new Energy(0);
+    let total = new Appliance({name: "Total", "demand": 0, "usage": 0, "on": false});
     for (const appliance_raw of res['appliances']) {
       let appliance = new Appliance(appliance_raw);
       if (['Fridge', 'Lights', 'ElectricHeater'].includes(appliance.name)) {
-        demand[appliance.name].push(appliance.demand);
+        demand[appliance.name].push(appliance);
       }
-      total = total.add(appliance.demand);
+      total.demand = total.demand.add(appliance.demand);
     }
     demand["Total"].push(total);
-    total = new Energy(0);
+    let total1 = new Energy(0);
     for (const generator_raw of res['generators']) {
       let generator = new Generator(generator_raw);
       if (['SolarPanel', 'Windturbine'].includes(generator.name)) {
         generation[generator.name].push(generator.supply);
       }
-      total = total.add(generator.supply);
+      total1 = total1.add(generator.supply);
     }
-    generation["Total"].push(total);
+    generation["Total"].push(total1);
     let battery = new Battery(res['battery']);
     battery_level.push(battery.level);
     let grid_raw = new Grid(res['grid']);
@@ -165,7 +167,6 @@ function step() {
       for (const generatorParameter of ['SolarPanel', 'Windturbine', 'Total']) {
         generation_view.value[generatorParameter] = generation[generatorParameter].slice(begin, currentIndex.value);
       }
-      //generation_view.value['SolarPanel'] = generation['SolarPanel'].slice(begin, currentIndex.value);
       battery_level_view.value = battery_level.slice(begin, currentIndex.value);
       for (const gridParameter of ['sold', 'bought', 'sell', 'buy']) {
         grid_view.value[gridParameter] = grid[gridParameter].slice(begin, currentIndex.value);
@@ -314,6 +315,24 @@ function patch_outside() {
                     :keys="dates_view"
                     :axes="['Grid buying', 'Grid selling']"
                     :values="[grid_view['buy'], grid_view['sell']]"/>
+      </div>
+    </div>
+    <div class="charts">
+      <div class="singleChart">
+        <LinesChart v-if="dataFetched"
+                    id="sum_generators"
+                    :key="currentIndex"
+                    :keys="dates_view"
+                    :axes="[]"
+                    :values="[]"/>
+      </div>
+      <div class="singleChart">
+        <LinesChart v-if="dataFetched"
+                    id="sum_appliances"
+                    :key="currentIndex"
+                    :keys="dates_view"
+                    :axes="[]"
+                    :values="[]"/>
       </div>
     </div>
     <p v-if="!dataFetched">Loading...</p>

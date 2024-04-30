@@ -1,13 +1,13 @@
 import { Energy } from '@/@types/physics'
 
 
-export class Appliance implements IAppliance {
+export class Appliance {
   "name": string;
   "demand": Energy;
   "usage": Energy;
   "on": boolean;
 
-  constructor({name, demand, usage, on}: {name: string, demand: number, usage: number, on: boolean}) {
+  constructor({name, demand, usage, on}: IAppliance) {
     this.name = name;
     this.demand = new Energy(demand);
     this.usage = new Energy(usage);
@@ -16,17 +16,17 @@ export class Appliance implements IAppliance {
 }
 export interface IAppliance {
   "name": string,
-  "demand": Energy,
-  "usage": Energy,
+  "demand": number,
+  "usage": number,
   "on": boolean
 }
 
-export class Generator implements IGenerator {
+export class Generator {
   "name": string;
   "supply": Energy;
   "generation": Energy;
 
-  constructor({name, supply, generation}: {name: string, supply: number, generation: number}) {
+  constructor({name, supply, generation}: IGenerator) {
     this.name = name;
     this.supply = new Energy(supply);
     this.generation = new Energy(generation);
@@ -34,34 +34,34 @@ export class Generator implements IGenerator {
 }
 export interface IGenerator {
   "name": string,
-  "supply": Energy,
-  "generation": Energy
+  "supply": number,
+  "generation": number
 }
 
-export class Battery implements IBattery {
+export class Battery {
   "level": Energy;
   "stored": Energy;
   "taken": Energy;
 
-  constructor({level, stored, taken}: {level: number, stored: number, taken: number}) {
+  constructor({level, stored, taken}: IBattery) {
     this.level = new Energy(level);
     this.stored = new Energy(stored);
     this.taken = new Energy(taken);
   }
 }
 export interface IBattery {
-  "level": Energy,
-  "stored": Energy,
-  "taken": Energy
+  "level": number,
+  "stored": number,
+  "taken": number
 }
 
-export class Grid implements IGrid {
+export class Grid {
   "sold": Energy;
   "bought": Energy;
   "sell": Energy;
   "buy": Energy;
 
-  constructor({sold, bought, sell, buy}: {sold: number, bought: number, sell: number, buy: number}) {
+  constructor({sold, bought, sell, buy}: IGrid) {
     this.sold = new Energy(sold);
     this.bought = new Energy(bought);
     this.sell = new Energy(sell);
@@ -69,8 +69,8 @@ export class Grid implements IGrid {
   }
 }
 export interface IGrid {
-  "sold": Energy,
-  "bought": Energy,
-  "sell": Energy,
-  "buy": Energy
+  "sold": number,
+  "bought": number,
+  "sell": number,
+  "buy": number
 }

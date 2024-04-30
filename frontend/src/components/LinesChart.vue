@@ -85,7 +85,7 @@ let formatAxis = function(value: number) {
   return `${value}`;
 }
 
-function transformData(axes: string[], values: [number[] | Energy[]]): {'label': string, 'backgroundColor': string, data: number[]}[] {
+function transformData(axes: string[], values: [number[] | Energy[] | Money[]]): {'label': string, 'backgroundColor': string, data: number[]}[] {
   let data = [];
   if (axes.length !== values.length) {
     console.error('Axes does not match values length', axes, values);
