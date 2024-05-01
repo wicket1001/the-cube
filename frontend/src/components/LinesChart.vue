@@ -35,14 +35,14 @@ export default {
     // eslint-disable-next-line vue/no-reserved-component-names
     Line
   },
-  props: ['keys', 'axes', 'values'],
+  props: ['keys', 'axes', 'values', 'mode'],
   data() {
     return {
       data: {
         labels: this.keys.map((date: Date) => {
           return date.toLocaleTimeString('de-DE', {timeStyle: 'short'})
         }),
-        datasets: transformData(this.axes, this.values),
+        datasets: transformData(this.axes, this.values, this.mode),
       },
       options: {
         //responsive: true,
@@ -77,6 +77,7 @@ export default {
     }
   },
   setup(props) {
+
   },
 
 }
@@ -85,7 +86,7 @@ let formatAxis = function(value: number) {
   return `${value}`;
 }
 
-function transformData(axes: string[], values: [number[] | Energy[] | Money[]]): {'label': string, 'backgroundColor': string, data: number[]}[] {
+function transformData(axes: string[], values: [number[] | Energy[] | Money[]], mode: string): {'label': string, 'backgroundColor': string, data: number[]}[] {
   let data = [];
   if (axes.length !== values.length) {
     console.error('Axes does not match values length', axes, values);
@@ -101,10 +102,17 @@ function transformData(axes: string[], values: [number[] | Energy[] | Money[]]):
             }
             return item;
           } else if (item instanceof Energy) {
-            formatAxis = function(value: number) {
-              return `${value} Wh`;
+            if (mode && mode === 'Mode.KILO_WATT_HOURS') {
+              formatAxis = function(value: number) {
+                return `${value} kWh`;
+              }
+              return item.get_kilo_watt_hours();
+            } else {
+              formatAxis = function(value: number) {
+                return `${value} Wh`;
+              }
+              return item.get_watt_hours();
             }
-            return item.get_watt_hours();
           } else if (item instanceof Money) {
             formatAxis = function(value: number) {
               return `${value} €`;
