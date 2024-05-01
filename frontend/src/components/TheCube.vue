@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, reactive, type Ref, ref, watch, getCurrentInstance } from 'vue'
+import { onMounted, reactive, type Ref, ref, watch, getCurrentInstance, computed } from 'vue'
 import { getData, patching, simulate } from '@/utils/resources'
 import LinesChart from '@/components/LinesChart.vue'
 import WindComponent from '@/components/WindComponent.vue'
@@ -7,8 +7,21 @@ import {toColor, calculateHeat, map, stepHeat} from '@/utils/utils'
 import { Appliance, Battery, Generator, Grid } from '@/@types/components'
 import { Energy, Money } from '@/@types/physics'
 import Mode from '@/components/LinesChart.vue'
+import VueDatePicker from '@vuepic/vue-datepicker';
+import '@vuepic/vue-datepicker/dist/main.css'
+import { getMonth, addMonths, addMinutes } from 'date-fns'
 
 const INITIAL_HEAT = 21;
+
+let future = defineModel('future');
+const presetDates = ref([
+  {label: 'Begin', value: new Date(2021, 0, 1, 0, 0, 0)},
+  {label: 'End', value: new Date(2023, 11, 31, 23, 50, 0)},
+  {label: 'Scenario 1', value: new Date(2022, 2, 1, 0, 0, 0)},
+  {label: 'Scenario 2', value: new Date(2022, 5, 1, 0, 0, 0)},
+  {label: 'Scenario 3', value: new Date(2022, 8, 1, 0, 0, 0)},
+  {label: 'Scenario 4', value: new Date(2021, 11, 1, 0, 0, 0)},
+]);
 
 let currentIndex = ref(0);
 let current_time = ref('');
@@ -59,12 +72,25 @@ let rotationX = 0;
 let rotationY = 0;
 let cubeColor = ref('hsl(90, 100%, 50%)');
 
-const pause = defineModel()
+const pause = defineModel();
 
 let timer = -1
 const lookback = 72
 
 onMounted(() => {
+  let begin = new Date(2021, 0, 1, 0, 0, 0);
+  let absolute_step = 0;
+  console.log(begin);
+  for (let i = 0; i < 3; i ++) {
+    for (let j = 0; j < 365; j ++) {
+      for (let k = 0; k < 144; k ++) {
+        begin = addMinutes(begin, 10);
+        // console.log(absolute_step, k, begin);
+        absolute_step ++;
+      }
+    }
+  }
+  console.log("Ending", begin, absolute_step)
 })
 
 watch(currentIndex, async (newValue, oldValue) => {
@@ -72,6 +98,11 @@ watch(currentIndex, async (newValue, oldValue) => {
 
 watch(pause, async(newValue, oldValue) => {
 
+})
+
+watch(future, async(newValue, oldValue) => {
+  //console.log(newValue)
+  //console.log(oldValue)
 })
 
 function play(timeout = 1000) {
@@ -109,6 +140,7 @@ function step() {
     current_time.value = date.toLocaleTimeString('de-DE');
     current_date.value = date.toLocaleDateString('de-DE');
     dates.push(date);
+    future.value = date;
 
     let radiation = res['environment']['radiations'];
     radiations.push(radiation);
@@ -179,6 +211,20 @@ function step() {
   });
 }
 
+const handleDate = (modelData) => {
+  console.log(modelData, typeof modelData, modelData instanceof Date)
+
+}
+
+/*
+const filters = computed(() => {
+  const currentDate = new Date(2021, 1, 1)
+  return {
+    months: Array.from(Array(3).keys())
+      .map((item) => getMonth(addMonths(currentDate, item + 1)))
+  }
+})*/
+
 function patch_outside() {
   patching().then(res => {
     console.log('Patch worked', res)
@@ -221,6 +267,25 @@ function get_field(bucket, field, index) {
     -
     <div class="d-inline">
       {{ current_date }}
+    </div>
+    <div>
+      <VueDatePicker
+        v-model="future"
+        @update:model-value="handleDate"
+        :preset-dates="presetDates"
+        no-today
+        :loading="!dataFetched"
+        :min-date="presetDates[0].value"
+        :max-date="presetDates[1].value"
+        minutes-increment="10"
+        minutes-grid-increment="10"
+        select-text="Auswählen"
+        cancel-text="Abbrechen">
+          <!--locale="de"
+          :filter="filter"
+          :is-24="false"
+          https://vue3datepicker.com/props/localization/-->
+      </VueDatePicker>
     </div>
   </div>
   <div class="controls" v-if="dataFetched">
