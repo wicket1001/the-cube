@@ -10,6 +10,7 @@ import Mode from '@/components/LinesChart.vue'
 import VueDatePicker from '@vuepic/vue-datepicker';
 import '@vuepic/vue-datepicker/dist/main.css'
 import { getMonth, addMonths, addMinutes, differenceInMinutes } from 'date-fns'
+import type { SimulationRaw } from '@/@types/simulation'
 
 const INITIAL_HEAT = 21;
 
@@ -20,7 +21,7 @@ const presetDates = ref([
   {label: 'Scenario 1', value: new Date(2022, 2, 1, 0, 0, 0)},
   {label: 'Scenario 2', value: new Date(2022, 5, 1, 0, 0, 0)},
   {label: 'Scenario 3', value: new Date(2022, 8, 1, 0, 0, 0)},
-  {label: 'Scenario 4', value: new Date(2021, 11, 1, 0, 0, 0)},
+  {label: 'Scenario 4', value: new Date(2022, 11, 1, 0, 0, 0)},
 ]);
 
 let currentIndex = ref(0);
@@ -134,82 +135,87 @@ function show_cube_temperature(inner_temperature: number) {
   }
 }
 
+function add_simulation_raw(res: SimulationRaw, update: boolean) {
+  let date_raw = res['environment']['dates']
+  let date = new Date(date_raw)
+  current_time.value = date.toLocaleTimeString('de-DE')
+  current_date.value = date.toLocaleDateString('de-DE')
+  dates.push(date)
+  future.value = date
+
+  let radiation = res['environment']['radiations']
+  radiations.push(radiation)
+
+  let temperature = res['environment']['temperatures']
+  outside.value = temperature
+  temperatures.push(temperature)
+
+  let wind = res['environment']['winds']
+  wind_direction.value = res['environment']['wind_directions']
+  winds.push(wind)
+
+  let inner_temperature = res['environment']['inner_temperature']
+  inside.value = inner_temperature
+  inside_temperatures.push(inner_temperature)
+  show_cube_temperature(inner_temperature)
+
+  let money_value = new Money(res['environment']['money'])
+  money.push(money_value)
+
+  let total = new Appliance({ name: 'Total', 'demand': 0, 'usage': 0, 'on': false })
+  for (const appliance_raw of res['appliances']) {
+    let appliance = new Appliance(appliance_raw)
+    if (['Fridge', 'Lights', 'ElectricHeater'].includes(appliance.name)) {
+      demand[appliance.name].push(appliance)
+    }
+    total.demand = total.demand.add(appliance.demand)
+    total.usage = total.usage.add(appliance.usage)
+  }
+  demand['Total'].push(total)
+  let total1 = new Generator({ name: 'Total', supply: 0, generation: 0 })
+  for (const generator_raw of res['generators']) {
+    let generator = new Generator(generator_raw)
+    if (['SolarPanel', 'Windturbine'].includes(generator.name)) {
+      generation[generator.name].push(generator)
+    }
+    total1.supply = total1.supply.add(generator.supply)
+    total1.generation = total1.generation.add(generator.generation)
+  }
+  generation['Total'].push(total1)
+  let battery = new Battery(res['battery'])
+  battery_level.push(battery.level)
+  let grid_raw = new Grid(res['grid'])
+  for (const gridParameter of ['sold', 'bought', 'sell', 'buy']) {
+    grid[gridParameter].push(grid_raw[gridParameter])
+  }
+
+  if (update && currentIndex.value >= 3) {
+    dataFetched.value = true
+    let end = dates.length;
+    let begin = Math.max(0, end - lookback) // only watch back 12h
+    dates_view = dates.slice(begin, end)
+    temperatures_view.value = temperatures.slice(begin, end)
+    inside_temperatures_view.value = inside_temperatures.slice(begin, end)
+    radiations_view.value = radiations.slice(begin, end)
+    winds_view.value = winds.slice(begin, end)
+    for (const applianceParameter of ['Fridge', 'Lights', 'ElectricHeater', 'Total']) {
+      demand_view.value[applianceParameter] = demand[applianceParameter].slice(begin, end)
+    }
+    for (const generatorParameter of ['SolarPanel', 'Windturbine', 'Total']) {
+      generation_view.value[generatorParameter] = generation[generatorParameter].slice(begin, end)
+    }
+    battery_level_view.value = battery_level.slice(begin, end)
+    for (const gridParameter of ['sold', 'bought', 'sell', 'buy']) {
+      grid_view.value[gridParameter] = grid[gridParameter].slice(begin, end)
+    }
+    money_view.value = money.slice(begin, end)
+  }
+}
+
 function step() {
   currentIndex.value ++;
-  simulate(currentIndex.value, currentIndex.value).then(res => {
-    let date_raw = res['environment']['dates'];
-    let date = new Date(date_raw);
-    current_time.value = date.toLocaleTimeString('de-DE');
-    current_date.value = date.toLocaleDateString('de-DE');
-    dates.push(date);
-    future.value = date;
-
-    let radiation = res['environment']['radiations'];
-    radiations.push(radiation);
-
-    let temperature = res['environment']['temperatures'];
-    outside.value = temperature;
-    temperatures.push(temperature);
-
-    let wind = res['environment']['winds'];
-    wind_direction.value = res['environment']['wind_directions'];
-    winds.push(wind);
-
-    let inner_temperature = res['environment']['inner_temperature'];
-    inside.value = inner_temperature;
-    inside_temperatures.push(inner_temperature);
-    show_cube_temperature(inner_temperature);
-
-    let money_value = new Money(res['environment']['money']);
-    money.push(money_value);
-
-    let total = new Appliance({name: "Total", "demand": 0, "usage": 0, "on": false});
-    for (const appliance_raw of res['appliances']) {
-      let appliance = new Appliance(appliance_raw);
-      if (['Fridge', 'Lights', 'ElectricHeater'].includes(appliance.name)) {
-        demand[appliance.name].push(appliance);
-      }
-      total.demand = total.demand.add(appliance.demand);
-      total.usage = total.usage.add(appliance.usage);
-    }
-    demand["Total"].push(total);
-    let total1 = new Generator({name: "Total", supply: 0, generation: 0});
-    for (const generator_raw of res['generators']) {
-      let generator = new Generator(generator_raw);
-      if (['SolarPanel', 'Windturbine'].includes(generator.name)) {
-        generation[generator.name].push(generator);
-      }
-      total1.supply = total1.supply.add(generator.supply);
-      total1.generation = total1.generation.add(generator.generation);
-    }
-    generation["Total"].push(total1);
-    let battery = new Battery(res['battery']);
-    battery_level.push(battery.level);
-    let grid_raw = new Grid(res['grid']);
-    for (const gridParameter of ['sold', 'bought', 'sell', 'buy']) {
-      grid[gridParameter].push(grid_raw[gridParameter]);
-    }
-
-    if (currentIndex.value >= 3) {
-      dataFetched.value = true;
-      let begin = Math.max(0, currentIndex.value - lookback); // only watch back 12h
-      dates_view = dates.slice(begin, currentIndex.value);
-      temperatures_view.value = temperatures.slice(begin, currentIndex.value);
-      inside_temperatures_view.value = inside_temperatures.slice(begin, currentIndex.value);
-      radiations_view.value = radiations.slice(begin, currentIndex.value);
-      winds_view.value = winds.slice(begin, currentIndex.value);
-      for (const applianceParameter of ["Fridge", "Lights", "ElectricHeater", "Total"]) {
-        demand_view.value[applianceParameter] = demand[applianceParameter].slice(begin, currentIndex.value);
-      }
-      for (const generatorParameter of ['SolarPanel', 'Windturbine', 'Total']) {
-        generation_view.value[generatorParameter] = generation[generatorParameter].slice(begin, currentIndex.value);
-      }
-      battery_level_view.value = battery_level.slice(begin, currentIndex.value);
-      for (const gridParameter of ['sold', 'bought', 'sell', 'buy']) {
-        grid_view.value[gridParameter] = grid[gridParameter].slice(begin, currentIndex.value);
-      }
-      money_view.value = money.slice(begin, currentIndex.value);
-    }
+  simulate().then(res => {
+    add_simulation_raw(res, true);
   });
 }
 
@@ -220,7 +226,12 @@ const handleDate = (modelData) => {
     let absolute_step = minuteDifference / 10;
     // console.log(absolute_step)
     patch_future(absolute_step).then(res => {
-      console.log('Patch worked', res)
+      currentIndex.value = absolute_step;
+
+      for (let i = 0; i < res.length - 1; i ++) {
+        add_simulation_raw(res[i], false);
+      }
+      add_simulation_raw(res[res.length - 1], true);
     });
   }
 }
@@ -326,7 +337,7 @@ function get_field(bucket, field, index) {
       </div>
     </div>
 
-    <div class="charts">
+    <div class="charts my-16">
       <div class="singleChart">
         <LinesChart v-if="dataFetched"
                     id="solar_plot"
@@ -346,7 +357,7 @@ function get_field(bucket, field, index) {
                     :values="[battery_level_view]"/>
       </div>
     </div>
-    <div class="charts">
+    <div class="charts my-16">
       <div class="singleChart">
         <LinesChart v-if="dataFetched"
                     id="wind_plot"
@@ -364,7 +375,7 @@ function get_field(bucket, field, index) {
                        :values="wind_direction"/>
       </div>
     </div>
-    <div class="charts">
+    <div class="charts my-16">
       <div class="singleChart">
         <LinesChart v-if="dataFetched"
                     id="appliances_plot"
@@ -385,7 +396,7 @@ function get_field(bucket, field, index) {
                     :values="[money_view]"/>
       </div>
     </div>
-    <div class="charts">
+    <div class="charts my-16">
       <div class="singleChart">
         <LinesChart v-if="dataFetched"
                     id="grid_plot"
@@ -404,7 +415,7 @@ function get_field(bucket, field, index) {
                     :values="[grid_view['buy'], grid_view['sell']]"/>
       </div>
     </div>
-    <div class="charts">
+    <div class="charts my-16">
       <div class="singleChart">
         <LinesChart v-if="dataFetched"
                     id="sum_generators"
