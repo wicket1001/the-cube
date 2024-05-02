@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, reactive, type Ref, ref, watch, getCurrentInstance, computed } from 'vue'
-import { getData, patching, simulate } from '@/utils/resources'
+import { getData, patch_future, patching, simulate } from '@/utils/resources'
 import LinesChart from '@/components/LinesChart.vue'
 import WindComponent from '@/components/WindComponent.vue'
 import {toColor, calculateHeat, map, stepHeat} from '@/utils/utils'
@@ -9,11 +9,11 @@ import { Energy, Money } from '@/@types/physics'
 import Mode from '@/components/LinesChart.vue'
 import VueDatePicker from '@vuepic/vue-datepicker';
 import '@vuepic/vue-datepicker/dist/main.css'
-import { getMonth, addMonths, addMinutes } from 'date-fns'
+import { getMonth, addMonths, addMinutes, differenceInMinutes } from 'date-fns'
 
 const INITIAL_HEAT = 21;
 
-let future = defineModel('future');
+let future = defineModel<Date>('future', {default: new Date()});
 const presetDates = ref([
   {label: 'Begin', value: new Date(2021, 0, 1, 0, 0, 0)},
   {label: 'End', value: new Date(2023, 11, 31, 23, 50, 0)},
@@ -78,6 +78,7 @@ let timer = -1
 const lookback = 72
 
 onMounted(() => {
+  /*
   let begin = new Date(2021, 0, 1, 0, 0, 0);
   let absolute_step = 0;
   console.log(begin);
@@ -91,6 +92,7 @@ onMounted(() => {
     }
   }
   console.log("Ending", begin, absolute_step)
+   */
 })
 
 watch(currentIndex, async (newValue, oldValue) => {
@@ -212,8 +214,15 @@ function step() {
 }
 
 const handleDate = (modelData) => {
-  console.log(modelData, typeof modelData, modelData instanceof Date)
-
+  let minuteDifference = differenceInMinutes(modelData, presetDates.value[0].value);
+  if (minuteDifference > 0) {
+    // console.log(minuteDifference)
+    let absolute_step = minuteDifference / 10;
+    // console.log(absolute_step)
+    patch_future(absolute_step).then(res => {
+      console.log('Patch worked', res)
+    });
+  }
 }
 
 /*

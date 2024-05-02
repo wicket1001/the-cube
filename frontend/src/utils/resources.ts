@@ -66,3 +66,11 @@ export async function patching(): Promise<boolean> {
   });
   return true;
 }
+
+export async function patch_future(absolute_step: number): Promise<boolean> {
+  const url = `http://localhost:8080/step`;
+  const response = await axios.patch(url, {
+    absolute: absolute_step
+  });
+  return true;
+}
