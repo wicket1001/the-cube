@@ -11,14 +11,14 @@ from Windturbine import Windturbine
 
 
 class House(object):
-    solarPanel = SolarPanel(1)
-    windturbine = Windturbine(37.5, 0)
+    solarPanel = SolarPanel(1)  # m^2
+    windturbine = Windturbine(75 * 0.5, 0)  # m^2
     battery = Battery()
-    electricHeater = ElectricHeater()
+    electricHeater = ElectricHeater()  # 600W
     lights = Lights()
     fridge = Fridge()
     grid = Grid()
-    room = Room(5, 8, 2.5)
+    room = Room(5, 8, 2.5)  # m
     money = Money(0)
     energy_production = Energy(0)
     energy_consumption = Energy(0)
@@ -58,7 +58,7 @@ class House(object):
         response["appliances"] = appliances_response
         return energy_demand
 
-    def step(self, step_of_the_day: int, absolute_step: int, weather, verbosity: DebugLevel):
+    def step(self, step_of_the_day: int, absolute_step: int, weather, verbosity: DebugLevel) -> dict:
         response = {'step': step_of_the_day, 'absolute_step': absolute_step, 'environment': {}}
         for condition in weather.keys():
             response['environment'][condition] = weather[condition][absolute_step]
