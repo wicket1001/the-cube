@@ -1,5 +1,7 @@
 @startuml
 
+class Occupancy
+
 class TapWater
 class WaterBuffer
 TapWater <|-- WaterBuffer
