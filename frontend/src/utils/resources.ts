@@ -49,7 +49,7 @@ function export_dates(raw_data: GeosphereRaw): Dates {
   }
 }
 
-export async function simulate(step: number, absolute_step: number): Promise<SimulationRaw> {
+export async function simulate(): Promise<SimulationRaw> {
   const url = `${baseURL}step`;
   await axios.patch(url);
   const response = await axios.get(url);
@@ -76,8 +76,6 @@ export async function patch_future(absolute_step: number): Promise<SimulationRaw
     },
     paramsSerializer: { indexes: null }
   });
-  console.log(response);
   const data: [SimulationRaw] = response.data;
-  console.log(data)
   return data;
 }
