@@ -1,5 +1,10 @@
 @startuml
 
+class Occupancy {
+breath() -> CO2
+live() -> Heat
+}
+
 class TapWater
 class WaterBuffer
 TapWater <|-- WaterBuffer
