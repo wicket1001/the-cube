@@ -5,7 +5,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from http import HTTPStatus
 import time
 from io import BytesIO
-from urllib.parse import urlparse, parse_qs
+from urllib.parse import urlparse, parse_qs, parse_qsl
 
 import utils
 from DebugLevel import DebugLevel
@@ -16,9 +16,11 @@ hostName = "localhost"
 serverPort = 8080
 
 
-msg_id = 1
+msg_id = 0
 house = House()
 weather = utils.read_csv(DebugLevel.INFORMATIONAL)
+cache = []
+cache_size = 72
 
 
 class RestAPI(BaseHTTPRequestHandler):
@@ -37,11 +39,13 @@ class RestAPI(BaseHTTPRequestHandler):
         global msg_id
         global house
         global weather
+        global cache
 
         url = urlparse(self.path)
         #print(url)
         parameters = parse_qs(url.query)
-        #print(parameters)
+        print(parameters)
+
         if url.path == '' or url.path == '/':
             self.path = '/index.html'
         if self.path == '/index.html':
@@ -55,20 +59,38 @@ class RestAPI(BaseHTTPRequestHandler):
             # self.wfile.write(bytes("<p>This is an example web server.</p>", "utf-8"))
             # self.wfile.write(bytes("</body></html>", "utf-8"))
         elif url.path == '/step':
-            response = house.step(msg_id, msg_id, weather, DebugLevel.INFORMATIONAL)
-            response_data = json.dumps(response, cls=SIEncoder).encode('utf-8')
+            if msg_id == 0:
+                self.send_unprocessable_entity()
+                return
 
-            self.send_response(200)
-            self.send_header("Connection", "keep-alive")
-            self.send_header("Content-type", "application/json")
-            self.send_header("Access-Control-Allow-Origin", "*")
-            self.send_header("Content-Length", str(len(response_data)))
-            self.end_headers()
+            if 'lookback' in parameters:
+                lookback = parameters['lookback']
+                if len(parameters['lookback']) != 1:
+                    self.send_unprocessable_entity()
+                    return
+                try:
+                    lookback = int(lookback[0])
+                except ValueError:
+                    self.send_unprocessable_entity()
+                    return
 
-            # Write _exactly_ the number of bytes specified by the
-            # 'Content-Length' header
-            self.wfile.write(response_data)
-            msg_id += 1
+                if lookback > cache_size or lookback > msg_id:
+                    self.send_unprocessable_entity()
+                else:
+                    self.send_json(cache[len(cache) - lookback:])
+
+            else:
+                self.send_json(cache[len(cache) - 1])
+
+    def send_json(self, data):
+        response_data = json.dumps(data, cls=SIEncoder).encode('utf-8')
+        self.send_response(200)
+        self.send_header("Connection", "keep-alive")
+        self.send_header("Content-type", "application/json")
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Content-Length", str(len(response_data)))
+        self.end_headers()
+        self.wfile.write(response_data)
 
     def do_POST(self):
         global msg_id
@@ -102,12 +124,6 @@ class RestAPI(BaseHTTPRequestHandler):
         msg_id += 1
 
     def do_OPTIONS(self):
-        global house
-        # print(self.path)
-        url = urlparse(self.path)
-        # print(self.command, url)
-        # print(self.headers)
-
         self.send_response(HTTPStatus.NO_CONTENT)
         self.send_header("Connection", "keep-alive")
         self.send_header("Access-Control-Allow-Origin", "*")
@@ -118,6 +134,7 @@ class RestAPI(BaseHTTPRequestHandler):
     def do_PATCH(self):
         global msg_id
         global house
+        global cache
         url = urlparse(self.path)
         parameters = parse_qs(url.query)
         # print(self.path)
@@ -128,48 +145,48 @@ class RestAPI(BaseHTTPRequestHandler):
 
         if 'Content-Length' in self.headers:
             content_length = int(self.headers['Content-Length'])
-            body = self.rfile.read(content_length)
-            body = json.loads(body)
-            # print(body)
+            if content_length > 0:
+                body = self.rfile.read(content_length)
+                body = json.loads(body)
+                # print(body)
 
         if url.path == '/environment':
             if 'outer_temperature' in body.keys():
                 house.patch_outer_temperature(body['outer_temperature'])
 
-                # response = house.patch()
-                # response_data = json.dumps(response, cls=SIEncoder).encode('utf-8')
+                self.send_empty_response()
+                return
 
-                self.send_response(HTTPStatus.NO_CONTENT)
-                # self.send_header("Content-type", "application/json")
-                self.send_header("Access-Control-Allow-Origin", "*")
-                self.send_header("Content-Length", str(0))
-                self.end_headers()
-
-                # self.wfile.write(response_data)
         if url.path == '/step':
+            diff = 1
             if 'absolute' in body.keys():
+                print(body)
                 diff = body['absolute'] - msg_id
-                if diff > 0:
-                    response = ''
-                    for i in range(diff):
-                        response = house.step(msg_id, msg_id, weather, DebugLevel.INFORMATIONAL)
-                        msg_id += 1
-                    response_data = json.dumps(response, cls=SIEncoder).encode('utf-8')
+                # print(diff)
+                if diff <= 0:
+                    self.send_unprocessable_entity()
+                    return
 
-                    self.send_response(200)
-                    self.send_header("Connection", "keep-alive")
-                    self.send_header("Content-type", "application/json")
-                    self.send_header("Access-Control-Allow-Origin", "*")
-                    self.send_header("Content-Length", str(len(response_data)))
-                    self.end_headers()
+            for i in range(diff):
+                cache.append(house.step(msg_id, msg_id, weather, DebugLevel.INFORMATIONAL))
+                msg_id += 1
+                # print(len(cache))
+                if len(cache) > cache_size:
+                    cache.pop(0)
 
-                    self.wfile.write(response_data)
+            self.send_empty_response()
 
-                else:
-                    self.send_response(HTTPStatus.UNPROCESSABLE_ENTITY)
-                    self.send_header("Access-Control-Allow-Origin", "*")
-                    self.send_header("Content-Length", str(0))
-                    self.end_headers()
+    def send_unprocessable_entity(self):
+        self.send_response(HTTPStatus.UNPROCESSABLE_ENTITY)
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Content-Length", str(0))
+        self.end_headers()
+
+    def send_empty_response(self):
+        self.send_response(HTTPStatus.NO_CONTENT)
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Content-Length", str(0))
+        self.end_headers()
 
 
 if __name__ == "__main__":

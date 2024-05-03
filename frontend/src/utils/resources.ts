@@ -2,6 +2,9 @@ import axios from 'axios'
 import type { Dates, GeosphereRaw } from '@/@types/geosphere'
 import type { SimulationRaw } from '@/@types/simulation'
 
+const baseURL = `http://localhost:8080/`
+const cache_size = 72;
+
 const host = 'https://dataset.api.hub.geosphere.at'
 const version = 'v1'
 
@@ -47,30 +50,34 @@ function export_dates(raw_data: GeosphereRaw): Dates {
 }
 
 export async function simulate(step: number, absolute_step: number): Promise<SimulationRaw> {
-  const url = `http://localhost:8080/step`;
-  const response = await axios.get(url, {
-    params: {
-      step: step,
-      absolute_step: absolute_step
-    },
-    paramsSerializer: { indexes: null }
-  });
+  const url = `${baseURL}step`;
+  await axios.patch(url);
+  const response = await axios.get(url);
   const data: SimulationRaw = response.data;
   return data;
 }
 
 export async function patching(): Promise<boolean> {
-  const url = `http://localhost:8080/environment`;
+  const url = `${baseURL}environment`;
   const response = await axios.patch(url, {
     outer_temperature: 30
   });
   return true;
 }
 
-export async function patch_future(absolute_step: number): Promise<boolean> {
-  const url = `http://localhost:8080/step`;
-  const response = await axios.patch(url, {
+export async function patch_future(absolute_step: number): Promise<SimulationRaw[]> {
+  const url = `${baseURL}step`;
+  await axios.patch(url, {
     absolute: absolute_step
   });
-  return true;
+  const response = await axios.get(url, {
+    params: {
+      lookback: Math.min(absolute_step, cache_size),
+    },
+    paramsSerializer: { indexes: null }
+  });
+  console.log(response);
+  const data: [SimulationRaw] = response.data;
+  console.log(data)
+  return data;
 }
