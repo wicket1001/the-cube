@@ -58,7 +58,7 @@ class House(object):
         response["appliances"] = appliances_response
         return energy_demand
 
-    def step(self, step_of_the_day: int, absolute_step: int, weather, verbosity: DebugLevel):
+    def step(self, step_of_the_day: int, absolute_step: int, weather, verbosity: DebugLevel) -> dict:
         response = {'step': step_of_the_day, 'absolute_step': absolute_step, 'environment': {}}
         for condition in weather.keys():
             response['environment'][condition] = weather[condition][absolute_step]

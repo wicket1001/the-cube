@@ -4,7 +4,7 @@ from Physics import Power, Time, Energy, Temperature
 
 
 class ElectricHeater(Appliance):
-    WATTS = Power(2000)
+    WATTS = Power(600)
     EFFICIENCY = 0.1
     should_activate = False
     name = 'ElectricHeater'
