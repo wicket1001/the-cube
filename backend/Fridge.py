@@ -8,14 +8,13 @@ class Fridge(Appliance):
     # A+++: 95-125kWh
     # 2002: 330kWh
 
-    WATTS = Power(150)
     SPLITTER = 8
     name = 'Fridge'
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, watts: float):
+        super().__init__(watts)
 
-    def step(self, t: int, absolute_step: int, verbosity: DebugLevel) -> Energy:
+    def step(self, t: int, absolute_step: int, verbosity: DebugLevel = DebugLevel.INFORMATIONAL) -> Energy:
         energy_demand = Energy(0)
         self.on = False
         if t % self.SPLITTER * 4 < self.SPLITTER:

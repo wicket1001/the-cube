@@ -29,7 +29,7 @@ class SolarPanel(Generator):
     def save_weather(self, array: List[float]):
         self.radiations = array
 
-    def step(self, t: int, absolute_step: int, verbosity: DebugLevel) -> Energy:
+    def step(self, t: int, absolute_step: int, verbosity: DebugLevel = DebugLevel.INFORMATIONAL) -> Energy:
         self.iterations += 1
         if len(self.radiations) == 0:
             # return int(math.sin(t) * 1000)

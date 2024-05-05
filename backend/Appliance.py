@@ -8,8 +8,8 @@ class Appliance:
     usage = Energy(0)
     on = False
 
-    def __init__(self):
-        pass
+    def __init__(self, watts: float):
+        self.WATTS = Power(watts)
 
     def __str__(self):
         return f'Appliance used {self.usage}'

@@ -4,11 +4,10 @@ from Physics import Power, Time, Energy
 
 
 class Lights(Appliance):
-    WATTS = Power(25)
     name = 'Lights'
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, watts: float):
+        super().__init__(watts)
 
     def step(self, t: int, absolute_step: int, verbosity: DebugLevel) -> Energy:
         self.on = True

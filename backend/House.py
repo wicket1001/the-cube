@@ -14,9 +14,9 @@ class House(object):
     solarPanel = SolarPanel(1)  # m^2
     windturbine = Windturbine(75 * 0.5, 0)  # m^2
     battery = Battery()
-    electricHeater = ElectricHeater()  # 600W
-    lights = Lights()
-    fridge = Fridge()
+    electricHeater = ElectricHeater(600)  # 600W
+    lights = Lights(25)
+    fridge = Fridge(150)
     grid = Grid()
     room = Room(5, 8, 2.5)  # m
     money = Money(0)

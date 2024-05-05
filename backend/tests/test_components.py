@@ -9,6 +9,7 @@ import csv
 from datetime import datetime
 
 from ElectricHeater import ElectricHeater
+from Fridge import Fridge
 from HeatPump import HeatPump
 from Physics import *
 from Room import Room
@@ -46,6 +47,15 @@ class TestComponents(unittest.TestCase):
     def tearDown(self):
         pass
 
+    def test_fridge(self):
+        fridge = Fridge(150)
+        energy = Energy(0)
+        for i in range(self.STEPS_PER_DAY * 365):
+            production_step = fridge.step(i, i)
+            energy += production_step
+        self.assertEquals(energy.format_kilo_watt_hours(), Energy.from_kilo_watt_hours(328.5).format_kilo_watt_hours())
+        self.assertAlmostEqual(energy.value, Energy.from_kilo_watt_hours(328.5).value)
+
     def test_sin_solar_panel(self):
         solar_panel = SolarPanel(1)
         energy = Energy(0)
@@ -64,7 +74,7 @@ class TestComponents(unittest.TestCase):
 
         night = [0] * 19
         right_watts = night + [7, 14, 29, 50, 72, 93, 122]
-        right_joule = [(600 * x * solar_panel.SOLAR_EFFICIENCY) for x in right_watts]
+        right_joule = [(600 * x * solar_panel.EFFICIENCY) for x in right_watts]
 
         date_to_explore = datetime(2022, 5, 31, 0, 0, 0, 0)
         day = date_to_explore.timetuple()[7] + 365 - 1
@@ -75,7 +85,7 @@ class TestComponents(unittest.TestCase):
             if step < len(right_watts):
                 self.assertEqual(production_step.value, right_joule[step])
             energy += production_step
-        self.assertEquals(solar_panel.generation.value, solar_energy * solar_panel.SOLAR_EFFICIENCY)
+        self.assertEquals(solar_panel.generation.value, solar_energy * solar_panel.EFFICIENCY)
         self.assertEquals(solar_panel.solar_energy.value, solar_energy)
         watt_average = solar_panel.watt_sum / self.STEPS_PER_DAY
         self.assertAlmostEquals(watt_average.value, 363.93, places=2)
@@ -83,7 +93,7 @@ class TestComponents(unittest.TestCase):
         self.assertEqual(energy.format_kilo_watt_hours(), '1.75kWh')
         self.assertEquals(energy.format_watt_day(), '72.79Wd')
 
-        watt_per_second = (watt_average * solar_panel.SOLAR_EFFICIENCY) / Time.from_hours(1)
+        watt_per_second = (watt_average * solar_panel.EFFICIENCY) / Time.from_hours(1)
         self.assertAlmostEquals(watt_per_second.value, 0.02, places=3)
         self.assertEquals(str(watt_per_second), '0.02W')
         watt_per_day = watt_per_second * Time.from_hours(24).value
@@ -92,14 +102,15 @@ class TestComponents(unittest.TestCase):
         self.assertEqual(watt_per_day.format_kilo_watt(), '1.75kW')
 
     def test_electric_heater(self):
-        electric_heater = ElectricHeater()
-        energy = electric_heater.step(0)
+        watts = 600
+        electric_heater = ElectricHeater(watts)
+        energy = electric_heater.step(0, 0)
         self.assertEquals(energy.value, 0)
         electric_heater.activate()
-        energy = electric_heater.step(1)
+        energy = electric_heater.step(1, 1)
         electric_heater.reset()
-        self.assertEquals(energy.value, Energy.from_watt_hours(2000 / 6).value)
-        energy = electric_heater.step(2)
+        self.assertEquals(energy.value, Energy.from_watt_hours(watts / 6).value)
+        energy = electric_heater.step(2, 2)
         self.assertEquals(energy.value, 0)
 
     def test_heating(self):
@@ -177,7 +188,7 @@ class TestComponents(unittest.TestCase):
         self.assertEquals(delta_t.value, -2.1)
 
     def test_heat_pump(self):
-        heat_pump = HeatPump()
+        heat_pump = HeatPump(600)
 
 
 if __name__ == '__main__':

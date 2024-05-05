@@ -4,19 +4,18 @@ from Physics import Power, Time, Energy, Temperature
 
 
 class ElectricHeater(Appliance):
-    WATTS = Power(600)
     EFFICIENCY = 0.1
     should_activate = False
     name = 'ElectricHeater'
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, watts):
+        super().__init__(watts)
 
     def generate_heat(self, energy: Energy) -> Temperature:
         heat = energy * self.EFFICIENCY
         # print(f'Generated Heat: {heat}')
 
-    def step(self, t: int, absolute_step: int, verbosity: DebugLevel) -> Energy:
+    def step(self, t: int, absolute_step: int, verbosity: DebugLevel = DebugLevel.INFORMATIONAL) -> Energy:
         self.on = self.should_activate
         if self.should_activate:
             energy_demand = self.get_energy_demand()
