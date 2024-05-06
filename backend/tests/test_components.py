@@ -13,7 +13,9 @@ from Fridge import Fridge
 from HeatPump import HeatPump
 from Physics import *
 from Room import Room
+from SandBattery import SandBattery
 from SolarPanel import SolarPanel
+from SolarThermal import SolarThermal
 
 
 class TestComponents(unittest.TestCase):
@@ -189,6 +191,27 @@ class TestComponents(unittest.TestCase):
 
     def test_heat_pump(self):
         heat_pump = HeatPump(600)
+
+    def test_solar_thermal(self):
+        solar_thermal = SolarThermal(1)
+        solar_thermal.save_weather(self.radiations)
+        solar_thermal.input_water(Length(1), Temperature.from_celsius(7))
+        energy = Energy(0)
+        date_to_explore = datetime(2022, 5, 31, 0, 0, 0, 0)
+        day = date_to_explore.timetuple()[7] + 365 - 1
+        for step in range(self.STEPS_PER_DAY):
+            absolute_step = day * self.STEPS_PER_DAY + step
+            production_step = solar_thermal.step(step, absolute_step)
+            energy += production_step
+        solar_thermal.print_statistics()
+        # water =
+        self.assertEquals(energy.format_kilo_watt_hours(), Energy.from_kilo_watt_hours(328.5).format_kilo_watt_hours())
+        self.assertAlmostEqual(energy.value, Energy.from_kilo_watt_hours(328.5).value)
+
+    def test_sand_battery(self):
+        sand_battery = SandBattery()
+        self.assertEquals('25529.47kWh', sand_battery.capacity.format_kilo_watt_hours())
+        self.assertAlmostEqual(sand_battery.capacity.value, 91906099199.9, places=0)
 
 
 if __name__ == '__main__':

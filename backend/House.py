@@ -11,14 +11,14 @@ from Windturbine import Windturbine
 
 
 class House(object):
-    solarPanel = SolarPanel(1)  # m^2
-    windturbine = Windturbine(75 * 0.5, 0)  # m^2
+    solarPanel = SolarPanel(12 * 24)  # m^2
+    windturbine = Windturbine(24 * 0.5, 0)  # m^2
     battery = Battery()
-    electricHeater = ElectricHeater(600)  # 600W
+    electricHeater = ElectricHeater(600 * 4 * 4)  # 600W
     lights = Lights(25)
     fridge = Fridge(150)
     grid = Grid()
-    room = Room(5, 8, 2.5)  # m
+    room = Room(12, 24, 10)  # m
     money = Money(0)
     energy_production = Energy(0)
     energy_consumption = Energy(0)
@@ -85,8 +85,12 @@ class House(object):
         self.outer_temperature = temp
         response['environment']['temperatures'] = self.outer_temperature
 
-        natural_cooling = self.room.adapt_to_outside(self.outer_temperature, self.inner_temperature)
-        self.inner_temperature += natural_cooling
+        # natural_cooling = self.room.adapt_to_outside(self.outer_temperature, self.inner_temperature)
+        # self.inner_temperature += natural_cooling
+        natural_cooling = self.room.heat_loss(self.outer_temperature, self.inner_temperature)
+        self.inner_temperature -= natural_cooling
+
+        # self.inner_temperature += occupants.get_heat()
 
         if self.inner_temperature < Temperature(19.5):
             self.electricHeater.activate()

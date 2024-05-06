@@ -64,7 +64,7 @@ class SolarPanel(Generator):
             return energy_production
 
     def print_statistics(self):
-        print(f'{self.name} Produced: {self.generation.format_watt_hours()}')
+        print(f'{self.name} Produced: {self.generation.format_kilo_watt_hours()}')
         if self.iterations == 144:
             avg_watt = self.watt_sum / 144
             print(f'Watt Average: {avg_watt}')

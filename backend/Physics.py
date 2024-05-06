@@ -303,7 +303,8 @@ class Density:
         'wood': 200,  # 200-1200
         'water': 1000,
         'iron': 7874,
-        'concrete': 2400
+        'concrete': 2400,
+        'sand': 1602
     }
 
     class Predefined(IntFlag):
@@ -312,6 +313,7 @@ class Density:
         WATER = auto()
         IRON = auto()
         CONCRETE = auto()
+        SAND = auto()
 
     def __init__(self, value: float):
         self.value = value
@@ -352,7 +354,8 @@ class SpecificHeatCapacity:
         'air': 1.01,  # (dry)
         'wood fiber insulation': 2.1,  # cellulose flakes
         'polystyrene': 1.4,
-        'concrete': 0.88
+        'concrete': 0.88,
+        'sand':0.83
     }
 
     class Predefined(IntFlag):
@@ -367,6 +370,7 @@ class SpecificHeatCapacity:
         WOOD_FIBER_INSULATION = auto()
         POLYSTYRENE = auto()
         CONCRETE = auto()
+        SAND = auto()
 
     def __init__(self, value: float):
         self.value = value

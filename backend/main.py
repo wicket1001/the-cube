@@ -27,7 +27,7 @@ def main():
     house.solarPanel.save_weather(weather['radiations'])
     house.windturbine.save_weather(weather['winds'], weather['wind_directions'])
 
-    trying = 1
+    trying = 365
     for day in range(trying):
         date_to_explore = datetime(2022, 5, 31, 0, 0, 0, 0)
         if trying == 1:

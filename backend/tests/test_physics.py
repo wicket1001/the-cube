@@ -168,6 +168,12 @@ class TestPhysics(unittest.TestCase):
         )
         self.assertAlmostEquals(generated_heat.value, 3.341, places=3)
 
+    def test_heatpump(self):
+        shc = SpecificHeatCapacity.from_predefined(SpecificHeatCapacity.Predefined.WATER)
+        energy = shc.calculate_energy(Temperature(65) - Temperature(15), Weight(3000))
+        print()
+        print(energy.value / Time.from_minutes(10).value)
+
 
 if __name__ == '__main__':
     unittest.main()
