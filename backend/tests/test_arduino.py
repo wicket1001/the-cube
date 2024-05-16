@@ -2,7 +2,14 @@
 import serial
 import time
 
-arduino = serial.Serial(port='/dev/serial/by-id/usb-Arduino__www.arduino.cc__0042_75533353837351B0A150-if00', baudrate=9600, timeout=.1)  # /dev/ttyACM0
+# https://projecthub.arduino.cc/ansh2919/serial-communication-between-python-and-arduino-663756
+arduino = serial.Serial(
+    port='/dev/serial/by-id/usb-Arduino__www.arduino.cc__0042_75533353837351B0A150-if00',
+    baudrate=9600,
+    timeout=.1)
+# /dev/ttyACM0
+# https://stackoverflow.com/questions/23669855/linux-pyserial-could-not-open-port-dev-ttyama0-no-such-file-or-directory
+# ls /dev/serial/by-id/
 
 
 def write_read(x):
