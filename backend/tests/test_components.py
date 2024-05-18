@@ -231,10 +231,10 @@ class TestComponents(unittest.TestCase):
         self.assertAlmostEqual(Temperature.from_celsius(40).value, temperature.value, places=4)
 
     def test_solar_thermal(self):
-        verbosity = DebugLevel.INFORMATIONAL
+        verbosity = DebugLevel.DEBUGGING
         solar_thermal = SolarThermal(1)
         solar_thermal.save_weather(self.radiations)
-        solar_thermal.input_water(Length(1), Temperature.from_celsius(7))
+        solar_thermal.input_water(Length.from_litre(1000), Temperature.from_celsius(7))
         energy = Energy(0)
         date_to_explore = datetime(2022, 5, 31, 0, 0, 0, 0)
         day = date_to_explore.timetuple()[7] + 365 - 1
@@ -244,9 +244,14 @@ class TestComponents(unittest.TestCase):
             energy += production_step
         if verbosity >= DebugLevel.DEBUGGING:
             solar_thermal.print_statistics()
-        # water =
-        self.assertEqual(energy.format_kilo_watt_hours(), Energy.from_kilo_watt_hours(328.5).format_kilo_watt_hours())
-        self.assertAlmostEqual(energy.value, Energy.from_kilo_watt_hours(328.5).value)
+        self.assertEqual(energy.format_kilo_watt_hours(), Energy.from_kilo_watt_hours(1.75).format_kilo_watt_hours())
+        self.assertAlmostEqual(energy.value, Energy.from_kilo_watt_hours(1.74685).value, places=-3)
+        water_weight, water_temperature = solar_thermal.output_water()
+        self.assertEqual(water_weight.value, Weight.from_kilo_gramm(1000).value)
+        self.assertAlmostEqual(water_temperature.format_celsius(), '13.39°C')
+
+        with self.assertRaises(AttributeError):
+            solar_thermal.step(0, 0)
 
     def test_sand_battery(self):
         verbosity = DebugLevel.INFORMATIONAL

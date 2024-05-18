@@ -15,10 +15,10 @@ class SolarThermal(Generator):
     INITIAL_TEMPERATURE_C = 0
     solar_energy = Energy(0)
     radiations = []
-    water_weight = Weight(0)
-    water_temperature = Temperature.from_celsius(INITIAL_TEMPERATURE_C)
-    water_density = Density.from_predefined(Density.Predefined.WATER)
-    water_shc = SpecificHeatCapacity.from_predefined(SpecificHeatCapacity.Predefined.WATER)
+    weight = Weight(0)
+    temperature = Temperature.from_celsius(INITIAL_TEMPERATURE_C)
+    density = Density.from_predefined(Density.Predefined.WATER)
+    shc = SpecificHeatCapacity.from_predefined(SpecificHeatCapacity.Predefined.WATER)
 
     name = "SolarThermal"
 
@@ -29,6 +29,8 @@ class SolarThermal(Generator):
         self.radiations = array
 
     def step(self, t: int, absolute_step: int, verbosity: DebugLevel = DebugLevel.INFORMATIONAL) -> Energy:
+        if self.weight.value == 0:
+            raise AttributeError('Water heated cannot be 0l.')
         self.iterations += 1
         radiation = self.radiations[absolute_step]
         watt = Power(radiation * self.area.value)
@@ -37,21 +39,36 @@ class SolarThermal(Generator):
         energy_production = joule * self.EFFICIENCY
 
         heat_production = joule * self.WATER_EFFICIENCY
-        self.water_temperature += self.water_shc.calculate_heat(heat_production, self.water_weight)
-        print(self.water_temperature.format_celsius())
+        self.temperature += self.shc.calculate_heat(heat_production, self.weight)
+        if verbosity >= DebugLevel.DEBUGGING:
+            print(self.temperature.format_celsius())
 
         self.generation += energy_production
         return energy_production
 
-    def input_water(self, litre: Length, temperature: Temperature):
-        self.water_weight = self.water_density.calculate_mass(litre)
-        self.water_temperature = temperature
+    def input_water(self, litre: Length, temperature: Temperature) -> None:
+        self.weight = self.density.calculate_mass(litre)
+        self.temperature = temperature
 
     def output_water(self) -> (Weight, Temperature):
-        temp = Weight(self.water_weight.value), Temperature(self.water_temperature.value)
-        self.water_weight = Weight(0)
-        self.water_temperature = Temperature.from_celsius(self.INITIAL_TEMPERATURE_C)
+        temp = Weight(self.weight.value), Temperature(self.temperature.value)
+        self.weight = Weight(0)
+        self.temperature = Temperature.from_celsius(self.INITIAL_TEMPERATURE_C)
         return temp
+
+    def add_water(self, litre: Length, temperature: Temperature) -> None:
+        additional_water = self.density.calculate_mass(litre)
+        additional_energy = self.shc.calculate_energy(temperature, additional_water)
+        own_energy = self.shc.calculate_energy(self.temperature, self.weight)
+        self.weight += additional_water
+        self.temperature = self.shc.calculate_heat(own_energy + additional_energy, self.weight)
+
+    def take_water(self, litre: Length) -> (Weight, Temperature):
+        taken = self.density.calculate_mass(litre)
+        self.weight -= taken
+        if self.weight.value <= 0:
+            raise AttributeError('Water cannot be taken that is not inside the water buffer.')
+        return taken, Temperature(self.temperature.value)
 
     def print_statistics(self):
         print(f'{self.name} produced: {self.generation.format_watt_hours()}')
