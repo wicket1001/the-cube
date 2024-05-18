@@ -106,6 +106,11 @@ class TestPhysics(unittest.TestCase):
         litre = Length.from_litre(1)
         self.assertEqual(litre.value, 0.001)
         self.assertEqual(litre.format_litre(), '1.00l')
+        self.assertEqual(litre.format_gallon(), '0.26gal')
+        gallon = Length.from_gallon(1)
+        self.assertAlmostEqual(gallon.value, 0.003785411784)
+        self.assertEqual(gallon.format_litre(), '3.79l')
+        self.assertEqual(gallon.format_gallon(), '1.00gal')
 
     def test_density(self):
         water = Density(1000)

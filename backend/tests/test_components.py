@@ -231,6 +231,7 @@ class TestComponents(unittest.TestCase):
         self.assertAlmostEqual(Temperature.from_celsius(40).value, temperature.value, places=4)
 
     def test_solar_thermal(self):
+        verbosity = DebugLevel.INFORMATIONAL
         solar_thermal = SolarThermal(1)
         solar_thermal.save_weather(self.radiations)
         solar_thermal.input_water(Length(1), Temperature.from_celsius(7))
@@ -239,9 +240,10 @@ class TestComponents(unittest.TestCase):
         day = date_to_explore.timetuple()[7] + 365 - 1
         for step in range(self.STEPS_PER_DAY):
             absolute_step = day * self.STEPS_PER_DAY + step
-            production_step = solar_thermal.step(step, absolute_step)
+            production_step = solar_thermal.step(step, absolute_step, verbosity)
             energy += production_step
-        solar_thermal.print_statistics()
+        if verbosity >= DebugLevel.DEBUGGING:
+            solar_thermal.print_statistics()
         # water =
         self.assertEqual(energy.format_kilo_watt_hours(), Energy.from_kilo_watt_hours(328.5).format_kilo_watt_hours())
         self.assertAlmostEqual(energy.value, Energy.from_kilo_watt_hours(328.5).value)
@@ -265,17 +267,41 @@ class TestComponents(unittest.TestCase):
         self.assertEqual(battery.stored.value * battery.efficiency, battery.taken.value)
 
     def test_water_buffer(self):
+        verbosity = DebugLevel.INFORMATIONAL
         water_buffer = WaterBuffer(Length.from_litre(1), Temperature.from_celsius(10))
         water_buffer.add_water(Length.from_litre(1), Temperature.from_celsius(20))
         self.assertEqual(water_buffer.water_weight.value, Weight.from_kilo_gramm(2).value)
         self.assertEqual(water_buffer.water_temperature.value, Temperature.from_celsius(15).value)
 
         water_buffer = WaterBuffer(Length.from_litre(1000), Temperature.from_celsius(80))
+        lost = [Energy.from_watt_hours(141.27),
+                Energy.from_watt_hours(141.03),
+                Energy.from_watt_hours(140.80),
+                Energy.from_watt_hours(140.56),
+                Energy.from_watt_hours(140.33),
+                Energy.from_watt_hours(140.10)]
         for i in range(6):
-            water_buffer.step(i, i, DebugLevel.INFORMATIONAL)
+            lost_energy = water_buffer.step(i, i, verbosity)
+            self.assertAlmostEqual(lost_energy.value, lost[i].value, places=-2)
+
         self.assertEqual(water_buffer.water_temperature.format_celsius(), '79.27°C')  # TODO check
         self.assertAlmostEqual(water_buffer.water_temperature.value, Temperature.from_celsius(79.27).value, places=2)
         self.assertEqual(water_buffer.water_weight.value, Weight.from_kilo_gramm(1000).value)
+
+        water_buffer = WaterBuffer(Length.from_litre(1000), Temperature.from_celsius(80))
+        if verbosity >= DebugLevel.DEBUGGING:
+            print(water_buffer.water_density.calculate_volume(water_buffer.water_weight),
+                  water_buffer.water_temperature.format_celsius())
+            print(water_buffer.water_density.calculate_volume(water_buffer.water_weight).format_gallon(),
+                  water_buffer.water_temperature.format_fahrenheit())
+        for i in range(self.STEPS_PER_DAY):
+            water_buffer.step(i, i)
+        self.assertEqual(water_buffer.water_temperature.format_celsius(), '64.41°C')
+        if verbosity >= DebugLevel.DEBUGGING:
+            print(water_buffer.water_density.calculate_volume(water_buffer.water_weight),
+                  water_buffer.water_temperature.format_celsius())
+            print(water_buffer.water_density.calculate_volume(water_buffer.water_weight).format_gallon(),
+                  water_buffer.water_temperature.format_fahrenheit())
 
 
 if __name__ == '__main__':

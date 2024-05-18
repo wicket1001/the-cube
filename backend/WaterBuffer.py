@@ -1,5 +1,5 @@
 from DebugLevel import DebugLevel
-from Physics import Weight, Temperature, Density, SpecificHeatCapacity, Length
+from Physics import Weight, Temperature, Density, SpecificHeatCapacity, Length, Energy
 
 
 class WaterBuffer:
@@ -18,13 +18,14 @@ class WaterBuffer:
         self.water_weight = self.water_density.calculate_mass(litre)
         self.water_temperature = temperature
 
-    def step(self, t: int, absolute_step: int, verbosity: DebugLevel = DebugLevel.INFORMATIONAL):
+    def step(self, t: int, absolute_step: int, verbosity: DebugLevel = DebugLevel.INFORMATIONAL) -> Energy:
         delta_t = self.water_temperature - self.ambient_water_temperature
         temperature_lost = Temperature(delta_t.value * self.LOSS_PER_STEP)
+        energy_lost = self.water_shc.calculate_energy(temperature_lost, self.water_weight)
         if verbosity >= DebugLevel.DEBUGGING:
-            energy_lost = self.water_shc.calculate_energy(temperature_lost, self.water_weight)
             print(energy_lost.format_watt_hours())
         self.water_temperature -= temperature_lost
+        return energy_lost
 
     def add_water(self, litre: Length, temperature: Temperature) -> None:
         additional_water = self.water_density.calculate_mass(litre)

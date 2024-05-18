@@ -297,6 +297,10 @@ class Length:
     def from_litre(litre: float) -> Length:
         return Length(litre / 1000.0)
 
+    @staticmethod
+    def from_gallon(gallon: float) -> Length:
+        return Length(gallon * 3.785411784 / 1000.0)
+
     def format_square_metres(self):
         return f'{self.value:.2f}m^2'
 
@@ -305,6 +309,9 @@ class Length:
 
     def format_litre(self):
         return f'{self.value * 1000.0:.2f}l'
+
+    def format_gallon(self):
+        return f'{self.value * 1000.0 / 3.785411784:.2f}gal'
 
 
 class Density:
