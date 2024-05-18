@@ -9,10 +9,10 @@ class HeatPump(Appliance):
 
     COP = 3
     INITIAL_TEMPERATURE_C = 0
-    water_weight = Weight(0)
-    water_temperature = Temperature.from_celsius(INITIAL_TEMPERATURE_C)
+    weight = Weight(0)
+    temperature = Temperature.from_celsius(INITIAL_TEMPERATURE_C)
     water_density = Density.from_predefined(Density.Predefined.WATER)
-    water_shc = SpecificHeatCapacity.from_predefined(SpecificHeatCapacity.Predefined.WATER)
+    shc = SpecificHeatCapacity.from_predefined(SpecificHeatCapacity.Predefined.WATER)
 
     should_activate = False
 
@@ -20,7 +20,7 @@ class HeatPump(Appliance):
         super().__init__(watts)
 
     def step(self, t: int, absolute_step: int, verbosity: DebugLevel = DebugLevel.INFORMATIONAL):
-        if self.water_weight.value == 0:
+        if self.weight.value == 0:
             raise AttributeError('Water heated cannot be 0l.')
         if self.should_activate:
             energy_demand = self.get_energy_demand()
@@ -31,13 +31,13 @@ class HeatPump(Appliance):
             return Energy(0)
 
     def input_water(self, litre: Length, temperature: Temperature) -> None:
-        self.water_weight = self.water_density.calculate_mass(litre)
-        self.water_temperature = temperature
+        self.weight = self.water_density.calculate_mass(litre)
+        self.temperature = temperature
 
     def output_water(self) -> (Weight, Temperature):
-        temp = Weight(self.water_weight.value), Temperature(self.water_temperature.value)
-        self.water_weight = Weight(0)
-        self.water_temperature = Temperature.from_celsius(self.INITIAL_TEMPERATURE_C)
+        temp = Weight(self.weight.value), Temperature(self.temperature.value)
+        self.weight = Weight(0)
+        self.temperature = Temperature.from_celsius(self.INITIAL_TEMPERATURE_C)
         return temp
 
     def generate_heat(self, energy: Energy, verbosity: DebugLevel = DebugLevel.INFORMATIONAL) -> Temperature:
@@ -50,26 +50,26 @@ class HeatPump(Appliance):
         :param verbosity: Verbosity level for debugging.
         :return: the delta temperature that the water was heated up
         """
-        if self.water_weight.value == 0:
-            raise AttributeError('Water heated cannot be 0l.')
+        if self.weight.value <= 0:
+            raise AttributeError(f'{self.name} heated cannot be smaller than 0.')
         if verbosity >= DebugLevel.DEBUGGING:
-            print(self.water_temperature.value, energy)
-        initial_temperature = Temperature(self.water_temperature.value)
-        water_energy = self.water_shc.calculate_energy(self.water_temperature, self.water_weight)
+            print(self.temperature.format_celsius(), energy)
+        initial_temperature = Temperature(self.temperature.value)
+        total_energy = self.shc.calculate_energy(self.temperature, self.weight)
         if verbosity >= DebugLevel.DEBUGGING:
-            print(water_energy)
-        water_energy += energy * self.COP
+            print(total_energy)
+        total_energy += energy * self.COP
         if verbosity >= DebugLevel.DEBUGGING:
-            print(water_energy)
-        self.water_temperature = self.water_shc.calculate_heat(water_energy, self.water_weight)
-        return self.water_temperature - initial_temperature
+            print(total_energy)
+        self.temperature = self.shc.calculate_heat(total_energy, self.weight)
+        return self.temperature - initial_temperature
 
     def calculate_energy(self, temperature: Temperature, verbosity: DebugLevel = DebugLevel.INFORMATIONAL) -> Energy:
-        if self.water_weight.value == 0:
+        if self.weight.value == 0:
             raise AttributeError('Water heated cannot be 0l.')
-        initial_energy = self.water_shc.calculate_energy(self.water_temperature, self.water_weight)
-        output_water_t = self.water_temperature + temperature
-        output_energy = self.water_shc.calculate_energy(output_water_t, self.water_weight)
+        initial_energy = self.shc.calculate_energy(self.temperature, self.weight)
+        output_water_t = self.temperature + temperature
+        output_energy = self.shc.calculate_energy(output_water_t, self.weight)
         input_energy = (output_energy - initial_energy) / 3
         return input_energy
 

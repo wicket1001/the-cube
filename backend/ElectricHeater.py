@@ -32,5 +32,5 @@ class ElectricHeater(Appliance):
     def activate(self):
         self.should_activate = True
 
-    def reset(self):
+    def deactivate(self):
         self.should_activate = False
