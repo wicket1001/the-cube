@@ -103,6 +103,9 @@ class TestPhysics(unittest.TestCase):
         volume = quadratic_metres * room_height
         self.assertEqual(volume.value, 100)
         self.assertEqual(volume.format_qubic_metres(), '100.00m^3')
+        litre = Length.from_litre(1)
+        self.assertEqual(litre.value, 0.001)
+        self.assertEqual(litre.format_litre(), '1.00l')
 
     def test_density(self):
         water = Density(1000)
@@ -122,6 +125,11 @@ class TestPhysics(unittest.TestCase):
         volume2 = air.calculate_volume(weight)
         self.assertEqual(volume2.format_qubic_metres(), '100.00m^3')
         # self.assertEqual(volume2.format_qubic_metres())
+
+        water = Density.from_predefined(Density.Predefined.WATER)
+        cube = Length(1) * Length(1) * Length(1)
+        water_weight = water.calculate_mass(cube)
+        self.assertEqual(water_weight.value, 1000000)
 
     def test_room(self):
         room = Room(5, 8, 2.5)
@@ -167,12 +175,6 @@ class TestPhysics(unittest.TestCase):
             mass
         )
         self.assertAlmostEqual(generated_heat.value, 3.341, places=3)
-
-    def test_heatpump(self):
-        shc = SpecificHeatCapacity.from_predefined(SpecificHeatCapacity.Predefined.WATER)
-        energy = shc.calculate_energy(Temperature(65) - Temperature(15), Weight(3000))
-        print()
-        print(energy.value / Time.from_minutes(10).value)
 
 
 if __name__ == '__main__':

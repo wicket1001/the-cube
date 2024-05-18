@@ -256,6 +256,12 @@ class Weight:
     def __str__(self):
         return f'{self.value:.2f}g'
 
+    def __add__(self, other):
+        if isinstance(other, Weight):
+            return Weight(self.value + other.value)
+        else:
+            raise UnsupportedOperation('+')
+
     @staticmethod
     def from_kilo_gramm(value: float) -> Weight:
         return Weight(value * 1000)
@@ -277,7 +283,7 @@ class Length:
         if isinstance(other, Length):
             return Length(self.value + other.value)
         else:
-            raise UnsupportedOperation('*')
+            raise UnsupportedOperation('+')
 
     def __mul__(self, other):
         if isinstance(other, Length):
@@ -287,11 +293,18 @@ class Length:
         else:
             raise UnsupportedOperation('*')
 
+    @staticmethod
+    def from_litre(litre: float) -> Length:
+        return Length(litre / 1000.0)
+
     def format_square_metres(self):
         return f'{self.value:.2f}m^2'
 
     def format_qubic_metres(self):
         return f'{self.value:.2f}m^3'
+
+    def format_litre(self):
+        return f'{self.value * 1000.0:.2f}l'
 
 
 class Density:

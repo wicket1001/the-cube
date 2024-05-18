@@ -9,6 +9,7 @@ import csv
 from datetime import datetime
 
 from Battery import Battery
+from DebugLevel import DebugLevel
 from ElectricHeater import ElectricHeater
 from Fridge import Fridge
 from HeatPump import HeatPump
@@ -17,6 +18,7 @@ from Room import Room
 from SandBattery import SandBattery
 from SolarPanel import SolarPanel
 from SolarThermal import SolarThermal
+from WaterBuffer import WaterBuffer
 
 
 class TestComponents(unittest.TestCase):
@@ -261,6 +263,19 @@ class TestComponents(unittest.TestCase):
         self.assertEqual(battery.taken.value, Energy.from_watt_hours(1).value * battery.efficiency)
         self.assertEqual(battery.battery_level.value, 0)
         self.assertEqual(battery.stored.value * battery.efficiency, battery.taken.value)
+
+    def test_water_buffer(self):
+        water_buffer = WaterBuffer(Length.from_litre(1), Temperature.from_celsius(10))
+        water_buffer.add_water(Length.from_litre(1), Temperature.from_celsius(20))
+        self.assertEqual(water_buffer.water_weight.value, Weight.from_kilo_gramm(2).value)
+        self.assertEqual(water_buffer.water_temperature.value, Temperature.from_celsius(15).value)
+
+        water_buffer = WaterBuffer(Length.from_litre(1000), Temperature.from_celsius(80))
+        for i in range(6):
+            water_buffer.step(i, i, DebugLevel.INFORMATIONAL)
+        self.assertEqual(water_buffer.water_temperature.format_celsius(), '79.27°C')  # TODO check
+        self.assertAlmostEqual(water_buffer.water_temperature.value, Temperature.from_celsius(79.27).value, places=2)
+        self.assertEqual(water_buffer.water_weight.value, Weight.from_kilo_gramm(1000).value)
 
 
 if __name__ == '__main__':
