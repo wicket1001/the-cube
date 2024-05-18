@@ -14,6 +14,7 @@ import type { SimulationRaw } from '@/@types/simulation'
 
 const INITIAL_HEAT = 21;
 
+// https://dev.to/razi91/vues-new-definemodel-3nd5
 let future = defineModel<Date>('future', {default: new Date()});
 const presetDates = ref([
   {label: 'Begin', value: new Date(2021, 0, 1, 0, 0, 0)},
@@ -220,6 +221,7 @@ function step() {
 }
 
 const handleDate = (modelData) => {
+  // https://date-fns.org/v3.6.0/docs/differenceInMinutes
   let minuteDifference = differenceInMinutes(modelData, presetDates.value[0].value);
   if (minuteDifference > 0) {
     // console.log(minuteDifference)

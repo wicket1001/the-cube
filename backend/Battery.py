@@ -2,13 +2,14 @@ from Physics import Power, Energy
 
 
 class Battery:
-    capacity = Energy.from_kilo_watt_hours(13.5)
+    capacity = Energy(0)
     efficiency = 0.85
 
-    def __init__(self):
+    def __init__(self, capacity: Energy):
         self.battery_level = Energy(0)
         self.stored = Energy(0)
         self.taken = Energy(0)
+        self.capacity = capacity
 
     def __str__(self):
         return f'Battery {self.battery_level}'
@@ -28,10 +29,10 @@ class Battery:
             diff = self.capacity - self.battery_level
             self.battery_level += diff
             self.stored += diff
-            return energy - diff
+            return energy - diff / self.efficiency
         else:
-            self.battery_level += energy
-            self.stored += energy
+            self.battery_level += energy * self.efficiency
+            self.stored += energy * self.efficiency
             return Energy(0)
 
     def take(self, energy: Energy):

@@ -21,6 +21,7 @@ verbosity = DebugLevel.INFORMATIONAL
 
 
 def main():
+    # https://de.wikipedia.org/wiki/Building_Management_System
     weather = utils.read_csv(verbosity)
     house = House()
 

@@ -209,7 +209,7 @@ class TestComponents(unittest.TestCase):
         self.assertAlmostEqual(energy.value, Energy.from_kilo_watt_hours(328.5).value)
 
     def test_sand_battery(self):
-        sand_battery = SandBattery()
+        sand_battery = SandBattery(12, 12, 1)
         self.assertEquals('25529.47kWh', sand_battery.capacity.format_kilo_watt_hours())
         self.assertAlmostEqual(sand_battery.capacity.value, 91906099199.9, places=0)
 

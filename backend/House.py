@@ -13,7 +13,7 @@ from Windturbine import Windturbine
 class House(object):
     solarPanel = SolarPanel(12 * 24)  # m^2
     windturbine = Windturbine(24 * 0.5, 0)  # m^2
-    battery = Battery()
+    battery = Battery(Energy.from_kilo_watt_hours(13.5))
     electricHeater = ElectricHeater(600 * 4 * 4)  # 600W
     lights = Lights(25)
     fridge = Fridge(150)
