@@ -8,6 +8,7 @@ import unittest
 import csv
 from datetime import datetime
 
+from Battery import Battery
 from ElectricHeater import ElectricHeater
 from Fridge import Fridge
 from HeatPump import HeatPump
@@ -55,7 +56,7 @@ class TestComponents(unittest.TestCase):
         for i in range(self.STEPS_PER_DAY * 365):
             production_step = fridge.step(i, i)
             energy += production_step
-        self.assertEquals(energy.format_kilo_watt_hours(), Energy.from_kilo_watt_hours(328.5).format_kilo_watt_hours())
+        self.assertEqual(energy.format_kilo_watt_hours(), Energy.from_kilo_watt_hours(328.5).format_kilo_watt_hours())
         self.assertAlmostEqual(energy.value, Energy.from_kilo_watt_hours(328.5).value)
 
     def test_sin_solar_panel(self):
@@ -87,19 +88,19 @@ class TestComponents(unittest.TestCase):
             if step < len(right_watts):
                 self.assertEqual(production_step.value, right_joule[step])
             energy += production_step
-        self.assertEquals(solar_panel.generation.value, solar_energy * solar_panel.EFFICIENCY)
-        self.assertEquals(solar_panel.solar_energy.value, solar_energy)
+        self.assertEqual(solar_panel.generation.value, solar_energy * solar_panel.EFFICIENCY)
+        self.assertEqual(solar_panel.solar_energy.value, solar_energy)
         watt_average = solar_panel.watt_sum / self.STEPS_PER_DAY
-        self.assertAlmostEquals(watt_average.value, 363.93, places=2)
+        self.assertAlmostEqual(watt_average.value, 363.93, places=2)
         self.assertEqual(str(watt_average), '363.93W')
         self.assertEqual(energy.format_kilo_watt_hours(), '1.75kWh')
-        self.assertEquals(energy.format_watt_day(), '72.79Wd')
+        self.assertEqual(energy.format_watt_day(), '72.79Wd')
 
         watt_per_second = (watt_average * solar_panel.EFFICIENCY) / Time.from_hours(1)
-        self.assertAlmostEquals(watt_per_second.value, 0.02, places=3)
-        self.assertEquals(str(watt_per_second), '0.02W')
+        self.assertAlmostEqual(watt_per_second.value, 0.02, places=3)
+        self.assertEqual(str(watt_per_second), '0.02W')
         watt_per_day = watt_per_second * Time.from_hours(24).value
-        self.assertAlmostEquals(watt_per_day.value, 1746.87, places=2)
+        self.assertAlmostEqual(watt_per_day.value, 1746.87, places=2)
         self.assertEqual(str(watt_per_day), '1746.87W')
         self.assertEqual(watt_per_day.format_kilo_watt(), '1.75kW')
 
@@ -107,13 +108,13 @@ class TestComponents(unittest.TestCase):
         watts = 600
         electric_heater = ElectricHeater(watts)
         energy = electric_heater.step(0, 0)
-        self.assertEquals(energy.value, 0)
+        self.assertEqual(energy.value, 0)
         electric_heater.activate()
         energy = electric_heater.step(1, 1)
-        electric_heater.reset()
-        self.assertEquals(energy.value, Energy.from_watt_hours(watts / 6).value)
+        electric_heater.deactivate()
+        self.assertEqual(energy.value, Energy.from_watt_hours(watts / 6).value)
         energy = electric_heater.step(2, 2)
-        self.assertEquals(energy.value, 0)
+        self.assertEqual(energy.value, 0)
 
     def test_heating(self):
         room = Room(8, 5, 2.5)
@@ -187,10 +188,45 @@ class TestComponents(unittest.TestCase):
         room = Room(8, 5, 2.5)
         room.SPECIFIC_HEAT_CAPACITY = SpecificHeatCapacity(20)
         delta_t = room.adapt_to_outside(Temperature(0), Temperature(21))
-        self.assertEquals(delta_t.value, -2.1)
+        self.assertEqual(delta_t.value, -2.1)
 
     def test_heat_pump(self):
         heat_pump = HeatPump(600)
+
+        with self.assertRaises(AttributeError):
+            heat_pump.generate_heat(Power.from_kilo_watt(1) * Time.from_hours(1))
+
+        heat_pump.input_water(Length(1), Temperature.from_celsius(7))
+        heated = heat_pump.generate_heat(Power.from_kilo_watt(1) * Time.from_hours(1))  # , DebugLevel.DEBUGGING
+        self.assertAlmostEqual(Temperature(2.5837320574162845).value, heated.value, places=5)  # TODO check
+        water, temperature = heat_pump.output_water()
+        # print(Temperature.from_celsius(9.5837))
+        self.assertAlmostEqual(Temperature.from_celsius(9.5837).value, temperature.value, places=4)  # TODO check
+
+        with self.assertRaises(AttributeError):
+            heat_pump.generate_heat(Power.from_kilo_watt(1) * Time.from_hours(1))
+
+        with self.assertRaises(AttributeError):
+            heat_pump.calculate_energy(Temperature(30))
+
+        heat_pump.input_water(Length(1), Temperature.from_celsius(7))
+        energy_required = heat_pump.calculate_energy(Temperature(2.5837320574162845))
+        self.assertAlmostEqual((Power.from_kilo_watt(1) * Time.from_hours(1)).value, energy_required.value, places=4)
+        heat_pump.generate_heat(energy_required)
+        water, temperature = heat_pump.output_water()
+        self.assertAlmostEqual(Temperature.from_celsius(9.5837).value, temperature.value, places=4)
+
+        with self.assertRaises(AttributeError):
+            heat_pump.generate_heat(Power.from_kilo_watt(1) * Time.from_hours(1))
+
+        heat_pump.input_water(Length(1), Temperature.from_celsius(10))
+        energy_required = heat_pump.calculate_energy(Temperature(30))
+        energy_demand = (Power.from_kilo_watt(11.6111111) * Time.from_hours(1))
+        self.assertEqual(energy_demand.format_kilo_watt_hours(), '11.61kWh')
+        self.assertAlmostEqual(energy_demand.value, energy_required.value, places=1)
+        heat_pump.generate_heat(energy_required)
+        water, temperature = heat_pump.output_water()
+        self.assertAlmostEqual(Temperature.from_celsius(40).value, temperature.value, places=4)
 
     def test_solar_thermal(self):
         solar_thermal = SolarThermal(1)
@@ -205,13 +241,26 @@ class TestComponents(unittest.TestCase):
             energy += production_step
         solar_thermal.print_statistics()
         # water =
-        self.assertEquals(energy.format_kilo_watt_hours(), Energy.from_kilo_watt_hours(328.5).format_kilo_watt_hours())
+        self.assertEqual(energy.format_kilo_watt_hours(), Energy.from_kilo_watt_hours(328.5).format_kilo_watt_hours())
         self.assertAlmostEqual(energy.value, Energy.from_kilo_watt_hours(328.5).value)
 
     def test_sand_battery(self):
         sand_battery = SandBattery(12, 12, 1)
-        self.assertEquals('25529.47kWh', sand_battery.capacity.format_kilo_watt_hours())
+        self.assertEqual('25529.47kWh', sand_battery.capacity.format_kilo_watt_hours())
         self.assertAlmostEqual(sand_battery.capacity.value, 91906099199.9, places=0)
+
+    def test_battery(self):
+        battery = Battery(Energy.from_watt_hours(38.5))  # power_bank 10_000mAh, 3.85V or 6900mAh, 5.1V
+        overflow = battery.store(Energy.from_watt_hours(1))
+        with self.assertRaises(ValueError):
+            battery.take(Energy.from_watt_hours(1))
+
+        battery.take(Energy(Energy.from_watt_hours(1).value * battery.efficiency))
+        self.assertEqual(overflow.value, 0)
+        self.assertEqual(battery.stored.value, Energy.from_watt_hours(1).value)
+        self.assertEqual(battery.taken.value, Energy.from_watt_hours(1).value * battery.efficiency)
+        self.assertEqual(battery.battery_level.value, 0)
+        self.assertEqual(battery.stored.value * battery.efficiency, battery.taken.value)
 
 
 if __name__ == '__main__':
