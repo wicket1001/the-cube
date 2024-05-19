@@ -28,6 +28,10 @@ def main():
     house.solarPanel.save_weather(weather['radiations'])
     house.windturbine.save_weather(weather['winds'], weather['wind_directions'])
 
+    decision_tree = House()
+    decision_tree.solarPanel.save_weather(weather['radiations'])
+    decision_tree.windturbine.save_weather(weather['winds'], weather['wind_directions'])
+
     trying = 365
     for day in range(trying):
         date_to_explore = datetime(2022, 5, 31, 0, 0, 0, 0)
@@ -39,7 +43,12 @@ def main():
             absolute_step = day * STEPS_PER_DAY + i
             if verbosity >= DebugLevel.NOTIFICATION:
                 print(f'\nDay {day}, relative Step {i}, absolute Step {absolute_step}, {weather["dates"][absolute_step]}')
-            response = house.step(i, absolute_step, weather, verbosity)
+            response = house.step(i, absolute_step, House.Algorithms.BENCHMARK, weather, verbosity)
+            response_decision_tree = decision_tree.step(i, absolute_step, House.Algorithms.DECISION_TREE, weather, verbosity)
+            response['co2'] = {
+                'benchmark': response['environment']['co2'],
+                'decision': response_decision_tree['environment']['co2']
+            }
             print(json.dumps(response, cls=SIEncoder))  # , indent=4
     print('\n---------')
     house.grid.print_statistics(verbosity)
@@ -49,6 +58,9 @@ def main():
     house.fridge.print_statistics()
     house.lights.print_statistics()
     print(f'Money: {house.money}') # 4,18
+
+    print(f'CO2: {house.co2}')
+    print(f'CO2: {decision_tree.co2}')
 
 #     print("""
 # ---------
