@@ -136,6 +136,17 @@ class TestPhysics(unittest.TestCase):
         water_weight = water.calculate_mass(cube)
         self.assertEqual(water_weight.value, 1000000)
 
+        # https://www.sciencefocus.com/planet-earth/how-much-does-human-breathing-contribute-to-climate-change
+        co2 = Density.from_predefined(Density.Predefined.CO2)
+        human_exhale_per_day = Length.from_litre(500)
+        co2_exhaled = co2.calculate_mass(human_exhale_per_day)
+        self.assertEqual(co2_exhaled.value, Weight.from_kilo_gramm(0.99).value)
+
+        o2 = Density.from_predefined(Density.Predefined.O2)
+        human_breathe_per_day = Length.from_litre(500)
+        o2_exhaled = o2.calculate_mass(human_breathe_per_day)
+        self.assertEqual(o2_exhaled.value, Weight.from_kilo_gramm(0.7145).value)
+
     def test_room(self):
         room = Room(5, 8, 2.5)
         self.assertEqual(room.get_quadratic_metres().value, 40)

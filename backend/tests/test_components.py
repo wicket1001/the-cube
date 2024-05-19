@@ -13,6 +13,7 @@ from DebugLevel import DebugLevel
 from ElectricHeater import ElectricHeater
 from Fridge import Fridge
 from HeatPump import HeatPump
+from Occupancy import Occupancy
 from Physics import *
 from Room import Room
 from SandBattery import SandBattery
@@ -23,6 +24,7 @@ from WaterBuffer import WaterBuffer
 
 class TestComponents(unittest.TestCase):
     STEPS_PER_DAY = 144
+    STEPS_PER_YEAR = STEPS_PER_DAY * 365
     outer_temperatures = []
     dates = []
     radiations = []
@@ -231,7 +233,7 @@ class TestComponents(unittest.TestCase):
         self.assertAlmostEqual(Temperature.from_celsius(40).value, temperature.value, places=4)
 
     def test_solar_thermal(self):
-        verbosity = DebugLevel.DEBUGGING
+        verbosity = DebugLevel.INFORMATIONAL
         solar_thermal = SolarThermal(1)
         solar_thermal.save_weather(self.radiations)
         solar_thermal.input_water(Length.from_litre(1000), Temperature.from_celsius(7))
@@ -332,6 +334,21 @@ class TestComponents(unittest.TestCase):
                   water_buffer.temperature.format_celsius())
             print(water_buffer.density.calculate_volume(water_buffer.weight).format_gallon(),
                   water_buffer.temperature.format_fahrenheit())
+
+    def test_occupancy(self):
+        person = Occupancy(1)
+        person.step(0, 0)
+        self.assertAlmostEqual(person.taken_o2_litre.value, Length.from_milli_litre(250).value * 10)
+        self.assertAlmostEqual(person.produced_co2_litre.value, Length.from_milli_litre(248).value * 10)
+        self.assertAlmostEqual(person.taken_o2.value, Weight(3.57).value, places=2)
+        self.assertAlmostEqual(person.produced_co2.value, Weight(4.91).value, places=3)
+
+        person = Occupancy(1)
+        for i in range(self.STEPS_PER_DAY):
+            person.step(i, i)
+        # self.assertAlmostEqual(person.taken_o2_litre.value, )
+        self.assertAlmostEqual(person.produced_co2_litre.value, Length.from_litre(360).value, places=2)
+        self.assertAlmostEqual(person.produced_co2.value, Weight.from_kilo_gramm(0.707).value, places=0)
 
 
 if __name__ == '__main__':

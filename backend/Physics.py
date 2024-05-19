@@ -285,6 +285,12 @@ class Length:
         else:
             raise UnsupportedOperation('+')
 
+    def __sub__(self, other):
+        if isinstance(other, Length):
+            return Length(self.value - other.value)
+        else:
+            raise UnsupportedOperation('-')
+
     def __mul__(self, other):
         if isinstance(other, Length):
             return Length(self.value * other.value)
@@ -298,6 +304,10 @@ class Length:
         return Length(litre / 1000.0)
 
     @staticmethod
+    def from_milli_litre(milli_litre: float) -> Length:
+        return Length(milli_litre / 1_000_000.0)
+
+    @staticmethod
     def from_gallon(gallon: float) -> Length:
         return Length(gallon * 3.785411784 / 1000.0)
 
@@ -309,6 +319,9 @@ class Length:
 
     def format_litre(self):
         return f'{self.value * 1000.0:.2f}l'
+
+    def format_milli_litre(self):
+        return f'{self.value * 1_000_000.0:.2f}ml'
 
     def format_gallon(self):
         return f'{self.value * 1000.0 / 3.785411784:.2f}gal'
@@ -324,7 +337,9 @@ class Density:
         'water': 1000,
         'iron': 7874,
         'concrete': 2400,
-        'sand': 1602
+        'sand': 1602,
+        'co2': 1.98,
+        'o2': 1.429
     }
 
     class Predefined(IntFlag):
@@ -334,6 +349,8 @@ class Density:
         IRON = auto()
         CONCRETE = auto()
         SAND = auto()
+        CO2 = auto()
+        O2 = auto()
 
     def __init__(self, value: float):
         self.value = value
