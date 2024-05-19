@@ -1,3 +1,6 @@
+from __future__ import annotations
+from enum import IntFlag, auto
+
 from Physics import Energy, Power, Time, Length, Weight, Density
 from DebugLevel import DebugLevel
 
@@ -5,12 +8,25 @@ STEPS_PER_DAY = int((24 * 60) / 10)
 
 
 class Occupancy:
+    __occupancy = {
+        'empty': 0,
+        'low': 4,
+        'medium': 10,
+        'high': 15
+    }
+
+    class Predefined(IntFlag):
+        EMPTY = auto()
+        LOW = auto()
+        MEDIUM = auto()
+        HIGH = auto()
+
     name = 'Occupancy'
     density_co2 = Density.from_predefined(Density.Predefined.CO2)
     density_o2 = Density.from_predefined(Density.Predefined.O2)
     generated_heat = Energy(0)
 
-    def __init__(self, occupants):
+    def __init__(self, occupants: int):
         self.taken_o2 = Weight(0)
         self.produced_co2 = Weight(0)
         self.taken_o2_litre = Length(0)
@@ -26,6 +42,12 @@ class Occupancy:
         #       self.o2_usage.value,
         #       self.co2_demand.format_milli_litre(),
         #       self.co2_demand.value)
+
+    @staticmethod
+    def from_predefined(density: Predefined, quadratic_metres: Length) -> Occupancy:
+        return Occupancy(int(Occupancy.__occupancy[
+                            density.name.lower().replace('_', ' ')
+                         ] * quadratic_metres.value / 10))
 
     def generate_heat(self, verbosity: DebugLevel = DebugLevel.INFORMATIONAL) -> Energy:  # live
         energy = Power(100) * Time.from_minutes(10) * self.occupants

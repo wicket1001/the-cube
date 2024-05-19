@@ -350,6 +350,21 @@ class TestComponents(unittest.TestCase):
         self.assertAlmostEqual(person.produced_co2_litre.value, Length.from_litre(360).value, places=2)
         self.assertAlmostEqual(person.produced_co2.value, Weight.from_kilo_gramm(0.707).value, places=0)
 
+        room = Room(10, 10, 2.5)
+        empty_room = Occupancy.from_predefined(Occupancy.Predefined.EMPTY, room.get_quadratic_metres())
+        self.assertEqual(empty_room.occupants, 0)
+        low_room = Occupancy.from_predefined(Occupancy.Predefined.LOW, room.get_quadratic_metres())
+        self.assertEqual(low_room.occupants, 40)
+        high_room = Occupancy.from_predefined(Occupancy.Predefined.HIGH, room.get_quadratic_metres())
+        self.assertEqual(high_room.occupants, 150)
+
+        empty_room = Room(10, 10, 2.5, Occupancy.Predefined.EMPTY)
+        self.assertEqual(empty_room.occupancy.occupants, 0)
+        low_room = Room(10, 10, 2.5, Occupancy.Predefined.LOW)
+        self.assertEqual(low_room.occupancy.occupants, 40)
+        high_room = Room(10, 10, 2.5, Occupancy.Predefined.HIGH)
+        self.assertEqual(high_room.occupancy.occupants, 150)
+
 
 if __name__ == '__main__':
     unittest.main()

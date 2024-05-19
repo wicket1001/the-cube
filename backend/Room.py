@@ -1,5 +1,6 @@
 import numbers
 
+from Occupancy import Occupancy
 from Physics import Power, Temperature, Energy, Time, Length, SpecificHeatCapacity, Density, Weight
 
 # https://www.heizsparer.de/heizung/heiztechnik/heizleistung-berechnen
@@ -38,7 +39,8 @@ class Room:
     def __init__(self,
                  length: [numbers.Number, Length],
                  width: [numbers.Number, Length],
-                 room_height: [numbers.Number, Length]):
+                 room_height: [numbers.Number, Length],
+                 occupancy: Occupancy.Predefined = Occupancy.Predefined.EMPTY):
         if isinstance(length, numbers.Number):
             self.length = Length(float(length))
         elif isinstance(length, Length):
@@ -64,6 +66,8 @@ class Room:
         # print(self.get_volume())
         self.mass = air.calculate_mass(self.get_volume())
         # print(self.mass)
+
+        self.occupancy = Occupancy.from_predefined(occupancy, self.get_quadratic_metres())
 
     def get_quadratic_metres(self):
         return self.length * self.width
