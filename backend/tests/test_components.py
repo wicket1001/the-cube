@@ -13,6 +13,7 @@ from DebugLevel import DebugLevel
 from ElectricHeater import ElectricHeater
 from Fridge import Fridge
 from HeatPump import HeatPump
+from House import House
 from Occupancy import Occupancy
 from Physics import *
 from Room import Room
@@ -304,6 +305,9 @@ class TestComponents(unittest.TestCase):
         water_buffer.add_water(Length.from_litre(1), Temperature.from_celsius(20))
         self.assertEqual(water_buffer.weight.value, Weight.from_kilo_gramm(2).value)
         self.assertEqual(water_buffer.temperature.value, Temperature.from_celsius(15).value)
+        water_buffer.add_water(Length.from_litre(1), Temperature.from_celsius(7.5))
+        self.assertEqual(water_buffer.weight.value, Weight.from_kilo_gramm(3).value)
+        self.assertAlmostEqual(water_buffer.temperature.value, Temperature.from_celsius(12.5).value, places=0)
 
         water_buffer = WaterBuffer(Length.from_litre(1000), Temperature.from_celsius(80))
         lost = [Energy.from_watt_hours(141.27),
@@ -364,6 +368,142 @@ class TestComponents(unittest.TestCase):
         self.assertEqual(low_room.occupancy.occupants, 40)
         high_room = Room(10, 10, 2.5, Occupancy.Predefined.HIGH)
         self.assertEqual(high_room.occupancy.occupants, 150)
+
+    def test_room(self):
+        room = Room(5, 8, 2.5)
+        self.assertEqual(room.get_quadratic_metres().value, 40)
+        self.assertEqual(room.get_mantle().value, 65)
+        self.assertEqual(room.get_surface().value, 145)
+        self.assertEqual(room.get_volume().value, 100)
+        self.assertEqual(room.get_litre().value, 100000)
+        air = Density.from_predefined(Density.Predefined.AIR)
+        air_weight = air.calculate_mass(room.get_volume())
+        self.assertAlmostEqual(air_weight.value, 129300)
+
+        room = Room(10, 10, 2.5)
+        room.set_surfaces(Room.Surface.OUTSIDE,
+                          Room.Surface.GROUND,
+                          Room.Surface.OUTSIDE,
+                          Room.Surface.OUTSIDE,
+                          Room.Surface.OUTSIDE,
+                          Room.Surface.OUTSIDE)
+        if not room.valid():
+            raise AttributeError(f'A surface other than Ground should not be {Room.Surface.GROUND}.')
+
+    def test_house(self):
+        cellar_left = Room(5.25, 5.25, 4, Occupancy.Predefined.EMPTY, name='Cellar left')
+        cellar_right = Room(5.25, 5.25, 4, Occupancy.Predefined.EMPTY, name='Cellar right')
+        first_left = Room(5.25, 5.25, 4, Occupancy.Predefined.HIGH, name='First left')
+        first_right = Room(5.25, 5.25, 4, Occupancy.Predefined.HIGH, name='First right')
+        second_left = Room(5.25, 5.25, 4, Occupancy.Predefined.HIGH, name='Second left')
+        second_right = Room(5.25, 5.25, 4, Occupancy.Predefined.HIGH, name='Second right')
+        third_left = Room(5.25, 5.25, 4, Occupancy.Predefined.HIGH, name='Third left')
+        third_right = Room(5.25, 5.25, 4, Occupancy.Predefined.HIGH, name='Third right')
+        attic_left = Room(5.25, 5.25, 5, Occupancy.Predefined.HIGH, name='Attic left')
+        attic_right = Room(5.25, 5.25, 5, Occupancy.Predefined.HIGH, name='Attic right')
+        cellar_left.set_surfaces(Room.Surface.UNDEFINED,
+                                 Room.Surface.GROUND,
+                                 Room.Surface.GROUND,
+                                 Room.Surface.UNDEFINED,
+                                 Room.Surface.GROUND,
+                                 Room.Surface.GROUND)
+        cellar_right.set_surfaces(Room.Surface.UNDEFINED,
+                                  Room.Surface.GROUND,
+                                  Room.Surface.UNDEFINED,
+                                  Room.Surface.GROUND,
+                                  Room.Surface.GROUND,
+                                  Room.Surface.GROUND)
+        attic_left.set_surfaces(Room.Surface.OUTSIDE,
+                                 Room.Surface.UNDEFINED,
+                                 Room.Surface.OUTSIDE,
+                                 Room.Surface.UNDEFINED,
+                                 Room.Surface.OUTSIDE,
+                                 Room.Surface.OUTSIDE)
+        attic_right.set_surfaces(Room.Surface.OUTSIDE,
+                                  Room.Surface.UNDEFINED,
+                                  Room.Surface.UNDEFINED,
+                                  Room.Surface.OUTSIDE,
+                                  Room.Surface.OUTSIDE,
+                                  Room.Surface.OUTSIDE)
+        for room in [first_left, second_left, third_left]:
+            room.set_surfaces(Room.Surface.UNDEFINED,
+                              Room.Surface.UNDEFINED,
+                              Room.Surface.OUTSIDE,
+                              Room.Surface.UNDEFINED,
+                              Room.Surface.OUTSIDE,
+                              Room.Surface.OUTSIDE)
+        for room in [first_right, second_right, third_right]:
+            room.set_surfaces(Room.Surface.UNDEFINED,
+                              Room.Surface.UNDEFINED,
+                              Room.Surface.UNDEFINED,
+                              Room.Surface.OUTSIDE,
+                              Room.Surface.OUTSIDE,
+                              Room.Surface.OUTSIDE)
+        cellar_left.link_right(cellar_right, True)
+        cellar_left.link_top(first_left, True)
+        cellar_right.link_top(first_right, True)
+        attic_right.link_left(attic_left, True)
+        attic_right.link_bottom(third_right, True)
+        attic_left.link_bottom(third_left, True)
+        second_left.link_right(second_right, True)
+        second_left.link_top(third_left, True)
+        second_left.link_bottom(first_left, True)
+        second_right.link_top(third_right, True)
+        second_right.link_bottom(first_right, True)
+        first_left.link_right(first_right, True)
+        third_right.link_left(third_left, True)
+        rooms = [cellar_left, cellar_right,
+                 first_left, first_right,
+                 second_left, second_right,
+                 third_left, third_right,
+                 attic_left, attic_right]
+
+        house = House()
+        house.set_rooms(rooms)
+        if not house.valid():
+            raise AttributeError(f'Invalid house build.')
+
+        print()
+        # room = Room(10.5, 5.25, 21)
+        # print(room.get_mantle().format_square_metres())
+        # print(room.get_surface().format_square_metres())
+        # delta_t = Temperature.from_celsius(25) - Temperature.from_celsius(7)
+        # heat_loss = Power(room.get_mantle().value * room.u_value * delta_t.value)
+        # print(heat_loss, heat_loss.format_kilo_watt(), 'W/(m^2*K)')
+        # heat_loss_energy = heat_loss * Time.from_hours(24)
+        # print(heat_loss_energy, heat_loss_energy.format_kilo_watt_hours())
+
+        # room = Room(10, 22, 10)
+        # # room.get_mantle().value * 66 *
+        # print(room.get_quadratic_metres().format_square_metres())
+        # energy_lost_per_year = Energy.from_kilo_watt_hours(room.get_quadratic_metres().value * room.energy_pass)
+        # # 244 Heiztage, darüber 16940.00kWh aufgeteilt anhand Temperatur
+        # print(energy_lost_per_year.format_kilo_watt_hours(), energy_lost_per_year)
+
+        # low u_value = good isolation
+        # high u_value = bad / no isolation
+        room = Room(5.25, 5.25, 4)
+        wall_u_value = 0.29
+        roof_u_value = 0.25
+        window_u_value = 1.35
+        inner_wall_u_value = 1
+        inner_celling_u_value = 0.85
+        outer_area = room.length * room.room_height * 2 + room.width * room.room_height
+        print(outer_area.format_square_metres(), room.get_quadratic_metres().format_square_metres())
+        delta_t = Temperature.from_celsius(30) - Temperature.from_celsius(0)
+        p_walls = Power(wall_u_value * outer_area.value * delta_t.value)
+        p_roof = Power(roof_u_value * room.get_quadratic_metres().value * delta_t.value)
+        p_window = Power(window_u_value * 5 * delta_t.value)
+        print(p_walls, p_roof, p_window)
+        p_value = p_walls + p_roof + p_window
+        print(p_value)
+        energy_lost = p_value * Time.from_hours(1)
+        energy_year = p_value * Time.from_years(1)
+        print(energy_lost.format_kilo_watt_hours(), energy_year.format_kilo_watt_hours())
+
+    def test_error(self):
+        with self.assertRaises(ZeroDivisionError):
+            value = 3 / 0
 
 
 if __name__ == '__main__':

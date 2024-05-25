@@ -1,4 +1,6 @@
 import numbers
+import warnings
+from enum import IntFlag, auto
 
 from Occupancy import Occupancy
 from Physics import Power, Temperature, Energy, Time, Length, SpecificHeatCapacity, Density, Weight
@@ -24,11 +26,26 @@ u_value = {
 
 
 class Room:
+    class Surface(IntFlag):
+        UNDEFINED = auto()
+        OUTSIDE = auto()
+        GROUND = auto()
+    top = Surface.UNDEFINED
+    bottom = Surface.UNDEFINED
+    left = Surface.UNDEFINED
+    right = Surface.UNDEFINED
+    front = Surface.UNDEFINED
+    back = Surface.UNDEFINED
+    # surfaces = [top, bottom, left, right, front, back]
+
+    name = ''
+
     SPECIFIC_HEAT_CAPACITY = SpecificHeatCapacity.from_predefined(SpecificHeatCapacity.Predefined.AIR)  # 1.01
     # https://de.wikipedia.org/wiki/Spezifische_W%C3%A4rmekapazit%C3%A4t
 
     u_value = 3.10
     p_value = 1 / u_value
+    energy_pass = 77  # kWh / (m^2 * year)
 
     length = Length(0)
     width = Length(0)
@@ -40,7 +57,8 @@ class Room:
                  length: [numbers.Number, Length],
                  width: [numbers.Number, Length],
                  room_height: [numbers.Number, Length],
-                 occupancy: Occupancy.Predefined = Occupancy.Predefined.EMPTY):
+                 occupancy: Occupancy.Predefined = Occupancy.Predefined.EMPTY,
+                 name: str = ''):
         if isinstance(length, numbers.Number):
             self.length = Length(float(length))
         elif isinstance(length, Length):
@@ -69,22 +87,153 @@ class Room:
 
         self.occupancy = Occupancy.from_predefined(occupancy, self.get_quadratic_metres())
 
-    def get_quadratic_metres(self):
+        self.name = name
+
+    def valid_surface(self, surface) -> bool:
+        if isinstance(surface, Room.Surface):
+            return True
+        return False
+
+    def surface_index_to_name(self, i: int) -> str:
+        return ['top', 'bottom', 'left', 'right', 'front', 'back'][i]
+
+    def set_top(self, top):
+        if not self.valid_surface(top):
+            raise AttributeError('Unsupported surface type.')
+        self.top = top
+
+    def set_bottom(self, bottom):
+        if not self.valid_surface(bottom):
+            raise AttributeError('Unsupported surface type.')
+        self.bottom = bottom
+
+    def set_left(self, left):
+        if not self.valid_surface(left):
+            raise AttributeError('Unsupported surface type.')
+        self.left = left
+
+    def set_right(self, right):
+        if not self.valid_surface(right):
+            raise AttributeError('Unsupported surface type.')
+        self.right = right
+
+    def set_front(self, front):
+        if not self.valid_surface(front):
+            raise AttributeError('Unsupported surface type.')
+        self.front = front
+
+    def set_back(self, back):
+        if not self.valid_surface(back):
+            raise AttributeError('Unsupported surface type.')
+        self.back = back
+
+    def get_surfaces(self) -> tuple:
+        return self.top, self.bottom, self.left, self.right, self.front, self.back
+
+    def set_surfaces(self, top, bottom, left, right, front, back) -> None:
+        self.set_top(top)
+        self.set_bottom(bottom)
+        self.set_left(left)
+        self.set_right(right)
+        self.set_front(front)
+        self.set_back(back)
+
+    def valid(self) -> bool:
+        """
+        Tests if the room is valid, returns false if otherwise.
+        TODO should not be checked by server rather than client
+
+        :return: True if valid, False otherwise.
+        """
+        for i, surface in enumerate(self.get_surfaces()):  # self.surfaces:
+            if isinstance(surface, Room.Surface):
+                if surface == Room.Surface.UNDEFINED:
+                    raise AttributeError(f'{self.name}/{self.surface_index_to_name(i)} is not defined.')
+        for i, surface in enumerate(self.get_surfaces()):
+            if i == 1:
+                continue
+            if surface == Room.Surface.GROUND:
+                warnings.warn(f'{self.name} surface {self.surface_index_to_name(i)} other than bottom is {Room.Surface.GROUND}.')
+                # return False
+                # raise AttributeError(f'{surface} should not be {Room.Surface.GROUND}.')
+        return True
+
+    def link_top(self, rooms, recursive) -> None:
+        if isinstance(rooms, Room):
+            rooms = [rooms]
+        elif not isinstance(rooms, list):
+            raise AttributeError('Rooms is no instance of list or Room')
+        self.top = rooms
+        if recursive:
+            for room in rooms:
+                room.link_bottom(self, False)
+
+    def link_bottom(self, rooms, recursive) -> None:
+        if isinstance(rooms, Room):
+            rooms = [rooms]
+        elif not isinstance(rooms, list):
+            raise AttributeError('Rooms is no instance of list or Room')
+        self.bottom = rooms
+        if recursive:
+            for room in rooms:
+                room.link_top(self, False)
+
+    def link_left(self, rooms, recursive) -> None:
+        if isinstance(rooms, Room):
+            rooms = [rooms]
+        elif not isinstance(rooms, list):
+            raise AttributeError('Rooms is no instance of list or Room')
+        self.left = rooms
+        if recursive:
+            for room in rooms:
+                room.link_right(self, False)
+
+    def link_right(self, rooms, recursive) -> None:
+        if isinstance(rooms, Room):
+            rooms = [rooms]
+        elif not isinstance(rooms, list):
+            raise AttributeError('Rooms is no instance of list or Room')
+        self.right = rooms
+        if recursive:
+            for room in rooms:
+                room.link_left(self, False)
+
+    def link_front(self, rooms, recursive) -> None:
+        if isinstance(rooms, Room):
+            rooms = [rooms]
+        elif not isinstance(rooms, list):
+            raise AttributeError('Rooms is no instance of list or Room')
+        self.front = rooms
+        if recursive:
+            for room in rooms:
+                room.link_back(self, False)
+
+    def link_back(self, rooms, recursive) -> None:
+        if isinstance(rooms, Room):
+            rooms = [rooms]
+        elif not isinstance(rooms, list):
+            raise AttributeError('Rooms is no instance of list or Room')
+        self.back = rooms
+        if recursive:
+            for room in rooms:
+                room.link_front(self, False)
+
+    def get_quadratic_metres(self) -> Length:
         return self.length * self.width
 
-    def get_mantle(self):
+    def get_mantle(self) -> Length:
         return (self.length * self.room_height * 2 +
                 self.width * self.room_height * 2)
 
-    def get_surface(self):
+    def get_surface(self) -> Length:
         return (self.length * self.room_height * 2 +
                 self.width * self.room_height * 2 +
                 self.length * self.width * 2)
 
-    def get_volume(self):
+    def get_volume(self) -> Length:
         return self.length * self.width * self.room_height
 
-    def get_litre(self):
+    def get_litre(self) -> Length:
         return self.get_volume() * 1000
 
     def __str__(self):

@@ -50,6 +50,7 @@ class House(object):
     outer_temperature = Temperature(0)
     patched_temperature = None
     outer_temperature_patch = None
+    rooms = []
 
     def get_energy_production(self, response: dict, t: int, absolute_step: int, verbosity: DebugLevel):
         energy_produced = Energy(0)
@@ -64,6 +65,17 @@ class House(object):
             })
         response["generators"] = generators_response
         return energy_produced
+
+    def valid(self) -> bool:
+        valid = True
+        for room in self.rooms:
+            print(f'{room.name} is {room.valid()}')
+            if not room.valid():
+                valid = False
+        return valid
+
+    def set_rooms(self, rooms: [Room]):
+        self.rooms = rooms
 
     def get_energy_demand(self, response: dict, t: int, absolute_step: int, verbosity: DebugLevel):
         energy_demand = Energy(0)
@@ -185,7 +197,8 @@ class House(object):
             if battery.battery_level < battery.capacity:
                 battery.store(total_energy_surplus_COP)
             if battery.battery_level > battery.capacity and sand_battery.battery_level <= sand_battery.capacity:
-                sand_battery.
+                # sand_battery.
+                pass
 
     def algorithm_callback(self, absolute_step, energy_demand: Energy, energy_supply: Energy, algorithm: Algorithms,
                            verbosity: DebugLevel):

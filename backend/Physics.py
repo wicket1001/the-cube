@@ -61,6 +61,14 @@ class Time:
     def from_hours(time: float) -> Time:
         return Time(time * 3600)
 
+    @staticmethod
+    def from_days(time: float) -> Time:
+        return Time(time * 3600 * 24)
+
+    @staticmethod
+    def from_years(time: float) -> Time:
+        return Time(time * 3600 * 24 * 365)
+
     def format_minutes(self):
         return f'{self.value / 60:.2f}min'
 
@@ -300,6 +308,34 @@ class Length:
             raise UnsupportedOperation('*')
 
     @staticmethod
+    def from_milli_meter(value: float) -> Length:
+        return Length(value / 1000)
+
+    @staticmethod
+    def from_centi_meter(value: float) -> Length:
+        return Length(value / 100)
+
+    @staticmethod
+    def from_kilo_meters(value: float) -> Length:
+        return Length(value * 1000)
+
+    @staticmethod
+    def from_inch(value: float) -> Length:
+        return Length(value * 0.0254)
+
+    @staticmethod
+    def from_foot(value: float) -> Length:
+        return Length(value * 0.3048)
+
+    @staticmethod
+    def from_yard(value: float) -> Length:
+        return Length(value * 0.9144)
+
+    @staticmethod
+    def from_mile(value: float) -> Length:
+        return Length(value * 1609.344)
+
+    @staticmethod
     def from_litre(litre: float) -> Length:
         return Length(litre / 1000.0)
 
@@ -316,6 +352,27 @@ class Length:
 
     def format_qubic_metres(self):
         return f'{self.value:.2f}m^3'
+
+    def format_milli_metres(self):
+        return f'{self.value * 1000:.2f}mm'
+
+    def format_centi_metres(self):
+        return f'{self.value * 100:.2f}cm'
+
+    def format_kilo_metres(self):
+        return f'{self.value / 1000:.2f}km'
+
+    def format_inch(self):
+        return f'{self.value / 0.0254:.2f}´´'
+
+    def format_foot(self):
+        return f'{self.value / 0.3048:.2f}´'
+
+    def format_yard(self):
+        return f'{self.value / 0.9144:.2f}yd'
+
+    def format_mile(self):
+        return f'{self.value / 1609.344:.2f}mi'
 
     def format_litre(self):
         return f'{self.value * 1000.0:.2f}l'

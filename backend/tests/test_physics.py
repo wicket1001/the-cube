@@ -112,6 +112,19 @@ class TestPhysics(unittest.TestCase):
         self.assertEqual(gallon.format_litre(), '3.79l')
         self.assertEqual(gallon.format_gallon(), '1.00gal')
 
+        inch = Length.from_inch(1)
+        self.assertEqual('1.00´´', inch.format_inch())
+        self.assertEqual('2.54cm', inch.format_centi_metres())
+        self.assertEqual(0.0254, inch.value)
+        foot = Length.from_foot(1)
+        self.assertEqual('1.00´', foot.format_foot())
+        self.assertEqual('0.30m', str(foot))
+        self.assertEqual(0.3048, foot.value)
+        mile = Length.from_mile(1)
+        self.assertEqual('1.00mi', mile.format_mile())
+        self.assertEqual('1609.34m', str(mile))
+        self.assertEqual(1609.344, mile.value)
+
     def test_density(self):
         water = Density(1000)
         self.assertEqual(water.value, 1000)
@@ -146,17 +159,6 @@ class TestPhysics(unittest.TestCase):
         human_breathe_per_day = Length.from_litre(500)
         o2_exhaled = o2.calculate_mass(human_breathe_per_day)
         self.assertEqual(o2_exhaled.value, Weight.from_kilo_gramm(0.7145).value)
-
-    def test_room(self):
-        room = Room(5, 8, 2.5)
-        self.assertEqual(room.get_quadratic_metres().value, 40)
-        self.assertEqual(room.get_mantle().value, 65)
-        self.assertEqual(room.get_surface().value, 145)
-        self.assertEqual(room.get_volume().value, 100)
-        self.assertEqual(room.get_litre().value, 100000)
-        air = Density.from_predefined(Density.Predefined.AIR)
-        air_weight = air.calculate_mass(room.get_volume())
-        self.assertAlmostEqual(air_weight.value, 129300)
 
     def test_specific_heat_capacity(self):
         water = SpecificHeatCapacity(4.18)
