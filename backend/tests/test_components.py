@@ -391,16 +391,16 @@ class TestComponents(unittest.TestCase):
             raise AttributeError(f'A surface other than Ground should not be {Room.Surface.GROUND}.')
 
     def test_house(self):
-        cellar_left = Room(5.25, 5.25, 4, Occupancy.Predefined.EMPTY, name='Cellar left')
-        cellar_right = Room(5.25, 5.25, 4, Occupancy.Predefined.EMPTY, name='Cellar right')
-        first_left = Room(5.25, 5.25, 4, Occupancy.Predefined.HIGH, name='First left')
-        first_right = Room(5.25, 5.25, 4, Occupancy.Predefined.HIGH, name='First right')
-        second_left = Room(5.25, 5.25, 4, Occupancy.Predefined.HIGH, name='Second left')
-        second_right = Room(5.25, 5.25, 4, Occupancy.Predefined.HIGH, name='Second right')
-        third_left = Room(5.25, 5.25, 4, Occupancy.Predefined.HIGH, name='Third left')
-        third_right = Room(5.25, 5.25, 4, Occupancy.Predefined.HIGH, name='Third right')
-        attic_left = Room(5.25, 5.25, 5, Occupancy.Predefined.HIGH, name='Attic left')
-        attic_right = Room(5.25, 5.25, 5, Occupancy.Predefined.HIGH, name='Attic right')
+        cellar_left = Room(12, 24, 4, Occupancy.Predefined.EMPTY, name='Cellar left')
+        cellar_right = Room(12, 24, 4, Occupancy.Predefined.EMPTY, name='Cellar right')
+        first_left = Room(12, 24, 4, Occupancy.Predefined.HIGH, name='First left')
+        first_right = Room(12, 24, 4, Occupancy.Predefined.HIGH, name='First right')
+        second_left = Room(12, 24, 4, Occupancy.Predefined.HIGH, name='Second left')
+        second_right = Room(12, 24, 4, Occupancy.Predefined.HIGH, name='Second right')
+        third_left = Room(12, 24, 4, Occupancy.Predefined.HIGH, name='Third left')
+        third_right = Room(12, 24, 4, Occupancy.Predefined.HIGH, name='Third right')
+        attic_left = Room(12, 24, 5, Occupancy.Predefined.HIGH, name='Attic left')
+        attic_right = Room(12, 24, 5, Occupancy.Predefined.HIGH, name='Attic right')
         cellar_left.set_surfaces(Room.Surface.UNDEFINED,
                                  Room.Surface.GROUND,
                                  Room.Surface.GROUND,
@@ -462,8 +462,13 @@ class TestComponents(unittest.TestCase):
         house.set_rooms(rooms)
         if not house.valid():
             raise AttributeError(f'Invalid house build.')
-
         print()
+        
+        energy = house.heat_loss(Temperature.from_celsius(5), Temperature.from_celsius(19))
+        print('House total: ', energy.format_watt_hours())
+        self.assertAlmostEqual(energy.value, Energy.from_watt_hours(11813.76).value)
+
+    def test_p_value(self):
         # room = Room(10.5, 5.25, 21)
         # print(room.get_mantle().format_square_metres())
         # print(room.get_surface().format_square_metres())
@@ -489,17 +494,37 @@ class TestComponents(unittest.TestCase):
         inner_wall_u_value = 1
         inner_celling_u_value = 0.85
         outer_area = room.length * room.room_height * 2 + room.width * room.room_height
-        print(outer_area.format_square_metres(), room.get_quadratic_metres().format_square_metres())
+        self.assertEqual(outer_area.value, 63)
+        self.assertEqual(room.get_quadratic_metres().value, 27.5625)
         delta_t = Temperature.from_celsius(30) - Temperature.from_celsius(0)
         p_walls = Power(wall_u_value * outer_area.value * delta_t.value)
         p_roof = Power(roof_u_value * room.get_quadratic_metres().value * delta_t.value)
         p_window = Power(window_u_value * 5 * delta_t.value)
-        print(p_walls, p_roof, p_window)
+        self.assertEqual(548.10, p_walls.value)
+        self.assertEqual(206.71875, p_roof.value)
+        self.assertEqual(202.5, p_window.value)
+        # print(p_walls, p_roof, p_window)
         p_value = p_walls + p_roof + p_window
-        print(p_value)
+        # print(p_value)
+        self.assertEqual(957.31875, p_value.value)
         energy_lost = p_value * Time.from_hours(1)
         energy_year = p_value * Time.from_years(1)
-        print(energy_lost.format_kilo_watt_hours(), energy_year.format_kilo_watt_hours())
+        # print(energy_lost.format_kilo_watt_hours(), energy_year.format_kilo_watt_hours())
+        self.assertAlmostEqual(Energy.from_watt_hours(960).value, energy_lost.value, places=-5)
+        self.assertAlmostEqual(Energy.from_kilo_watt_hours(8386.11).value, energy_year.value, places=-5)
+
+    def test_room_heat_exchange(self):
+        room_left = Room(5, 4, 3, name='Left')
+        room_right = Room(5, 4, 3, name='Right')
+        room_left.link_right(room_right, True)
+        room_left.temperature = Temperature.from_celsius(30)
+        room_right.temperature = Temperature.from_celsius(10)
+        energy_lost_left = room_left.heat_exchange(Temperature.from_celsius(0), room_left.temperature)
+        energy_lost_right = room_right.heat_exchange(Temperature.from_celsius(0), room_right.temperature)
+        room_left.update_temperatures()
+        room_right.update_temperatures()
+        self.assertEqual(Temperature.from_celsius(28.16).format_celsius(), room_left.temperature.format_celsius())
+        self.assertEqual(Temperature.from_celsius(11.84).format_celsius(), room_right.temperature.format_celsius())
 
     def test_error(self):
         with self.assertRaises(ZeroDivisionError):
