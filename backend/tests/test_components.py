@@ -6,14 +6,12 @@
 
 import unittest
 import csv
-from datetime import datetime
 
 from Battery import Battery
 from DebugLevel import DebugLevel
 from ElectricHeater import ElectricHeater
 from Fridge import Fridge
 from HeatPump import HeatPump
-from House import House
 from Occupancy import Occupancy
 from Physics import *
 from Room import Room
@@ -21,6 +19,7 @@ from SandBattery import SandBattery
 from SolarPanel import SolarPanel
 from SolarThermal import SolarThermal
 from WaterBuffer import WaterBuffer
+from utils import get_house
 
 
 class TestComponents(unittest.TestCase):
@@ -391,82 +390,22 @@ class TestComponents(unittest.TestCase):
             raise AttributeError(f'A surface other than Ground should not be {Room.Surface.GROUND}.')
 
     def test_house(self):
-        cellar_left = Room(12, 24, 4, Occupancy.Predefined.EMPTY, name='Cellar left')
-        cellar_right = Room(12, 24, 4, Occupancy.Predefined.EMPTY, name='Cellar right')
-        first_left = Room(12, 24, 4, Occupancy.Predefined.HIGH, name='First left')
-        first_right = Room(12, 24, 4, Occupancy.Predefined.HIGH, name='First right')
-        second_left = Room(12, 24, 4, Occupancy.Predefined.HIGH, name='Second left')
-        second_right = Room(12, 24, 4, Occupancy.Predefined.HIGH, name='Second right')
-        third_left = Room(12, 24, 4, Occupancy.Predefined.HIGH, name='Third left')
-        third_right = Room(12, 24, 4, Occupancy.Predefined.HIGH, name='Third right')
-        attic_left = Room(12, 24, 5, Occupancy.Predefined.HIGH, name='Attic left')
-        attic_right = Room(12, 24, 5, Occupancy.Predefined.HIGH, name='Attic right')
-        cellar_left.set_surfaces(Room.Surface.UNDEFINED,
-                                 Room.Surface.GROUND,
-                                 Room.Surface.GROUND,
-                                 Room.Surface.UNDEFINED,
-                                 Room.Surface.GROUND,
-                                 Room.Surface.GROUND)
-        cellar_right.set_surfaces(Room.Surface.UNDEFINED,
-                                  Room.Surface.GROUND,
-                                  Room.Surface.UNDEFINED,
-                                  Room.Surface.GROUND,
-                                  Room.Surface.GROUND,
-                                  Room.Surface.GROUND)
-        attic_left.set_surfaces(Room.Surface.OUTSIDE,
-                                 Room.Surface.UNDEFINED,
-                                 Room.Surface.OUTSIDE,
-                                 Room.Surface.UNDEFINED,
-                                 Room.Surface.OUTSIDE,
-                                 Room.Surface.OUTSIDE)
-        attic_right.set_surfaces(Room.Surface.OUTSIDE,
-                                  Room.Surface.UNDEFINED,
-                                  Room.Surface.UNDEFINED,
-                                  Room.Surface.OUTSIDE,
-                                  Room.Surface.OUTSIDE,
-                                  Room.Surface.OUTSIDE)
-        for room in [first_left, second_left, third_left]:
-            room.set_surfaces(Room.Surface.UNDEFINED,
-                              Room.Surface.UNDEFINED,
-                              Room.Surface.OUTSIDE,
-                              Room.Surface.UNDEFINED,
-                              Room.Surface.OUTSIDE,
-                              Room.Surface.OUTSIDE)
-        for room in [first_right, second_right, third_right]:
-            room.set_surfaces(Room.Surface.UNDEFINED,
-                              Room.Surface.UNDEFINED,
-                              Room.Surface.UNDEFINED,
-                              Room.Surface.OUTSIDE,
-                              Room.Surface.OUTSIDE,
-                              Room.Surface.OUTSIDE)
-        cellar_left.link_right(cellar_right, True)
-        cellar_left.link_top(first_left, True)
-        cellar_right.link_top(first_right, True)
-        attic_right.link_left(attic_left, True)
-        attic_right.link_bottom(third_right, True)
-        attic_left.link_bottom(third_left, True)
-        second_left.link_right(second_right, True)
-        second_left.link_top(third_left, True)
-        second_left.link_bottom(first_left, True)
-        second_right.link_top(third_right, True)
-        second_right.link_bottom(first_right, True)
-        first_left.link_right(first_right, True)
-        third_right.link_left(third_left, True)
-        rooms = [cellar_left, cellar_right,
-                 first_left, first_right,
-                 second_left, second_right,
-                 third_left, third_right,
-                 attic_left, attic_right]
-
-        house = House()
-        house.set_rooms(rooms)
+        house = get_house()
         if not house.valid():
             raise AttributeError(f'Invalid house build.')
         print()
-        
-        energy = house.heat_loss(Temperature.from_celsius(5), Temperature.from_celsius(19))
-        print('House total: ', energy.format_watt_hours())
-        self.assertAlmostEqual(energy.value, Energy.from_watt_hours(11813.76).value)
+
+        energy = Energy(0)
+        for i in range(6):
+            loss = house.heat_loss(Temperature.from_celsius(5))
+            energy += loss
+            # print('House total: ', loss.format_watt_hours())
+            # print('House total: ', energy.format_watt_hours())
+            house.update_temperatures()
+        # if only assumed by one hour
+        # Energy.from_watt_hours(11813.76).format_watt_hours()
+        # if assumed by 10min steps
+        self.assertEqual(energy.format_watt_hours(), Energy.from_watt_hours(10822.36).format_watt_hours())
 
     def test_p_value(self):
         # room = Room(10.5, 5.25, 21)

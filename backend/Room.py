@@ -52,6 +52,27 @@ class Room:
     room_height = Length(0)
     mass = Weight(0)
     SIMULATION_TIME_STEP = Time.from_minutes(10)
+    INITIAL_TEMPERATURE_C = 19
+    temperature = Temperature.from_celsius(INITIAL_TEMPERATURE_C)
+
+    surfaces_names = ['top', 'bottom', 'left', 'right', 'front', 'back']
+    wall_u_value = 0.29
+    roof_u_value = 0.25
+    flooring_u_value = 0.2 # to outside
+    inner_wall_u_value = 1
+    inner_ceiling_u_value = 0.85
+    inner_flooring_u_value = 0.7 # to inside
+    ground_u_value = 1
+    outside_u_values = [roof_u_value, flooring_u_value, wall_u_value, wall_u_value, wall_u_value, wall_u_value]
+    inside_u_values = [inner_ceiling_u_value, inner_flooring_u_value,
+                       inner_wall_u_value, inner_wall_u_value,
+                       inner_wall_u_value, inner_wall_u_value]
+
+    INITIAL_TEMPERATURE_C = 19
+    current_heat = Temperature.from_celsius(INITIAL_TEMPERATURE_C)
+    next_temperature = Temperature.from_celsius(INITIAL_TEMPERATURE_C)
+
+    room_shc = SpecificHeatCapacity.from_predefined(SpecificHeatCapacity.Predefined.AIR)
 
     def __init__(self,
                  length: [numbers.Number, Length],
@@ -95,7 +116,7 @@ class Room:
         return False
 
     def surface_index_to_name(self, i: int) -> str:
-        return ['top', 'bottom', 'left', 'right', 'front', 'back'][i]
+        return self.surfaces_names[i]
 
     def set_top(self, top):
         if not self.valid_surface(top):
@@ -218,6 +239,103 @@ class Room:
             for room in rooms:
                 room.link_front(self, False)
 
+    def surrounding_loss(self, outside: Temperature, inside: Temperature) -> Energy:
+        delta_t = inside - outside
+        # print(outside.format_celsius(), inside.format_celsius(), delta_t)
+        sum_p_value = Power(0)
+        sum_energy = Energy(0)
+        for i, surface in enumerate(self.get_surfaces()):
+            if isinstance(surface, self.Surface):
+                if surface == self.Surface.UNDEFINED:
+                    raise ValueError(f'Undefined Surface at {self.surface_index_to_name(i)} in {self.name}')
+                p_value = Power(self.outside_u_values[i] * self.get_surface_area(i).value * delta_t.value)
+                # print(self.outside_u_values[i], self.get_surface_area(i), delta_t, p_value)
+                sum_p_value += p_value
+            elif isinstance(surface, Room):
+                raise NotImplementedError('Pls implement')
+            elif isinstance(surface, list):
+                for s in surface:
+                    if isinstance(s, Room):
+                        room_difference = abs(s.temperature - self.temperature)
+                        if room_difference > Temperature(0.01):
+                            wall = self.get_surface_area(i)
+                            # print(wall.format_square_metres())
+                            #opposing_wall = s.get_surface_area(self.get_opposite_surface(i))
+                            #wall = min(wall, opposing_wall)
+                            p_value = Power(self.inside_u_values[i] * wall.value * room_difference.value)
+                            #print(p_value)
+                            energy_transfer = p_value * self.SIMULATION_TIME_STEP
+                            if s.temperature > self.temperature:
+                                sum_energy += energy_transfer
+                            else:
+                                sum_energy -= energy_transfer
+                    else:
+                        raise ValueError(f'List Undefined Surface type at {self.surface_index_to_name(i)} in {self.name} as {surface}')
+            else:
+                raise ValueError(f'Undefined Surface type at {self.surface_index_to_name(i)} in {self.name} as {surface}')
+        p_energy_loss = sum_p_value * self.SIMULATION_TIME_STEP
+        # print(p_energy_loss, sum_energy, p_energy_loss + sum_energy)
+        # if sum_energy.value > 0:
+        #     print(f'Energy gained at {self.name}')
+        # else:
+        #     print(f'Energy lost at {self.name}')
+        total_energy_lost = p_energy_loss - sum_energy
+        # print('AMBIENT LOSS', p_energy_loss.format_watt_hours())
+        # print('EXCHANGE LOSS', sum_energy.format_watt_hours())
+        heat_transfer = self.room_shc.calculate_heat(total_energy_lost, self.mass)
+        self.next_temperature = self.temperature - heat_transfer
+        return total_energy_lost
+
+    def heat_exchange(self, outside: Temperature, inside: Temperature) -> Energy:
+        sum_energy = Energy(0)
+        for i, surface in enumerate(self.get_surfaces()):
+            if isinstance(surface, self.Surface):
+                continue
+            elif isinstance(surface, Room):
+                raise NotImplementedError('Pls implement')
+            elif isinstance(surface, list):
+                for s in surface:
+                    if isinstance(s, Room):
+                        delta_t = abs(s.temperature - self.temperature)
+                        if delta_t > Temperature(0.01):
+                            wall = self.get_surface_area(i)
+                            # print(wall.format_square_metres())
+                            #opposing_wall = s.get_surface_area(self.get_opposite_surface(i))
+                            #wall = min(wall, opposing_wall)
+                            p_value = Power(self.inside_u_values[i] * wall.value * delta_t.value)
+                            #print(p_value)
+                            energy_transfer = p_value * self.SIMULATION_TIME_STEP
+                            # print(energy_transfer.format_watt_hours())
+                            # print(self.mass)
+                            heat_transfer = self.room_shc.calculate_heat(energy_transfer, self.mass)
+                            # print(heat_transfer)
+                            # print('other', s.temperature.format_celsius())
+                            # print('self', self.temperature.format_celsius())
+                            if s.temperature > self.temperature:
+                                s.next_temperature = s.temperature - heat_transfer
+                                self.next_temperature = self.temperature + heat_transfer
+                                # print('other', s.next_heat.format_celsius())
+                                # print('self', self.next_heat.format_celsius())
+                                if not s.next_temperature > self.next_temperature:
+                                    warnings.warn('The hotter cube switched around')
+                                    raise ValueError('The hotter cube switched around')
+                            else:
+                                s.next_temperature = s.temperature + heat_transfer
+                                self.next_temperature = self.temperature - heat_transfer
+                                # print('other', s.next_heat.format_celsius())
+                                # print('self', self.next_heat.format_celsius())
+                                if not s.next_temperature < self.next_temperature:
+                                    warnings.warn('The hotter cube switched around')
+                                    raise ValueError('The hotter cube switched around')
+                    else:
+                        raise ValueError(f'List Undefined Surface type at {self.surface_index_to_name(i)} in {self.name} as {surface}')
+            else:
+                raise ValueError(f'Undefined Surface type at {self.surface_index_to_name(i)} in {self.name} as {surface}')
+
+    def update_temperatures(self):
+        self.temperature = self.next_temperature
+        self.next_temperature = Temperature.from_celsius(self.INITIAL_TEMPERATURE_C)
+
     def get_quadratic_metres(self) -> Length:
         return self.length * self.width
 
@@ -282,3 +400,14 @@ class Room:
     def adapt_to_outside(self, outside: Temperature, inside: Temperature) -> Temperature:
         delta = (outside - inside) * 0.1
         return delta
+
+    def get_surface_area(self, i) -> Length:
+        return (self.width * self.length,
+                self.width * self.length,
+                self.width * self.room_height,
+                self.width * self.room_height,
+                self.length * self.room_height,
+                self.length * self.room_height)[i]
+
+    def get_opposite_surface(self, i: int) -> int:
+        return (1, 0, 3, 2, 5, 4)[i]

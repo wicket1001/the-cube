@@ -24,6 +24,7 @@ class House(object):
         BENCHMARK = auto()
         DECISION_TREE = auto()
         MARK1 = auto()
+        MATLAB = auto()
 
     class Season(IntFlag):
         SPRING = auto()
@@ -69,13 +70,31 @@ class House(object):
     def valid(self) -> bool:
         valid = True
         for room in self.rooms:
-            print(f'{room.name} is {room.valid()}')
+            # print(f'{room.name} is {room.valid()}')
             if not room.valid():
                 valid = False
         return valid
 
     def set_rooms(self, rooms: [Room]):
         self.rooms = rooms
+
+    def heat_loss(self, outside) -> Energy:
+        energy_sum = Energy(0)
+        for room in self.rooms:
+            energy_loss = room.surrounding_loss(outside, room.temperature)
+            # print(f'{room.name}: {energy_loss.format_watt_hours()}')
+            energy_sum += energy_loss
+        return energy_sum
+
+    def update_temperatures(self) -> None:
+        for room in self.rooms:
+            # print(f'{room.name}: before {room.temperature.format_celsius()}', end='')
+            # diff = room.temperature - room.next_temperature
+            # diff_energy = room.room_shc.calculate_energy(diff, room.mass)
+            room.update_temperatures()
+            # print(f' {room.name}: after {room.temperature.format_celsius()}', end='')
+            # print(f'--> {diff} {diff_energy.format_watt_hours()}')
+            # print(f'"{room.name}";{room.temperature.format_celsius()}')
 
     def get_energy_demand(self, response: dict, t: int, absolute_step: int, verbosity: DebugLevel):
         energy_demand = Energy(0)
@@ -105,16 +124,8 @@ class House(object):
             print(f'patched_temperature={self.patched_temperature}')
             print(f'outer_temperature={self.outer_temperature}')
             print(f'outer_temperature_patch{self.outer_temperature_patch}')
-        if self.patched_temperature is not None:
-            diff = abs(self.outer_temperature - temp)
-            if verbosity >= DebugLevel.DEBUGGING:
-                print(f'diff={diff}')
-                print(f'evaluate={diff < self.outer_temperature_patch}')
-            if diff < self.outer_temperature_patch:
-                self.patched_temperature = None
-                self.outer_temperature_patch = None
-            else:
-                temp = self.outer_temperature - self.outer_temperature_patch
+
+        temp = self.patch_outside_temperature(temp, verbosity)
 
         self.outer_temperature = temp
         response['environment']['temperatures'] = self.outer_temperature
@@ -168,6 +179,19 @@ class House(object):
         response['environment']['co2'] = self.co2  # TODO bought gas
 
         return response
+
+    def patch_outside_temperature(self, temp, verbosity):
+        if self.patched_temperature is not None:
+            diff = abs(self.outer_temperature - temp)
+            if verbosity >= DebugLevel.DEBUGGING:
+                print(f'diff={diff}')
+                print(f'evaluate={diff < self.outer_temperature_patch}')
+            if diff < self.outer_temperature_patch:
+                self.patched_temperature = None
+                self.outer_temperature_patch = None
+            else:
+                temp = self.outer_temperature - self.outer_temperature_patch
+        return temp
 
     def get_season(self, absolute_step: int) -> Season:
         absolute_step %= STEPS_PER_DAY * 365
@@ -233,7 +257,7 @@ class House(object):
                 if verbosity >= DebugLevel.DEBUGGING:
                     print(f'Selling: {battery_overfull}')
                 self.money += self.grid.sell(battery_overfull)
-        elif algorithm == self.Algorithms.DECISION_TREE:
+        elif algorithm == self.Algorithms.MATLAB:
             season = self.get_season(absolute_step)
             t_status, e_status = self.get_capacity()
             if verbosity >= DebugLevel.INFORMATIONAL:
@@ -244,6 +268,9 @@ class House(object):
                     pass
 
             elif season == self.Season.WINTER:
+                total_energy_surplus = 0
+                total_energy_surplus_cop = 0
+                priority = 0
                 if t_status == Battery.Status.CHARGING and e_status == Battery.Status.EMPTY:
                     if energy_demand > energy_supply:
                         self.charge_battery(
@@ -253,7 +280,8 @@ class House(object):
                             self.battery,
                             self.sand_battery
                         )
-
+        elif algorithm == self.Algorithms.DECISION_TREE:
+            pass
         else:
             raise NotImplementedError('No more Algorithms implemented.')
 
