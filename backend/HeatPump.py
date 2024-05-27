@@ -5,6 +5,7 @@ from Physics import Length, Energy, Power, Time, SpecificHeatCapacity, Density, 
 
 class HeatPump(Appliance):
     # https://en.wikipedia.org/wiki/Coefficient_of_performance
+    # https://heatpumps.co.uk/heat-pump-resources/numbers-and-calculations/
     name = 'HeatPump'
 
     COP = 3
@@ -70,7 +71,7 @@ class HeatPump(Appliance):
         initial_energy = self.shc.calculate_energy(self.temperature, self.weight)
         output_water_t = self.temperature + temperature
         output_energy = self.shc.calculate_energy(output_water_t, self.weight)
-        input_energy = (output_energy - initial_energy) / 3
+        input_energy = (output_energy - initial_energy) / self.COP
         return input_energy
 
     def get_energy_demand(self) -> Energy:

@@ -35,6 +35,7 @@ class Occupancy:
         self.occupants = occupants
 
         # https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8672270/
+        # https://pubs.asahq.org/anesthesiology/article/86/3/532/35822/How-Much-Oxygen-Does-the-Human-Lung-Consume
         self.litre_per_minute = Length.from_litre(5)
         self.o2_usage = self.litre_per_minute * 0.21 - self.litre_per_minute * 0.16
         self.co2_demand = self.litre_per_minute * 0.05 - self.litre_per_minute * 0.0004

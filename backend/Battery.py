@@ -32,7 +32,7 @@ class Battery:
             raise ValueError("Energy")
 
         if energy * self.efficiency + self.battery_level > self.capacity:
-            print("Battery full")
+            # print("Battery full")
             diff = self.capacity - self.battery_level
             self.battery_level += diff
             self.stored += diff

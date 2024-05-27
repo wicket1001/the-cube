@@ -1,13 +1,9 @@
 @startuml
 
-class Occupancy {
-breath() -> CO2
-live() -> Heat
-}
-
 class TapWater
-class WaterBuffer
-TapWater <|-- WaterBuffer
+class WaterBuffer #6ED46E
+TapWater . WaterBuffer
+WaterBattery <|-- WaterBuffer
 
 class Room
 class Heater
@@ -44,9 +40,9 @@ class GasBoiler
 class FloorBoiler #CCCCCC
 class CentralBoiler #CCCCCC
 class DistrictHeating
-class HeatPump
+class HeatPump #6ED46E
 Heater <|-- ElectricHeater
-Heater <|--- GasBoiler
+Heater <|-- GasBoiler
 GasBoiler <|-- FloorBoiler
 GasBoiler <|-- CentralBoiler
 Heater <|-- DistrictHeating
@@ -57,20 +53,21 @@ class Generator {
 def step(self, t: int, absolute_step: int) -> Energy:
 }
 class SolarPanel #6ED46E
-class SolarThermal
-class WindGenerator
+class SolarThermal #6ED46E
+class WindGenerator #6ED46E
 Generator <|-- SolarPanel
-Generator <|-- SolarThermal
 Generator <|-- WindGenerator
+SolarPanel <|-- SolarThermal
+WaterBuffer <|-- SolarThermal
 
 note bottom of WindGenerator
 Differentiate
 Blade and Ridge?
 end note
 
-class ThermalBattery #CCCCCC
-class SandBattery #CCCCCC
-class WaterBattery #CCCCCC
+class ThermalBattery
+class SandBattery #6ED46E
+class WaterBattery
 class WaxBattery #CCCCCC
 ThermalBattery <|-- SandBattery
 ThermalBattery <|-- WaterBattery
@@ -87,4 +84,11 @@ class Aquariums #CCCCCC
 class FacadeGreening #CCCCCC
 class ReuseHeatedAir #CCCCCC
 Ventilation <. ReuseHeatedAir : addons <
+
+class Occupancy {
+breath() -> CO2
+live() -> Heat
+}
+
+Occupancy "1" --* "1" Room : < has
 @enduml
