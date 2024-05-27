@@ -1,38 +1,28 @@
-import csv
 import json
-from datetime import datetime
 import time
 
 import utils
 from DebugLevel import DebugLevel
 from House import House
 from Physics import *
-from Fridge import Fridge
-from Lights import Lights
-from SolarPanel import SolarPanel
-from Battery import Battery
-from ElectricHeater import ElectricHeater
-from Grid import Grid
-from Room import Room
-from Windturbine import Windturbine
 from utils import get_house
 
 STEPS_PER_DAY = int((24 * 60) / 10)
 
-verbosity = DebugLevel.WARNING
+verbosity = DebugLevel.NOTIFICATION
 
 
 def main():
     # https://de.wikipedia.org/wiki/Building_Management_System
     weather = utils.read_csv(verbosity)
-    house = get_house()
+    benchmark_house = get_house()
 
-    house.solarPanel.save_weather(weather['radiations'])
-    house.windturbine.save_weather(weather['winds'], weather['wind_directions'])
+    benchmark_house.solarPanel.save_weather(weather['radiations'])
+    benchmark_house.windturbine.save_weather(weather['winds'], weather['wind_directions'])
 
-    decision_tree = get_house()
-    decision_tree.solarPanel.save_weather(weather['radiations'])
-    decision_tree.windturbine.save_weather(weather['winds'], weather['wind_directions'])
+    decision_house = get_house()
+    decision_house.solarPanel.save_weather(weather['radiations'])
+    decision_house.windturbine.save_weather(weather['winds'], weather['wind_directions'])
 
     trying = 365
     start = time.time()
@@ -47,27 +37,37 @@ def main():
             absolute_step = day * STEPS_PER_DAY + i
             if verbosity >= DebugLevel.NOTIFICATION:
                 print(f'\nDay {day}, relative Step {i}, absolute Step {absolute_step}, {weather["dates"][absolute_step]}')
-            response = house.step(i, absolute_step, House.Algorithms.BENCHMARK, weather, verbosity)
-            response_decision_tree = decision_tree.step(i, absolute_step, House.Algorithms.DECISION_TREE, weather, verbosity)
-            response['co2'] = {
-                'benchmark': response['environment']['co2'],
-                'decision': response_decision_tree['environment']['co2']
+
+            response = {
+                'step': i,
+                'absolute_step': absolute_step,
+                'environment': {},
+                'benchmark': {},
+                'decision': {}
             }
+            for condition in weather.keys():
+                response['environment'][condition] = weather[condition][absolute_step]
+
+            benchmark = benchmark_house.step(i, absolute_step, House.Algorithms.BENCHMARK, weather, verbosity)
+            decision = decision_house.step(i, absolute_step, House.Algorithms.DECISION_TREE, weather, verbosity)
+
+            response['benchmark'] = benchmark
+            response['decision'] = decision
             if verbosity >= DebugLevel.NOTIFICATION:
                 print(json.dumps(response, cls=SIEncoder))  # , indent=4
     end = time.time()
     print(end - start, 's')
     print('\n---------')
-    house.grid.print_statistics(verbosity)
-    house.electricHeater.print_statistics()
-    house.solarPanel.print_statistics()
-    house.windturbine.print_statistics()
-    house.fridge.print_statistics()
-    house.lights.print_statistics()
-    print(f'Money: {house.money}') # 4,18
+    benchmark_house.grid.print_statistics(verbosity)
+    benchmark_house.electricHeater.print_statistics()
+    benchmark_house.solarPanel.print_statistics()
+    benchmark_house.windturbine.print_statistics()
+    benchmark_house.fridge.print_statistics()
+    benchmark_house.lights.print_statistics()
+    print(f'Money: {benchmark_house.money}') # 4,18
 
-    print(f'CO2: {house.co2}')
-    print(f'CO2: {decision_tree.co2}')
+    print(f'CO2: {benchmark_house.co2}')
+    print(f'CO2: {decision_house.co2}')
 
 #     print("""
 # ---------

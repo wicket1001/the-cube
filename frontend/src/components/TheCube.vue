@@ -5,12 +5,12 @@ import LinesChart from '@/components/LinesChart.vue'
 import WindComponent from '@/components/WindComponent.vue'
 import {toColor, calculateHeat, map, stepHeat} from '@/utils/utils'
 import { Appliance, Battery, Generator, Grid } from '@/@types/components'
-import { Energy, Money } from '@/@types/physics'
+import { Energy, Money, Temperature } from '@/@types/physics'
 import Mode from '@/components/LinesChart.vue'
 import VueDatePicker from '@vuepic/vue-datepicker';
 import '@vuepic/vue-datepicker/dist/main.css'
 import { getMonth, addMonths, addMinutes, differenceInMinutes } from 'date-fns'
-import type { SimulationRaw } from '@/@types/simulation'
+import { type ISimulation, Simulation } from '@/@types/simulation'
 
 const INITIAL_HEAT = 21;
 
@@ -28,19 +28,19 @@ const presetDates = ref([
 let currentIndex = ref(0);
 let current_time = ref('');
 let current_date = ref('');
-let outside = ref(0);
-let inside = ref(INITIAL_HEAT);
+let outside = ref(new Temperature(0));
+let inside = ref(new Temperature(0));
 let dataFetched: Ref<boolean> = ref(false);
 let playBtn = ref('Play')
 
 let dates: Date[] = [];
 let dates_view: Date[] = [];
 
-let temperatures: number[] = [];
-let temperatures_view: Ref<number[]> = ref([]);
+let temperatures: Temperature[] = [];
+let temperatures_view: Ref<Temperature[]> = ref([]);
 
-let inside_temperatures: number[] = [];
-let inside_temperatures_view: Ref<number[]> = ref([]);
+let inside_temperatures: Temperature[] = [];
+let inside_temperatures_view: Ref<Temperature[]> = ref([]);
 
 let radiations: number[] = [];
 let radiations_view: Ref<number[]> = ref([]);
@@ -79,6 +79,8 @@ const pause = defineModel();
 let timer = -1
 const lookback = 72
 
+let lang = 'de'
+
 onMounted(() => {
   /*
   let begin = new Date(2021, 0, 1, 0, 0, 0);
@@ -105,9 +107,22 @@ watch(pause, async(newValue, oldValue) => {
 })
 
 watch(future, async(newValue, oldValue) => {
-  //console.log(newValue)
-  //console.log(oldValue)
+
 })
+
+function pause_sim() {
+  if (timer !== -1) {
+    clearInterval(timer);
+    timer = -1;
+  }
+}
+
+function step() {
+  currentIndex.value ++;
+  simulate().then(res => {
+    add_simulation_raw(res, true);
+  });
+}
 
 function play(timeout = 1000) {
   if (timer !== -1) {
@@ -136,9 +151,9 @@ function show_cube_temperature(inner_temperature: number) {
   }
 }
 
-function add_simulation_raw(res: SimulationRaw, update: boolean) {
-  let date_raw = res['environment']['dates']
-  let date = new Date(date_raw)
+function add_simulation_raw(res: Simulation, update: boolean) {
+  console.log(res)
+  let date = res['environment']['dates']
   current_time.value = date.toLocaleTimeString('de-DE')
   current_date.value = date.toLocaleDateString('de-DE')
   dates.push(date)
@@ -148,24 +163,27 @@ function add_simulation_raw(res: SimulationRaw, update: boolean) {
   radiations.push(radiation)
 
   let temperature = res['environment']['temperatures']
-  outside.value = temperature
+  if (lang === 'de') {
+    outside.value = temperature
+  } else if (lang === 'en') {
+    outside.value = temperature
+  }
   temperatures.push(temperature)
 
   let wind = res['environment']['winds']
   wind_direction.value = res['environment']['wind_directions']
   winds.push(wind)
 
-  let inner_temperature = res['environment']['inner_temperature']
+  let inner_temperature = res['benchmark']['rooms'][2]['temperature']
   inside.value = inner_temperature
   inside_temperatures.push(inner_temperature)
-  show_cube_temperature(inner_temperature)
+  show_cube_temperature(inner_temperature.get_celsius())
 
-  let money_value = new Money(res['environment']['money'])
+  let money_value = res['benchmark']['money']
   money.push(money_value)
 
   let total = new Appliance({ name: 'Total', 'demand': 0, 'usage': 0, 'on': false })
-  for (const appliance_raw of res['appliances']) {
-    let appliance = new Appliance(appliance_raw)
+  for (const appliance of res['benchmark']['rooms'][2]['appliances']) {
     if (['Fridge', 'Lights', 'ElectricHeater'].includes(appliance.name)) {
       demand[appliance.name].push(appliance)
     }
@@ -174,8 +192,7 @@ function add_simulation_raw(res: SimulationRaw, update: boolean) {
   }
   demand['Total'].push(total)
   let total1 = new Generator({ name: 'Total', supply: 0, generation: 0 })
-  for (const generator_raw of res['generators']) {
-    let generator = new Generator(generator_raw)
+  for (const generator of res['benchmark']['generators']) {
     if (['SolarPanel', 'Windturbine'].includes(generator.name)) {
       generation[generator.name].push(generator)
     }
@@ -183,9 +200,9 @@ function add_simulation_raw(res: SimulationRaw, update: boolean) {
     total1.generation = total1.generation.add(generator.generation)
   }
   generation['Total'].push(total1)
-  let battery = new Battery(res['battery'])
+  let battery = res['benchmark']['battery']
   battery_level.push(battery.level)
-  let grid_raw = new Grid(res['grid'])
+  let grid_raw = res['benchmark']['grid']
   for (const gridParameter of ['sold', 'bought', 'sell', 'buy']) {
     grid[gridParameter].push(grid_raw[gridParameter])
   }
@@ -211,13 +228,6 @@ function add_simulation_raw(res: SimulationRaw, update: boolean) {
     }
     money_view.value = money.slice(begin, end)
   }
-}
-
-function step() {
-  currentIndex.value ++;
-  simulate().then(res => {
-    add_simulation_raw(res, true);
-  });
 }
 
 const handleDate = (modelData) => {
@@ -267,6 +277,9 @@ function get_field(bucket, field, index) {
     <!--<datepicker placeholder="Start Date" v-model="start" name="start-date"></datepicker>
     <datepicker placeholder="End Date" v-model="end" name="end-date"></datepicker>-->
     <div>
+      <v-btn variant="outlined" @click="pause_sim()">
+        Pause
+      </v-btn>
       <v-btn variant="outlined" @click="step()">
         Step
       </v-btn>
@@ -276,8 +289,6 @@ function get_field(bucket, field, index) {
       <v-btn variant="outlined" @click="fast()">
         Fast
       </v-btn>
-      <v-icon icon="mdi-home" />
-      <v-icon>mdi-home</v-icon>
     </div>
     <div class="d-inline">
       {{currentIndex}}
@@ -447,11 +458,11 @@ function get_field(bucket, field, index) {
   <div class="stats mt-16">
     <div>
       Outside temperature:
-      <div class="font-weight-bold d-inline">{{outside}}</div>°C
+      <div class="font-weight-bold d-inline">{{outside.format_celsius()}}</div>
     </div>
     <div>
       Inside temperature:
-      <div class="font-weight-bold d-inline">{{Math.round(inside * 100) / 100}}</div>°C
+      <div class="font-weight-bold d-inline">{{inside.format_celsius()}}</div>
     </div>
   </div>
   <div class="cube-container">

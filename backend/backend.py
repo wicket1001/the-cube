@@ -1,11 +1,8 @@
 import json
-import logging
 from datetime import datetime
-from http.server import BaseHTTPRequestHandler, HTTPServer
 from http import HTTPStatus
-import time
-from io import BytesIO
-from urllib.parse import urlparse, parse_qs, parse_qsl
+from http.server import BaseHTTPRequestHandler, HTTPServer
+from urllib.parse import urlparse, parse_qs
 
 import utils
 from DebugLevel import DebugLevel
@@ -16,8 +13,9 @@ hostName = "localhost"
 serverPort = 8080
 
 
-msg_id = 0
-house = utils.get_house()
+absolute_step = 0
+benchmark_house = utils.get_house()
+decision_house = utils.get_house()
 weather = utils.read_csv(DebugLevel.INFORMATIONAL)
 cache = []
 cache_size = 72
@@ -36,8 +34,8 @@ class RestAPI(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self):
-        global msg_id
-        global house
+        global absolute_step
+        global benchmark_house
         global weather
         global cache
 
@@ -59,7 +57,7 @@ class RestAPI(BaseHTTPRequestHandler):
             # self.wfile.write(bytes("<p>This is an example web server.</p>", "utf-8"))
             # self.wfile.write(bytes("</body></html>", "utf-8"))
         elif url.path == '/step':
-            if msg_id == 0:
+            if absolute_step == 0:
                 self.send_unprocessable_entity()
                 return
 
@@ -74,7 +72,7 @@ class RestAPI(BaseHTTPRequestHandler):
                     self.send_unprocessable_entity()
                     return
 
-                if lookback > cache_size or lookback > msg_id:
+                if lookback > cache_size or lookback > absolute_step:
                     self.send_unprocessable_entity()
                 else:
                     self.send_json(cache[len(cache) - lookback:])
@@ -93,7 +91,7 @@ class RestAPI(BaseHTTPRequestHandler):
         self.wfile.write(response_data)
 
     def do_POST(self):
-        global msg_id
+        global absolute_step
 
         # print(f'{self.client_address=}')  # ('127.0.0.1', 40972)
         # print(f'{self.requestline=}')  # POST / HTTP/1.1
@@ -109,7 +107,7 @@ class RestAPI(BaseHTTPRequestHandler):
         curr_time = datetime.now()
         # response_data = b'{"msgid": 1234}'
         # data = f'{{"msgid": {str(msg_id)}, "time": "{str(curr_time)}"}}'
-        data = {"msgid": str(msg_id), "time": str(curr_time)}
+        data = {"msgid": str(absolute_step), "time": str(curr_time)}
         response_data = json.dumps(data).encode('utf-8')
 
         # Send the response
@@ -121,7 +119,7 @@ class RestAPI(BaseHTTPRequestHandler):
         # Write _exactly_ the number of bytes specified by the
         # 'Content-Length' header
         self.wfile.write(response_data)
-        msg_id += 1
+        absolute_step += 1
 
     def do_OPTIONS(self):
         self.send_response(HTTPStatus.NO_CONTENT)
@@ -132,8 +130,8 @@ class RestAPI(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_PATCH(self):
-        global msg_id
-        global house
+        global absolute_step
+        global benchmark_house
         global cache
         url = urlparse(self.path)
         parameters = parse_qs(url.query)
@@ -152,7 +150,7 @@ class RestAPI(BaseHTTPRequestHandler):
 
         if url.path == '/environment':
             if 'outer_temperature' in body.keys():
-                house.patch_outer_temperature(body['outer_temperature'])
+                benchmark_house.patch_outer_temperature(body['outer_temperature'])
 
                 self.send_empty_response()
                 return
@@ -161,15 +159,33 @@ class RestAPI(BaseHTTPRequestHandler):
             diff = 1
             if 'absolute' in body.keys():
                 print(body)
-                diff = body['absolute'] - msg_id
+                diff = body['absolute'] - absolute_step
                 # print(diff)
                 if diff <= 0:
                     self.send_unprocessable_entity()
                     return
 
             for i in range(diff):
-                cache.append(house.step(msg_id, msg_id, House.Algorithms.BENCHMARK, weather, DebugLevel.INFORMATIONAL))
-                msg_id += 1
+                step = absolute_step % 144
+                response = {
+                    'step': step,
+                    'absolute_step': absolute_step,
+                    'environment': {},
+                    'benchmark': {},
+                    'decision': {}
+                }
+                for condition in weather.keys():
+                    response['environment'][condition] = weather[condition][absolute_step]
+
+                benchmark = benchmark_house.step(step, absolute_step, House.Algorithms.BENCHMARK, weather, DebugLevel.INFORMATIONAL)
+                decision = decision_house.step(step, absolute_step, House.Algorithms.DECISION_TREE, weather, DebugLevel.INFORMATIONAL)
+
+                response['benchmark'] = benchmark
+                response['decision'] = decision
+
+                cache.append(response)
+
+                absolute_step += 1
                 # print(len(cache))
                 if len(cache) > cache_size:
                     cache.pop(0)
@@ -194,8 +210,8 @@ if __name__ == "__main__":
     # logging.basicConfig(level=logging.DEBUG)
     print(f"Server started http://{hostName}:{serverPort}")
 
-    house.solarPanel.save_weather(weather['radiations'])
-    house.windturbine.save_weather(weather['winds'], weather['wind_directions'])
+    benchmark_house.solarPanel.save_weather(weather['radiations'])
+    benchmark_house.windturbine.save_weather(weather['winds'], weather['wind_directions'])
 
     try:
         webServer.serve_forever()

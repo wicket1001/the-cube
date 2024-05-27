@@ -36,18 +36,12 @@ class House(object):
     windturbine = Windturbine(24 * 0.5, 0)  # m^2
     battery = Battery(Energy.from_kilo_watt_hours(200))
     sand_battery = SandBattery(1, 1, 1)
-    electricHeater = ElectricHeater(600 * 4 * 4)  # 600W
-    lights = Lights(25)
-    fridge = Fridge(150)
     grid = Grid()
-    room = Room(12, 24, 10)  # m
     money = Money(0)
     co2 = 0  # TODO CO2 unit
     energy_production = Energy(0)
     energy_consumption = Energy(0)
-    appliances = [electricHeater, lights, fridge]
     generators = [solarPanel, windturbine]
-    inner_temperature = Temperature(21)
     outer_temperature = Temperature(0)
     patched_temperature = None
     outer_temperature_patch = None
@@ -96,26 +90,10 @@ class House(object):
             # print(f'--> {diff} {diff_energy.format_watt_hours()}')
             # print(f'"{room.name}";{room.temperature.format_celsius()}')
 
-    def get_energy_demand(self, response: dict, t: int, absolute_step: int, verbosity: DebugLevel):
-        energy_demand = Energy(0)
-        appliances_response = []
-        for appliance in self.appliances:
-            appliance_demand = appliance.step(t, absolute_step, verbosity)
-            energy_demand += appliance_demand
-            appliances_response.append({
-                'name': appliance.name,
-                'demand': appliance_demand,
-                'usage': appliance.usage,
-                'on': appliance.on
-            })
-        response["appliances"] = appliances_response
-        return energy_demand
-
     def step(self, step_of_the_day: int, absolute_step: int, algorithms: Algorithms, weather, verbosity: DebugLevel) -> dict:
-        response = {'step': step_of_the_day, 'absolute_step': absolute_step, 'environment': {}}
-        for condition in weather.keys():
-            response['environment'][condition] = weather[condition][absolute_step]
-
+        response = {
+            'rooms': []
+        }
         self.grid.reset()
 
         temp = Temperature(weather['temperatures'][absolute_step])
@@ -128,30 +106,35 @@ class House(object):
         temp = self.patch_outside_temperature(temp, verbosity)
 
         self.outer_temperature = temp
-        response['environment']['temperatures'] = self.outer_temperature
+        # response['environment']['temperatures'] = self.outer_temperature # TODO
 
         # natural_cooling = self.room.adapt_to_outside(self.outer_temperature, self.inner_temperature)
         # self.inner_temperature += natural_cooling
         # natural_cooling = self.room.heat_loss(self.outer_temperature, self.inner_temperature)
         # self.inner_temperature -= natural_cooling
         self.heat_loss(self.outer_temperature)
-        self.inner_temperature = self.rooms[2].temperature
 
         # self.inner_temperature += occupants.get_heat()
 
-        if self.inner_temperature < Temperature(19.5):
-            self.electricHeater.activate()
-            delta_t = self.room.heat(self.electricHeater.WATTS)
-            self.inner_temperature += delta_t
-        if verbosity >= DebugLevel.DEBUGGING:
-            print(f'Inner temperature: {self.inner_temperature}')
+        for room in self.rooms:
+            room.should_heat()
 
-        response['environment']['inner_temperature'] = self.inner_temperature
-
-        energy_demand = self.get_energy_demand(response, step_of_the_day, absolute_step, verbosity)
+        energy_demand = Energy(0)
+        for room in self.rooms:
+            energy_demand_room = room.get_energy_demand(
+                response,
+                step_of_the_day,
+                absolute_step,
+                verbosity
+            )
+            energy_demand += energy_demand_room
         self.energy_consumption += energy_demand
-        energy_supply = self.get_energy_production(response, step_of_the_day,
-                                              absolute_step, verbosity)  # solarPanel.step(step_of_the_day, absolute_step)
+        energy_supply = self.get_energy_production(
+            response,
+            step_of_the_day,
+            absolute_step,
+            verbosity
+        )  # solarPanel.step(step_of_the_day, absolute_step)
         self.energy_production += energy_supply
         if verbosity >= DebugLevel.DEBUGGING:
             print(f'Energy demand: {energy_demand}, energy supply: {energy_supply}')
@@ -163,9 +146,10 @@ class House(object):
 
         # calculate_heat_power_demand()
 
-        self.electricHeater.deactivate()
+        for room in self.rooms:
+            room.electricHeater.deactivate()
+        self.update_temperatures()
 
-        response['environment']['money'] = self.money
         response['battery'] = {
             'level': self.battery.battery_level,
             'stored': self.battery.stored,
@@ -178,7 +162,8 @@ class House(object):
             'buy': self.grid.buying
         }
         self.co2 += to_co2(self.grid.bought)
-        response['environment']['co2'] = self.co2  # TODO bought gas
+        response['co2'] = self.co2  # TODO bought gas
+        response['money'] = self.money
 
         return response
 
@@ -238,23 +223,23 @@ class House(object):
                         self.money -= self.grid.buy(over_demand)
                         if verbosity >= DebugLevel.DEBUGGING:
                             print(f'Bought {over_demand} energy')
-                        self.electricHeater.generate_heat(energy_demand)
+                        # self.electricHeater.generate_heat(energy_demand)
                     else:
                         self.battery.take(over_demand)
                         if verbosity >= DebugLevel.DEBUGGING:
                             print(f'Took everything from battery {self.battery}, took {over_demand}')
-                        self.electricHeater.generate_heat(energy_demand)
+                        # self.electricHeater.generate_heat(energy_demand)
                 else:
                     self.money -= self.grid.buy(over_demand)
                     if verbosity >= DebugLevel.DEBUGGING:
                         print(f'Bought {over_demand} energy because battery is empty')
-                    self.electricHeater.generate_heat(energy_demand)
+                    # self.electricHeater.generate_heat(energy_demand)
 
             else:
                 energy_overproduction = energy_supply - energy_demand
                 if verbosity >= DebugLevel.DEBUGGING:
                     print(f'Energy overproduction: {energy_overproduction}')
-                self.electricHeater.generate_heat(energy_demand)
+                # self.electricHeater.generate_heat(energy_demand)
                 battery_overfull = self.battery.store(energy_overproduction)
                 if verbosity >= DebugLevel.DEBUGGING:
                     print(f'Selling: {battery_overfull}')

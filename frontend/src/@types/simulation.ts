@@ -1,46 +1,25 @@
-import type { IAppliance, IBattery, IGenerator, IGrid } from '@/@types/components'
-import { Appliance, Battery, Generator, Grid } from '@/@types/components'
+import type { IAppliance, IBattery, IGenerator, IGrid, IRoom, IAlgorithm, IEnvironment } from '@/@types/components'
+import { Appliance, Battery, Generator, Grid, Room, Algorithm, Environment } from '@/@types/components'
 
-export interface SimulationRaw {
-  "step": number,
-  "absolute_step": number,
-  "environment": {
-    "dates": string,
-    "radiations": number,
-    "temperatures": number,
-    "winds": number,
-    "wind_directions": number,
-    "inner_temperature": number,
-    "money": number
-  },
-  "appliances": [
-    IAppliance
-  ],
-  "generators": [
-    IGenerator
-  ],
-  "battery": IBattery,
-  "grid": IGrid
+export class Simulation {
+  "step": number;
+  "absolute_step": number;
+  "environment": Environment;
+  "benchmark": Algorithm;
+  "decision": Algorithm;
+
+  constructor({step, absolute_step, environment, benchmark, decision}: ISimulation) {
+    this.step = step;
+    this.absolute_step = absolute_step;
+    this.environment = new Environment(environment);
+    this.benchmark = new Algorithm(benchmark);
+    this.decision = new Algorithm(decision);
+  }
 }
-
-export interface Simulation {
+export interface ISimulation {
   "step": number,
   "absolute_step": number,
-  "environment": {
-    "dates": Date,
-    "radiations": number,
-    "temperatures": number,
-    "winds": number,
-    "wind_directions": number,
-    "inner_temperature": number,
-    "money": number
-  },
-  "appliances": [
-    Appliance
-  ],
-  "generators": [
-    Generator
-  ],
-  "battery": Battery,
-  "grid": Grid
+  "environment": IEnvironment,
+  "benchmark": IAlgorithm
+  "decision": IAlgorithm
 }

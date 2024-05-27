@@ -1,6 +1,7 @@
 import axios from 'axios'
 import type { Dates, GeosphereRaw } from '@/@types/geosphere'
-import type { SimulationRaw } from '@/@types/simulation'
+import type { ISimulation } from '@/@types/simulation'
+import { Simulation } from '@/@types/simulation'
 
 const baseURL = `http://localhost:8080/`
 const cache_size = 72;
@@ -49,12 +50,12 @@ function export_dates(raw_data: GeosphereRaw): Dates {
   }
 }
 
-export async function simulate(): Promise<SimulationRaw> {
+export async function simulate(): Promise<Simulation> {
   const url = `${baseURL}step`;
   await axios.patch(url);
   const response = await axios.get(url);
-  const data: SimulationRaw = response.data;
-  return data;
+  const data: ISimulation = response.data;
+  return new Simulation(data);
 }
 
 export async function patching(): Promise<boolean> {
@@ -65,7 +66,7 @@ export async function patching(): Promise<boolean> {
   return true;
 }
 
-export async function patch_future(absolute_step: number): Promise<SimulationRaw[]> {
+export async function patch_future(absolute_step: number): Promise<Simulation[]> {
   const url = `${baseURL}step`;
   await axios.patch(url, {
     absolute: absolute_step
@@ -76,6 +77,11 @@ export async function patch_future(absolute_step: number): Promise<SimulationRaw
     },
     paramsSerializer: { indexes: null }
   });
-  const data: [SimulationRaw] = response.data;
-  return data;
+  const raw_simulation: [ISimulation] = response.data;
+  let simulations: Simulation[] = [];
+  // return raw_simulation.map(isimulation => new Simulation(isimulation));
+  for (const raw of raw_simulation) {
+    simulations.push(new Simulation(raw));
+  }
+  return simulations;
 }

@@ -100,6 +100,14 @@ export class Temperature {
     return `${this.value.toFixed()}K`;
   }
 
+  public from_fahrenheit(value: number) {
+    return new Temperature((value - 459.67) * (5 / 9));
+  }
+
+  public from_celsius(value: number) {
+    return new Temperature(value + 273.15);
+  }
+
   public get_celsius(): number {
     return this.value - 273.15;
   }
@@ -126,5 +134,9 @@ export class Money {
 
   public toString(): string {
     return `${this.value.toFixed()}€`;
+  }
+
+  public format_dollar(): string {
+    return `${(this.value).toFixed()}$`;
   }
 }

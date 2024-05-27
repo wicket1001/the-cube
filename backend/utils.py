@@ -18,7 +18,8 @@ def read_csv(verbosity: DebugLevel):
         'radiations': [],
         'temperatures': [],
         'winds': [],
-        'wind_directions': []
+        'wind_directions': [],
+        'precipitation': []
     }
 
     with open('res/Messstationen Zehnminutendaten v2 Datensatz_20210101T0000_20240101T0000.csv') as csvfile:
@@ -30,8 +31,9 @@ def read_csv(verbosity: DebugLevel):
         temperature_index = headers.index('tl')
         wind_index = headers.index('ff')
         wind_direction_index = headers.index('dd')
+        precipitation_index = headers.index('rr')
         if verbosity >= DebugLevel.DEBUGGING:
-            print(date_index, radiation_index, temperature_index, wind_index)
+            print(date_index, radiation_index, temperature_index, wind_index, precipitation_index)
         for row in reader:
             # print(len(row), ', '.join(row))
             weather['dates'].append(datetime.fromisoformat(row[date_index]))
@@ -42,15 +44,18 @@ def read_csv(verbosity: DebugLevel):
             weather['temperatures'].append(float(row[temperature_index]))
             weather['winds'].append(float(row[wind_index]))
             weather['wind_directions'].append(float(row[wind_direction_index]))
+            weather['precipitation'].append(float(row[precipitation_index]))
 
     if verbosity >= DebugLevel.DEBUGGING:
         print(len(weather['dates']), ', '.join([x.strftime('%d.%m.%Y %H:%M') for x in weather['dates']]))
     if verbosity >= DebugLevel.DEBUGGING:
         print(len(weather['radiations']), ', '.join([str(x) for x in weather['radiations']]))
     if verbosity >= DebugLevel.DEBUGGING:
-        print(len(weather['temperatures']), ', '.join([str(x) for x in weather['outer_temperatures']]))
+        print(len(weather['temperatures']), ', '.join([str(x) for x in weather['temperatures']]))
     if verbosity >= DebugLevel.DEBUGGING:
         print(len(weather['winds']), ', '.join([str(x) for x in weather['winds']]))
+    if verbosity >= DebugLevel.DEBUGGING:
+        print(len(weather['precipitation']), ', '.join([str(x) for x in weather['precipitation']]))
 
     return weather
 

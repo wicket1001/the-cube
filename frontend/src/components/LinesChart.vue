@@ -14,7 +14,7 @@ import {
   Legend
 } from 'chart.js'
 import { Line } from 'vue-chartjs'
-import { Energy, Money } from '@/@types/physics'
+import { Energy, Money, Temperature } from '@/@types/physics'
 
 ChartJS.register(
   CategoryScale,
@@ -118,6 +118,11 @@ function transformData(axes: string[], values: [number[] | Energy[] | Money[]], 
               return `${value} €`;
             }
             return item.value;
+          } else if (item instanceof Temperature) {
+            formatAxis = function(value: number) {
+              return `${value} °C`;
+            }
+            return item;
           } else {
             console.error('In transformData.map occured an error.', item);
             return item;

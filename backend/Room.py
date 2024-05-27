@@ -2,6 +2,10 @@ import numbers
 import warnings
 from enum import IntFlag, auto
 
+from DebugLevel import DebugLevel
+from ElectricHeater import ElectricHeater
+from Fridge import Fridge
+from Lights import Lights
 from Occupancy import Occupancy
 from Physics import Power, Temperature, Energy, Time, Length, SpecificHeatCapacity, Density, Weight
 
@@ -73,6 +77,13 @@ class Room:
     next_temperature = Temperature.from_celsius(INITIAL_TEMPERATURE_C)
 
     room_shc = SpecificHeatCapacity.from_predefined(SpecificHeatCapacity.Predefined.AIR)
+
+    energy_consumption = Energy(0)
+
+    electricHeater = ElectricHeater(600 * 4 * 4)  # 600W
+    lights = Lights(25)
+    fridge = Fridge(150)
+    appliances = [electricHeater, lights, fridge]
 
     def __init__(self,
                  length: [numbers.Number, Length],
@@ -411,3 +422,26 @@ class Room:
 
     def get_opposite_surface(self, i: int) -> int:
         return (1, 0, 3, 2, 5, 4)[i]
+
+    def get_energy_demand(self, response: dict, t: int, absolute_step: int, verbosity: DebugLevel):
+        energy_demand = Energy(0)
+        appliances_response = []
+        for appliance in self.appliances:
+            appliance_demand = appliance.step(t, absolute_step, verbosity)
+            energy_demand += appliance_demand
+            appliances_response.append({
+                'name': appliance.name,
+                'demand': appliance_demand,
+                'usage': appliance.usage,
+                'on': appliance.on
+            })
+        room = {
+            'name': self.name,
+            'appliances': appliances_response
+        }
+        response["rooms"].append(room)
+        self.energy_consumption += energy_demand
+        return energy_demand
+
+    def should_heat(self):
+        pass

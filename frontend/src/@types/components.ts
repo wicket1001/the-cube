@@ -1,5 +1,85 @@
-import { Energy } from '@/@types/physics'
+import { Energy, Money, Temperature } from '@/@types/physics'
 
+export class Algorithm {
+  "co2": number;
+  "money": Money;
+  "battery": Battery;
+  "grid": Grid;
+  "generators": Generator[];
+  "rooms": Room[];
+
+  constructor({co2, money, battery, grid, generators, rooms}: IAlgorithm) {
+    this.co2 = co2;
+    this.money = new Money(money);
+    this.battery = new Battery(battery);
+    this.grid = new Grid(grid);
+    this.generators = [];
+    this.rooms = [];
+    for (const generator of generators) {
+      this.generators.push(new Generator(generator));
+    }
+    for (const room of rooms) {
+      this.rooms.push(new Room(room));
+    }
+  }
+}
+export interface IAlgorithm {
+  "co2": number,
+  "money": number,
+  "battery": IBattery,
+  "grid": IGrid,
+  "generators": [
+    IGenerator
+  ],
+  "rooms": [
+    IRoom
+  ]
+}
+
+export class Environment {
+  "dates": Date;
+  "radiations": number;
+  "temperatures": Temperature;
+  "winds": number;
+  "wind_directions": number;
+
+  constructor({dates, radiations, temperatures, winds, wind_directions}: IEnvironment) {
+    this.dates = new Date(dates);
+    this.radiations = radiations;
+    this.temperatures = new Temperature(temperatures);
+    this.winds = winds;
+    this.wind_directions = wind_directions;
+  }
+}
+export interface IEnvironment {
+  "dates": string,
+  "radiations": number,
+  "temperatures": number,
+  "winds": number,
+  "wind_directions": number,
+}
+
+export class Room {
+  "name": string;
+  "temperature": Temperature;
+  "appliances": Appliance[];
+
+  constructor({name, temperature, appliances}: IRoom) {
+    this.name = name;
+    this.temperature = new Temperature(temperature);
+    this.appliances = [];
+    for (const appliance of appliances) {
+      this.appliances.push(new Appliance(appliance));
+    }
+  }
+}
+export interface IRoom {
+  "name": string,
+  "temperature": number,
+  "appliances": [
+    IAppliance
+  ],
+}
 
 export class Appliance {
   "name": string;
