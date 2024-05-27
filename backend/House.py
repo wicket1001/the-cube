@@ -94,9 +94,9 @@ class House(object):
         response = {
             'rooms': []
         }
-        self.grid.reset()
+        self.reset()
 
-        temp = Temperature(weather['temperatures'][absolute_step])
+        temp = Temperature.from_celsius(weather['temperatures'][absolute_step])
         if verbosity >= DebugLevel.DEBUGGING:
             print(f'temp={temp}')
             print(f'patched_temperature={self.patched_temperature}')
@@ -117,7 +117,7 @@ class House(object):
         # self.inner_temperature += occupants.get_heat()
 
         for room in self.rooms:
-            room.should_heat()
+            room.step(step_of_the_day, absolute_step, algorithms, verbosity)
 
         energy_demand = Energy(0)
         for room in self.rooms:
@@ -166,6 +166,11 @@ class House(object):
         response['money'] = self.money
 
         return response
+
+    def reset(self):
+        self.grid.reset()
+        for room in self.rooms:
+            room.reset()
 
     def patch_outside_temperature(self, temp, verbosity):
         if self.patched_temperature is not None:

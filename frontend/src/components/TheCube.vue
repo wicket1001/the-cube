@@ -152,7 +152,6 @@ function show_cube_temperature(inner_temperature: number) {
 }
 
 function add_simulation_raw(res: Simulation, update: boolean) {
-  console.log(res)
   let date = res['environment']['dates']
   current_time.value = date.toLocaleTimeString('de-DE')
   current_date.value = date.toLocaleDateString('de-DE')
@@ -185,7 +184,7 @@ function add_simulation_raw(res: Simulation, update: boolean) {
   let total = new Appliance({ name: 'Total', 'demand': 0, 'usage': 0, 'on': false })
   for (const appliance of res['benchmark']['rooms'][2]['appliances']) {
     if (['Fridge', 'Lights', 'ElectricHeater'].includes(appliance.name)) {
-      demand[appliance.name].push(appliance)
+      demand[appliance['name']].push(appliance)
     }
     total.demand = total.demand.add(appliance.demand)
     total.usage = total.usage.add(appliance.usage)

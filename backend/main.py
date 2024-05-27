@@ -47,6 +47,8 @@ def main():
             }
             for condition in weather.keys():
                 response['environment'][condition] = weather[condition][absolute_step]
+                if condition == 'temperatures':
+                    response['environment']['temperatures'] = Temperature.from_celsius(response['environment']['temperatures'])
 
             benchmark = benchmark_house.step(i, absolute_step, House.Algorithms.BENCHMARK, weather, verbosity)
             decision = decision_house.step(i, absolute_step, House.Algorithms.DECISION_TREE, weather, verbosity)

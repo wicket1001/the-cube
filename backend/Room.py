@@ -73,7 +73,6 @@ class Room:
                        inner_wall_u_value, inner_wall_u_value]
 
     INITIAL_TEMPERATURE_C = 19
-    current_heat = Temperature.from_celsius(INITIAL_TEMPERATURE_C)
     next_temperature = Temperature.from_celsius(INITIAL_TEMPERATURE_C)
 
     room_shc = SpecificHeatCapacity.from_predefined(SpecificHeatCapacity.Predefined.AIR)
@@ -437,11 +436,12 @@ class Room:
             })
         room = {
             'name': self.name,
+            'temperature': self.temperature,
             'appliances': appliances_response
         }
         response["rooms"].append(room)
         self.energy_consumption += energy_demand
         return energy_demand
 
-    def should_heat(self):
+    def step(self, step_of_the_day: int, absolute_step: int, algorithms: Algorithms, weather, verbosity: DebugLevel) -> dict:
         pass

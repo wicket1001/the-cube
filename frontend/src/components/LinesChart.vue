@@ -122,7 +122,7 @@ function transformData(axes: string[], values: [number[] | Energy[] | Money[]], 
             formatAxis = function(value: number) {
               return `${value} °C`;
             }
-            return item;
+            return item.get_celsius();
           } else {
             console.error('In transformData.map occured an error.', item);
             return item;

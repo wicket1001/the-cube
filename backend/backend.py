@@ -7,7 +7,7 @@ from urllib.parse import urlparse, parse_qs
 import utils
 from DebugLevel import DebugLevel
 from House import House
-from Physics import SIEncoder
+from Physics import SIEncoder, Temperature
 
 hostName = "localhost"
 serverPort = 8080
@@ -176,6 +176,8 @@ class RestAPI(BaseHTTPRequestHandler):
                 }
                 for condition in weather.keys():
                     response['environment'][condition] = weather[condition][absolute_step]
+                    if condition == 'temperatures':
+                        response['environment']['temperatures'] = Temperature.from_celsius(response['environment']['temperatures'])
 
                 benchmark = benchmark_house.step(step, absolute_step, House.Algorithms.BENCHMARK, weather, DebugLevel.INFORMATIONAL)
                 decision = decision_house.step(step, absolute_step, House.Algorithms.DECISION_TREE, weather, DebugLevel.INFORMATIONAL)
