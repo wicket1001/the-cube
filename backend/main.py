@@ -1,6 +1,7 @@
 import csv
 import json
 from datetime import datetime
+import time
 
 import utils
 from DebugLevel import DebugLevel
@@ -14,31 +15,34 @@ from ElectricHeater import ElectricHeater
 from Grid import Grid
 from Room import Room
 from Windturbine import Windturbine
+from utils import get_house
 
 STEPS_PER_DAY = int((24 * 60) / 10)
 
-verbosity = DebugLevel.INFORMATIONAL
+verbosity = DebugLevel.WARNING
 
 
 def main():
     # https://de.wikipedia.org/wiki/Building_Management_System
     weather = utils.read_csv(verbosity)
-    house = House()
+    house = get_house()
 
     house.solarPanel.save_weather(weather['radiations'])
     house.windturbine.save_weather(weather['winds'], weather['wind_directions'])
 
-    decision_tree = House()
+    decision_tree = get_house()
     decision_tree.solarPanel.save_weather(weather['radiations'])
     decision_tree.windturbine.save_weather(weather['winds'], weather['wind_directions'])
 
     trying = 365
+    start = time.time()
     for day in range(trying):
         date_to_explore = datetime(2022, 5, 31, 0, 0, 0, 0)
         if trying == 1:
             # day = date_to_explore.timetuple()[7] + 365 - 1
             pass
-        print(f'Day {day}')
+        if verbosity >= DebugLevel.WARNING:
+            print(f'Day {day}')
         for i in range(STEPS_PER_DAY):
             absolute_step = day * STEPS_PER_DAY + i
             if verbosity >= DebugLevel.NOTIFICATION:
@@ -49,7 +53,10 @@ def main():
                 'benchmark': response['environment']['co2'],
                 'decision': response_decision_tree['environment']['co2']
             }
-            print(json.dumps(response, cls=SIEncoder))  # , indent=4
+            if verbosity >= DebugLevel.NOTIFICATION:
+                print(json.dumps(response, cls=SIEncoder))  # , indent=4
+    end = time.time()
+    print(end - start, 's')
     print('\n---------')
     house.grid.print_statistics(verbosity)
     house.electricHeater.print_statistics()

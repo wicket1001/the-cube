@@ -132,8 +132,10 @@ class House(object):
 
         # natural_cooling = self.room.adapt_to_outside(self.outer_temperature, self.inner_temperature)
         # self.inner_temperature += natural_cooling
-        natural_cooling = self.room.heat_loss(self.outer_temperature, self.inner_temperature)
-        self.inner_temperature -= natural_cooling
+        # natural_cooling = self.room.heat_loss(self.outer_temperature, self.inner_temperature)
+        # self.inner_temperature -= natural_cooling
+        self.heat_loss(self.outer_temperature)
+        self.inner_temperature = self.rooms[2].temperature
 
         # self.inner_temperature += occupants.get_heat()
 

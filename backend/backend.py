@@ -17,7 +17,7 @@ serverPort = 8080
 
 
 msg_id = 0
-house = House()
+house = utils.get_house()
 weather = utils.read_csv(DebugLevel.INFORMATIONAL)
 cache = []
 cache_size = 72
@@ -168,7 +168,7 @@ class RestAPI(BaseHTTPRequestHandler):
                     return
 
             for i in range(diff):
-                cache.append(house.step(msg_id, msg_id, weather, DebugLevel.INFORMATIONAL))
+                cache.append(house.step(msg_id, msg_id, House.Algorithms.BENCHMARK, weather, DebugLevel.INFORMATIONAL))
                 msg_id += 1
                 # print(len(cache))
                 if len(cache) > cache_size:

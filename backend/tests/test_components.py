@@ -393,7 +393,7 @@ class TestComponents(unittest.TestCase):
         house = get_house()
         if not house.valid():
             raise AttributeError(f'Invalid house build.')
-        print()
+        # print()
 
         energy = Energy(0)
         for i in range(6):
