@@ -1,7 +1,7 @@
 #include <Adafruit_NeoPixel.h>
 
 int pin = 5;                // input pin Neopixel is attached to
-int totalNum = 350;          // number of neopixels in whole strip
+int totalNum = 350;         // number of neopixels in whole strip
 unsigned long currentTime;  // running time for program
 int firstPixels[30] = {0, 11, 46, 47, 116, 125, 126, 140, 149, 150, 164, 173, 174, 188, 197, 198, 222, 223, 231, 238, 244, 248, 268, 275, 295, 302};
 int redColors[30] = {255, 255, 0, 0, 0, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255};
@@ -48,7 +48,7 @@ int backwardBlink(int start, int N, int prevN, int num, int red, int green, int 
 void LED_move(int prevN, int N, int red, int green, int blue) {
   pixels.setPixelColor(N, pixels.Color(red, green, blue));
   pixels.setPixelColor(prevN, pixels.Color(0, 0, 0));
-  pixels.show();
+  //pixels.show();
 }
 
 void setup() {
@@ -56,12 +56,11 @@ void setup() {
   Serial.begin(115200);
   // Initialize the NeoPixel library.
   pixels.begin();
-	for (int i = 0; i < 26; i++) {
-  pixels.setPixelColor(firstPixels[i], pixels.Color(redColors[i], greenColors[i], blueColors[i]));
+  for (int i = 0; i < 26; i++) {
+    pixels.setPixelColor(firstPixels[i], pixels.Color(redColors[i], greenColors[i], blueColors[i]));
+  }
+  // defineInterval();
 }
-// defineInterval();
-}
-
 
 void loop() {
   // put your main code here, to run repeatedly:
@@ -72,16 +71,13 @@ void loop() {
       newPeriods[i] = false;
     }
     if (currentTime - periodStarts[i] > intervals[i]) {
-    	if (directions[i] == 0) {
-          currentIndices[i] = backwardBlink(firstIndices[i], currentIndices[i], prevIndices[i], numLEDS[i], redColors[i], greenColors[i], blueColors[i]);
-        }
-      	else {
-        	currentIndices[i] = forwardBlink(firstIndices[i], currentIndices[i], prevIndices[i], numLEDS[i], redColors[i], greenColors[i], blueColors[i]);
-        }
-      	newPeriods[i] = true;
+      if (directions[i] == 0) {
+        currentIndices[i] = backwardBlink(firstIndices[i], currentIndices[i], prevIndices[i], numLEDS[i], redColors[i], greenColors[i], blueColors[i]);
+      } else {
+        currentIndices[i] = forwardBlink(firstIndices[i], currentIndices[i], prevIndices[i], numLEDS[i], redColors[i], greenColors[i], blueColors[i]);
+      }
+      newPeriods[i] = true;
     }
-        }
-        }
-        
-        
-  
+  }
+  pixels.show();
+}
