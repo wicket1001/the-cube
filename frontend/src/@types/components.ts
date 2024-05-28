@@ -39,13 +39,15 @@ export interface IAlgorithm {
 export class Environment {
   "dates": Date;
   "radiations": number;
+  "precipitations": number;
   "temperatures": Temperature;
   "winds": number;
   "wind_directions": number;
 
-  constructor({dates, radiations, temperatures, winds, wind_directions}: IEnvironment) {
+  constructor({dates, radiations, precipitations, temperatures, winds, wind_directions}: IEnvironment) {
     this.dates = new Date(dates);
     this.radiations = radiations;
+    this.precipitations = precipitations;
     this.temperatures = new Temperature(temperatures);
     this.winds = winds;
     this.wind_directions = wind_directions;
@@ -54,6 +56,7 @@ export class Environment {
 export interface IEnvironment {
   "dates": string,
   "radiations": number,
+  "precipitations": number,
   "temperatures": number,
   "winds": number,
   "wind_directions": number,

@@ -9,29 +9,17 @@ from ElectricHeater import ElectricHeater
 from Grid import Grid
 from Room import Room
 from Windturbine import Windturbine
-
+from algorithm_utils import Season, Algorithms
 
 STEPS_PER_DAY = int((24 * 60) / 10)
 
 
 def to_co2(energy: Energy) -> float:
     # https://www.rensmart.com/Calculators/KWH-to-CO2
-    return energy.value * 0.085
+    return (energy.value / 1000.0) * 0.076
 
 
 class House(object):
-    class Algorithms(IntFlag):
-        BENCHMARK = auto()
-        DECISION_TREE = auto()
-        MARK1 = auto()
-        MATLAB = auto()
-
-    class Season(IntFlag):
-        SPRING = auto()
-        SUMMER = auto()
-        FALL = auto()
-        WINTER = auto()
-
     solarPanel = SolarPanel(12 * 24)  # m^2
     windturbine = Windturbine(24 * 0.5, 0)  # m^2
     battery = Battery(Energy.from_kilo_watt_hours(200))
@@ -94,7 +82,7 @@ class House(object):
         response = {
             'rooms': []
         }
-        self.reset()
+        self.reset_before()
 
         temp = Temperature.from_celsius(weather['temperatures'][absolute_step])
         if verbosity >= DebugLevel.DEBUGGING:
@@ -113,6 +101,7 @@ class House(object):
         # natural_cooling = self.room.heat_loss(self.outer_temperature, self.inner_temperature)
         # self.inner_temperature -= natural_cooling
         self.heat_loss(self.outer_temperature)
+        self.update_temperatures()
 
         # self.inner_temperature += occupants.get_heat()
 
@@ -146,10 +135,6 @@ class House(object):
 
         # calculate_heat_power_demand()
 
-        for room in self.rooms:
-            room.electricHeater.deactivate()
-        self.update_temperatures()
-
         response['battery'] = {
             'level': self.battery.battery_level,
             'stored': self.battery.stored,
@@ -161,16 +146,22 @@ class House(object):
             'sell': self.grid.selling,
             'buy': self.grid.buying
         }
-        self.co2 += to_co2(self.grid.bought)
+        self.co2 += to_co2(self.grid.buying)
         response['co2'] = self.co2  # TODO bought gas
         response['money'] = self.money
 
+        self.reset_after()
+
         return response
 
-    def reset(self):
+    def reset_before(self):
         self.grid.reset()
         for room in self.rooms:
-            room.reset()
+            room.reset_before()
+
+    def reset_after(self):
+        for room in self.rooms:
+            room.electricHeater.deactivate()
 
     def patch_outside_temperature(self, temp, verbosity):
         if self.patched_temperature is not None:
@@ -188,13 +179,13 @@ class House(object):
     def get_season(self, absolute_step: int) -> Season:
         absolute_step %= STEPS_PER_DAY * 365
         if 0 <= absolute_step < STEPS_PER_DAY * 90:
-            return self.Season.SPRING
+            return Season.SPRING
         elif STEPS_PER_DAY * 90 <= absolute_step < STEPS_PER_DAY * 181:
-            return self.Season.SUMMER
+            return Season.SUMMER
         elif STEPS_PER_DAY * 181 <= absolute_step < STEPS_PER_DAY * 273:
-            return self.Season.FALL
+            return Season.FALL
         elif STEPS_PER_DAY * 273 <= absolute_step < STEPS_PER_DAY * 365:
-            return self.Season.WINTER
+            return Season.WINTER
         else:
             raise NotImplementedError('Something went wrong in the implementation of the seasons.')
 
@@ -218,7 +209,7 @@ class House(object):
 
     def algorithm_callback(self, absolute_step, energy_demand: Energy, energy_supply: Energy, algorithm: Algorithms,
                            verbosity: DebugLevel):
-        if algorithm == self.Algorithms.BENCHMARK:
+        if algorithm == Algorithms.BENCHMARK:
             if energy_demand > energy_supply:
                 over_demand = energy_demand - energy_supply
                 if self.battery.battery_level > Energy(0):
@@ -249,17 +240,17 @@ class House(object):
                 if verbosity >= DebugLevel.DEBUGGING:
                     print(f'Selling: {battery_overfull}')
                 self.money += self.grid.sell(battery_overfull)
-        elif algorithm == self.Algorithms.MATLAB:
+        elif algorithm == Algorithms.MATLAB:
             season = self.get_season(absolute_step)
             t_status, e_status = self.get_capacity()
             if verbosity >= DebugLevel.INFORMATIONAL:
                 print(f't_status: {t_status}')
 
-            if season == self.Season.SPRING:
+            if season == Season.SPRING:
                 if t_status == Battery.Status.CHARGING and e_status == Battery.Status.EMPTY:
                     pass
 
-            elif season == self.Season.WINTER:
+            elif season == Season.WINTER:
                 total_energy_surplus = 0
                 total_energy_surplus_cop = 0
                 priority = 0
@@ -272,8 +263,37 @@ class House(object):
                             self.battery,
                             self.sand_battery
                         )
-        elif algorithm == self.Algorithms.DECISION_TREE:
-            pass
+        elif algorithm == Algorithms.DECISION_TREE:
+            if energy_demand > energy_supply:
+                over_demand = energy_demand - energy_supply
+                if self.battery.battery_level > Energy(0):
+                    if over_demand > self.battery.battery_level:
+                        over_demand -= self.battery.battery_level
+                        self.battery.take(self.battery.battery_level)
+                        self.money -= self.grid.buy(over_demand)
+                        if verbosity >= DebugLevel.DEBUGGING:
+                            print(f'Bought {over_demand} energy')
+                        # self.electricHeater.generate_heat(energy_demand)
+                    else:
+                        self.battery.take(over_demand)
+                        if verbosity >= DebugLevel.DEBUGGING:
+                            print(f'Took everything from battery {self.battery}, took {over_demand}')
+                        # self.electricHeater.generate_heat(energy_demand)
+                else:
+                    self.money -= self.grid.buy(over_demand)
+                    if verbosity >= DebugLevel.DEBUGGING:
+                        print(f'Bought {over_demand} energy because battery is empty')
+                    # self.electricHeater.generate_heat(energy_demand)
+
+            else:
+                energy_overproduction = energy_supply - energy_demand
+                if verbosity >= DebugLevel.DEBUGGING:
+                    print(f'Energy overproduction: {energy_overproduction}')
+                # self.electricHeater.generate_heat(energy_demand)
+                battery_overfull = self.battery.store(energy_overproduction)
+                if verbosity >= DebugLevel.DEBUGGING:
+                    print(f'Selling: {battery_overfull}')
+                self.money += self.grid.sell(battery_overfull)
         else:
             raise NotImplementedError('No more Algorithms implemented.')
 

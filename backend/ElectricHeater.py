@@ -11,16 +11,12 @@ class ElectricHeater(Appliance):
     def __init__(self, watts):
         super().__init__(watts)
 
-    def generate_heat(self, energy: Energy) -> Temperature:
-        heat = energy * self.EFFICIENCY
-        # print(f'Generated Heat: {heat}')
-
     def step(self, t: int, absolute_step: int, verbosity: DebugLevel = DebugLevel.INFORMATIONAL) -> Energy:
         self.on = self.should_activate
         if self.should_activate:
             energy_demand = self.get_energy_demand()
             self.usage += energy_demand
-            self.generate_heat(energy_demand)
+            # self.generate_heat(energy_demand)
             return energy_demand
         else:
             return Energy(0)

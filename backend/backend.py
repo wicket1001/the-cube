@@ -8,6 +8,7 @@ import utils
 from DebugLevel import DebugLevel
 from House import House
 from Physics import SIEncoder, Temperature
+from algorithm_utils import Season, Algorithms
 
 hostName = "localhost"
 serverPort = 8080
@@ -179,8 +180,8 @@ class RestAPI(BaseHTTPRequestHandler):
                     if condition == 'temperatures':
                         response['environment']['temperatures'] = Temperature.from_celsius(response['environment']['temperatures'])
 
-                benchmark = benchmark_house.step(step, absolute_step, House.Algorithms.BENCHMARK, weather, DebugLevel.INFORMATIONAL)
-                decision = decision_house.step(step, absolute_step, House.Algorithms.DECISION_TREE, weather, DebugLevel.INFORMATIONAL)
+                benchmark = benchmark_house.step(step, absolute_step, Algorithms.BENCHMARK, weather, DebugLevel.INFORMATIONAL)
+                decision = decision_house.step(step, absolute_step, Algorithms.DECISION_TREE, weather, DebugLevel.INFORMATIONAL)
 
                 response['benchmark'] = benchmark
                 response['decision'] = decision

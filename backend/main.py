@@ -5,6 +5,7 @@ import utils
 from DebugLevel import DebugLevel
 from House import House
 from Physics import *
+from algorithm_utils import Algorithms
 from utils import get_house
 
 STEPS_PER_DAY = int((24 * 60) / 10)
@@ -50,8 +51,8 @@ def main():
                 if condition == 'temperatures':
                     response['environment']['temperatures'] = Temperature.from_celsius(response['environment']['temperatures'])
 
-            benchmark = benchmark_house.step(i, absolute_step, House.Algorithms.BENCHMARK, weather, verbosity)
-            decision = decision_house.step(i, absolute_step, House.Algorithms.DECISION_TREE, weather, verbosity)
+            benchmark = benchmark_house.step(i, absolute_step, Algorithms.BENCHMARK, weather, verbosity)
+            decision = decision_house.step(i, absolute_step, Algorithms.DECISION_TREE, weather, verbosity)
 
             response['benchmark'] = benchmark
             response['decision'] = decision

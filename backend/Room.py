@@ -8,6 +8,7 @@ from Fridge import Fridge
 from Lights import Lights
 from Occupancy import Occupancy
 from Physics import Power, Temperature, Energy, Time, Length, SpecificHeatCapacity, Density, Weight
+from algorithm_utils import Algorithms
 
 # https://www.heizsparer.de/heizung/heiztechnik/heizleistung-berechnen
 # Q [Heizleistung W] = Wohnfläche [m^2] * U-Wert [W/(m^2*K)] * Temperaturdifferenz [delta K]
@@ -79,7 +80,7 @@ class Room:
 
     energy_consumption = Energy(0)
 
-    electricHeater = ElectricHeater(600 * 4 * 4)  # 600W
+    electricHeater = ElectricHeater(36_600)  # 600W  600 * 4 * 4
     lights = Lights(25)
     fridge = Fridge(150)
     appliances = [electricHeater, lights, fridge]
@@ -381,6 +382,9 @@ class Room:
         heat_loss_power = self.get_heat_loss_power(delta_t)
         return self.heat_hour(heat_loss_power)
 
+    def heat(self, heat_energy: Energy) -> Temperature:
+        return self.SPECIFIC_HEAT_CAPACITY.calculate_heat(heat_energy, self.mass)
+
     def heat_hour(self, heat_power: Power) -> Temperature:
         """
         Heats a room with a given power for an hour.
@@ -395,7 +399,7 @@ class Room:
         # return delta_t
         return self.SPECIFIC_HEAT_CAPACITY.calculate_heat(heat_power * Time.from_hours(1), self.mass)
 
-    def heat(self, heat_power: Power) -> Temperature:  # in Watts
+    def heat_power(self, heat_power: Power) -> Temperature:  # in Watts
         return self.heat_hour(heat_power) / (Time.from_hours(1) / self.SIMULATION_TIME_STEP)
 
     def get_heat_loss_energy(self, delta_t: Temperature) -> Energy:
@@ -443,5 +447,22 @@ class Room:
         self.energy_consumption += energy_demand
         return energy_demand
 
-    def step(self, step_of_the_day: int, absolute_step: int, algorithms: Algorithms, weather, verbosity: DebugLevel) -> dict:
+    def step(self, step_of_the_day: int, absolute_step: int, algorithms: Algorithms, verbosity: DebugLevel) -> dict:
+        if algorithms == Algorithms.BENCHMARK:
+            if self.temperature < Temperature.from_celsius(19):
+                self.electricHeater.activate()
+                heat_generated = self.electricHeater.get_energy_demand()
+                self.temperature += self.heat(heat_generated)
+        elif algorithms == Algorithms.DECISION_TREE:
+            if 6 * 6 < step_of_the_day < 18 * 6 and self.temperature < Temperature.from_celsius(19):
+                self.electricHeater.activate()
+                heat_generated = self.electricHeater.get_energy_demand()
+                self.temperature += self.heat(heat_generated)
+        else:
+            raise NotImplementedError('Other Algorithms are not implemented for room.')
+
+    def reset_before(self):
+        pass
+
+    def reset_after(self):
         pass

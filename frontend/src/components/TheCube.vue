@@ -18,7 +18,8 @@ const INITIAL_HEAT = 21;
 let future = defineModel<Date>('future', {default: new Date()});
 const presetDates = ref([
   {label: 'Begin', value: new Date(2021, 0, 1, 0, 0, 0)},
-  {label: 'End', value: new Date(2023, 11, 31, 23, 50, 0)},
+  {label: 'End of first year', value: new Date(2022, 0, 1, 0, 0, 0)},
+  {label: 'End of simulation', value: new Date(2023, 11, 31, 23, 50, 0)},
   {label: 'Scenario 1', value: new Date(2022, 2, 1, 0, 0, 0)},
   {label: 'Scenario 2', value: new Date(2022, 5, 1, 0, 0, 0)},
   {label: 'Scenario 3', value: new Date(2022, 8, 1, 0, 0, 0)},
@@ -39,8 +40,13 @@ let dates_view: Date[] = [];
 let temperatures: Temperature[] = [];
 let temperatures_view: Ref<Temperature[]> = ref([]);
 
-let inside_temperatures: Temperature[] = [];
-let inside_temperatures_view: Ref<Temperature[]> = ref([]);
+let benchmark_inside_temperatures: Temperature[] = [];
+let benchmark_inside_temperatures_view: Ref<Temperature[]> = ref([]);
+let decision_inside_temperatures: Temperature[] = [];
+let decision_inside_temperatures_view: Ref<Temperature[]> = ref([]);
+
+let precipitations: number[] = [];
+let precipitations_view: Ref<number[]> = ref([]);
 
 let radiations: number[] = [];
 let radiations_view: Ref<number[]> = ref([]);
@@ -48,6 +54,11 @@ let radiations_view: Ref<number[]> = ref([]);
 let winds: number[] = [];
 let winds_view: Ref<number[]> = ref([]);
 let wind_direction = ref(0);
+
+let benchmark_co2: number[] = [];
+let decision_co2: number[] = [];
+let benchmark_co2_view: Ref<number[]> = ref([]);
+let decision_co2_view: Ref<number[]> = ref([]);
 
 let money: Money[] = [];
 let money_view: Ref<Money[]> = ref([]);
@@ -97,6 +108,13 @@ onMounted(() => {
   }
   console.log("Ending", begin, absolute_step)
    */
+  let chartsContainer = document.getElementsByClassName('singleChart');
+  /*for (let chartContainer of chartsContainer) {
+    chartContainer.firstChild.style.width = '';
+  }
+  onresize = (event) => {
+
+  };*/
 })
 
 watch(currentIndex, async (newValue, oldValue) => {
@@ -158,6 +176,9 @@ function add_simulation_raw(res: Simulation, update: boolean) {
   dates.push(date)
   future.value = date
 
+  let precipitation = res['environment']['precipitations']
+  precipitations.push(precipitation)
+
   let radiation = res['environment']['radiations']
   radiations.push(radiation)
 
@@ -173,10 +194,18 @@ function add_simulation_raw(res: Simulation, update: boolean) {
   wind_direction.value = res['environment']['wind_directions']
   winds.push(wind)
 
-  let inner_temperature = res['benchmark']['rooms'][2]['temperature']
-  inside.value = inner_temperature
-  inside_temperatures.push(inner_temperature)
-  show_cube_temperature(inner_temperature.get_celsius())
+  let benchmark_inside_temperature = res['benchmark']['rooms'][2]['temperature']
+  inside.value = benchmark_inside_temperature
+  benchmark_inside_temperatures.push(benchmark_inside_temperature)
+  show_cube_temperature(benchmark_inside_temperature.get_celsius())
+
+  let decision_inside_temperature = res['decision']['rooms'][2]['temperature']
+  decision_inside_temperatures.push(decision_inside_temperature)
+
+  let benchmark_co2_value = res['benchmark']['co2']
+  benchmark_co2.push(benchmark_co2_value)
+  let decision_co2_value = res['decision']['co2']
+  decision_co2.push(decision_co2_value)
 
   let money_value = res['benchmark']['money']
   money.push(money_value)
@@ -212,7 +241,9 @@ function add_simulation_raw(res: Simulation, update: boolean) {
     let begin = Math.max(0, end - lookback) // only watch back 12h
     dates_view = dates.slice(begin, end)
     temperatures_view.value = temperatures.slice(begin, end)
-    inside_temperatures_view.value = inside_temperatures.slice(begin, end)
+    benchmark_inside_temperatures_view.value = benchmark_inside_temperatures.slice(begin, end)
+    decision_inside_temperatures_view.value = decision_inside_temperatures.slice(begin, end)
+    precipitations_view.value = precipitations.slice(begin, end)
     radiations_view.value = radiations.slice(begin, end)
     winds_view.value = winds.slice(begin, end)
     for (const applianceParameter of ['Fridge', 'Lights', 'ElectricHeater', 'Total']) {
@@ -225,6 +256,8 @@ function add_simulation_raw(res: Simulation, update: boolean) {
     for (const gridParameter of ['sold', 'bought', 'sell', 'buy']) {
       grid_view.value[gridParameter] = grid[gridParameter].slice(begin, end)
     }
+    benchmark_co2_view.value = benchmark_co2.slice(begin, end)
+    decision_co2_view.value = decision_co2.slice(begin, end)
     money_view.value = money.slice(begin, end)
   }
 }
@@ -332,13 +365,28 @@ function get_field(bucket, field, index) {
     <div class="charts">
       <div class="singleChart">
         <LinesChart v-if="dataFetched"
+                    id="co2_plot"
+                    :key="currentIndex"
+                    :keys="dates_view"
+                    :axes="['Benchmark CO2', 'Decision CO2']"
+                    :values="[benchmark_co2_view, decision_co2_view]"/>
+      </div>
+      <div class="singleChart">
+        <LinesChart v-if="dataFetched"
                     id="temperature_plot"
                     :key="currentIndex"
                     :keys="dates_view"
-                    :axes="['Outside Temperature', 'Inside Temperature']"
-                    :values="[temperatures_view, inside_temperatures_view]"/>
+                    :axes="['Outside Temperature', 'Benchmark Inside Temperature', 'Decision Inside Temperature']"
+                    :values="[temperatures_view, benchmark_inside_temperatures_view, decision_inside_temperatures_view]"/>
       </div>
-
+      <div class="singleChart">
+        <LinesChart v-if="dataFetched"
+                    id="precipitation_plot"
+                    :key="currentIndex"
+                    :keys="dates_view"
+                    :axes="['Precipitation']"
+                    :values="[precipitations_view]"/>
+      </div>
       <div class="singleChart">
         <LinesChart v-if="dataFetched"
                     id="radiation_plot"
@@ -347,9 +395,6 @@ function get_field(bucket, field, index) {
                     :axes="['Radiation']"
                     :values="[radiations_view]"/>
       </div>
-    </div>
-
-    <div class="charts my-16">
       <div class="singleChart">
         <LinesChart v-if="dataFetched"
                     id="solar_plot"
@@ -368,8 +413,6 @@ function get_field(bucket, field, index) {
                     :axes="['Battery Level']"
                     :values="[battery_level_view]"/>
       </div>
-    </div>
-    <div class="charts my-16">
       <div class="singleChart">
         <LinesChart v-if="dataFetched"
                     id="wind_plot"
@@ -386,8 +429,6 @@ function get_field(bucket, field, index) {
                        :axes="'Wind direction'"
                        :values="wind_direction"/>
       </div>
-    </div>
-    <div class="charts my-16">
       <div class="singleChart">
         <LinesChart v-if="dataFetched"
                     id="appliances_plot"
@@ -407,8 +448,6 @@ function get_field(bucket, field, index) {
                     :axes="['Money']"
                     :values="[money_view]"/>
       </div>
-    </div>
-    <div class="charts my-16">
       <div class="singleChart">
         <LinesChart v-if="dataFetched"
                     id="grid_plot"
@@ -426,8 +465,6 @@ function get_field(bucket, field, index) {
                     :axes="['Grid buying', 'Grid selling']"
                     :values="[grid_view['buy'], grid_view['sell']]"/>
       </div>
-    </div>
-    <div class="charts my-16">
       <div class="singleChart">
         <LinesChart v-if="dataFetched"
                     id="sum_generators"
@@ -551,16 +588,15 @@ input[type="range"] {
 }
 
 .charts {
-  width: inherit;
-  height: 30vh;
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
 }
 
 .singleChart {
-  position: relative;
-  width: 40vw;
-  height: 20vw;
+  flex-grow: 0;
+  flex-shrink: 0;
+  width: 45vw;
 }
 </style>

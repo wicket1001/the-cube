@@ -19,7 +19,7 @@ def read_csv(verbosity: DebugLevel):
         'temperatures': [],
         'winds': [],
         'wind_directions': [],
-        'precipitation': []
+        'precipitations': []
     }
 
     with open('res/Messstationen Zehnminutendaten v2 Datensatz_20210101T0000_20240101T0000.csv') as csvfile:
@@ -44,7 +44,7 @@ def read_csv(verbosity: DebugLevel):
             weather['temperatures'].append(float(row[temperature_index]))
             weather['winds'].append(float(row[wind_index]))
             weather['wind_directions'].append(float(row[wind_direction_index]))
-            weather['precipitation'].append(float(row[precipitation_index]))
+            weather['precipitations'].append(float(row[precipitation_index]))
 
     if verbosity >= DebugLevel.DEBUGGING:
         print(len(weather['dates']), ', '.join([x.strftime('%d.%m.%Y %H:%M') for x in weather['dates']]))
