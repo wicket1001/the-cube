@@ -24,6 +24,6 @@ Dieses wird mit einem Arduino gesteuert, welcher mit mehreren LED Streifen den E
 # Sponsoren
 Wir danken herzlichst unseren Sponsoren:
 
-<img alt="BIG Logo" src="https://www.big.at/typo3conf/ext/big_core/Resources/Public/Images/big_logo_langform_weiss.svg" style="background: #5b5f62; border: 4px #5b5f62 solid;">
+<img alt="BIG Logo" src="https://www.big.at/fileadmin/user_upload/05_Presse-News/5_3_Downloads/BIG_Logo_Langform_72dpi.jpg">
 <img alt="BHÖ Logo" src="https://www.burghauptmannschaft.at/dam/jcr:70582199-a1d2-40ae-83d1-bf87717ab41b/BH%C3%96%20LOGO%20NEU.JPG">
 <img alt="Simacek Logo" src="https://www.simacek.com/apps/ckfinder/userfiles/files/simacek_logo.png">
