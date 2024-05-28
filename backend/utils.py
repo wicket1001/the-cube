@@ -1,10 +1,15 @@
 import csv
 from datetime import datetime
 
+from Battery import Battery
 from DebugLevel import DebugLevel
 from House import House
 from Occupancy import Occupancy
+from Physics import Length, Energy
 from Room import Room
+from SandBattery import SandBattery
+from SolarPanel import SolarPanel
+from Windturbine import Windturbine
 
 
 def read_mat(verbosity: DebugLevel):
@@ -61,16 +66,16 @@ def read_csv(verbosity: DebugLevel):
 
 
 def get_house():
-    cellar_left = Room(12, 24, 4, Occupancy.Predefined.EMPTY, name='Cellar left')
-    cellar_right = Room(12, 24, 4, Occupancy.Predefined.EMPTY, name='Cellar right')
-    first_left = Room(12, 24, 4, Occupancy.Predefined.HIGH, name='First left')
-    first_right = Room(12, 24, 4, Occupancy.Predefined.HIGH, name='First right')
-    second_left = Room(12, 24, 4, Occupancy.Predefined.HIGH, name='Second left')
-    second_right = Room(12, 24, 4, Occupancy.Predefined.HIGH, name='Second right')
-    third_left = Room(12, 24, 4, Occupancy.Predefined.HIGH, name='Third left')
-    third_right = Room(12, 24, 4, Occupancy.Predefined.HIGH, name='Third right')
-    attic_left = Room(12, 24, 5, Occupancy.Predefined.HIGH, name='Attic left')
-    attic_right = Room(12, 24, 5, Occupancy.Predefined.HIGH, name='Attic right')
+    cellar_left = Room(6, 24, 4, Occupancy.Predefined.EMPTY, name='Cellar left')
+    cellar_right = Room(6, 24, 4, Occupancy.Predefined.EMPTY, name='Cellar right')
+    first_left = Room(6, 24, 4, Occupancy.Predefined.HIGH, name='First left')
+    first_right = Room(6, 24, 4, Occupancy.Predefined.HIGH, name='First right')
+    second_left = Room(6, 24, 4, Occupancy.Predefined.MEDIUM, name='Second left')
+    second_right = Room(6, 24, 4, Occupancy.Predefined.MEDIUM, name='Second right')
+    third_left = Room(6, 24, 4, Occupancy.Predefined.HIGH, name='Third left')
+    third_right = Room(6, 24, 4, Occupancy.Predefined.HIGH, name='Third right')
+    attic_left = Room(6, 24, 5, Occupancy.Predefined.LOW, name='Attic left')
+    attic_right = Room(6, 24, 5, Occupancy.Predefined.LOW, name='Attic right')
     cellar_left.set_surfaces(Room.Surface.UNDEFINED,
                              Room.Surface.GROUND,
                              Room.Surface.GROUND,
@@ -129,4 +134,8 @@ def get_house():
              attic_left, attic_right]
     house = House()
     house.set_rooms(rooms)
+    # house.solarPanel = SolarPanel(Length(12 * 24 * 0.5))
+    # house.windturbine = Windturbine(24 * 0.5, 0)
+    # house.battery = Battery(Energy.from_kilo_watt_hours(200))
+    # house.sand_battery = SandBattery(1, 1, 1)
     return house
