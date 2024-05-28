@@ -10,7 +10,7 @@ import {
   type Generators,
   type IAppliances,
   type IGrid,
-  type Algorithms, bob
+  type Algorithms, appliances_named, rooms_named, type IRooms
 } from '@/@types/components'
 import { Appliance, Battery, Generator, Grid } from '@/@types/components'
 import { Energy, Money, Temperature } from '@/@types/physics'
@@ -45,10 +45,64 @@ let playBtn = ref('Play')
 let dates: Date[] = [];
 let dates_view: Date[] = [];
 
-let temperatures_graph: {"Outside": Temperature[], "Benchmark First Inside": Temperature[], "Decision First Inside": Temperature[]} =
-  {'Outside': [], 'Benchmark First Inside': [], 'Decision First Inside': []};
-let temperatures_graph_view: Ref<{"Outside": Temperature[], "Benchmark First Inside": Temperature[], "Decision First Inside": Temperature[]}> =
-  ref({'Outside': [], 'Benchmark First Inside': [], 'Decision First Inside': []});
+let temperatures_graph: {
+  'Outside': Temperature[],
+  'Benchmark First Inside': Temperature[],
+  'Decision First Inside': Temperature[],
+  'Cellar left': Temperature[],
+  'Cellar right': Temperature[],
+  'First left': Temperature[],
+  'First right': Temperature[],
+  'Second left': Temperature[],
+  'Second right': Temperature[],
+  'Third left': Temperature[],
+  'Third right': Temperature[],
+  'Attic left': Temperature[],
+  'Attic right': Temperature[],
+} = {
+  'Outside': [],
+  'Benchmark First Inside': [],
+  'Decision First Inside': [],
+  'Cellar left': [],
+  'Cellar right': [],
+  'First left': [],
+  'First right': [],
+  'Second left': [],
+  'Second right': [],
+  'Third left': [],
+  'Third right': [],
+  'Attic left': [],
+  'Attic right': [],
+};
+let temperatures_graph_view: Ref<{
+  'Outside': Temperature[],
+  'Benchmark First Inside': Temperature[],
+  'Decision First Inside': Temperature[],
+  'Cellar left': Temperature[],
+  'Cellar right': Temperature[],
+  'First left': Temperature[],
+  'First right': Temperature[],
+  'Second left': Temperature[],
+  'Second right': Temperature[],
+  'Third left': Temperature[],
+  'Third right': Temperature[],
+  'Attic left': Temperature[],
+  'Attic right': Temperature[],
+}> = ref({
+  'Outside': [],
+  'Benchmark First Inside': [],
+  'Decision First Inside': [],
+  'Cellar left': [],
+  'Cellar right': [],
+  'First left': [],
+  'First right': [],
+  'Second left': [],
+  'Second right': [],
+  'Third left': [],
+  'Third right': [],
+  'Attic left': [],
+  'Attic right': [],
+});
 
 let temperatures: Temperature[] = [];
 let temperatures_view: Ref<Temperature[]> = ref([]);
@@ -106,28 +160,7 @@ const lookback = 72
 let lang = 'de'
 
 onMounted(() => {
-  /*
-  let begin = new Date(2021, 0, 1, 0, 0, 0);
-  let absolute_step = 0;
-  console.log(begin);
-  for (let i = 0; i < 3; i ++) {
-    for (let j = 0; j < 365; j ++) {
-      for (let k = 0; k < 144; k ++) {
-        begin = addMinutes(begin, 10);
-        // console.log(absolute_step, k, begin);
-        absolute_step ++;
-      }
-    }
-  }
-  console.log("Ending", begin, absolute_step)
-   */
-  let chartsContainer = document.getElementsByClassName('singleChart');
-  /*for (let chartContainer of chartsContainer) {
-    chartContainer.firstChild.style.width = '';
-  }
-  onresize = (event) => {
 
-  };*/
 })
 
 watch(currentIndex, async (newValue, oldValue) => {
@@ -206,19 +239,25 @@ function add_simulation_raw(res: Simulation, update: boolean) {
   } else if (lang === 'en') {
     outside.value = temperature
   }
-  temperatures.push(temperature)
+  // temperatures.push(temperature)
+  temperatures_graph['Outside'].push(temperature);
 
   let wind = res['environment']['winds']
   wind_direction.value = res['environment']['wind_directions']
   winds.push(wind)
 
-  let benchmark_inside_temperature = res['benchmark']['rooms'][2]['temperature']
-  inside.value = benchmark_inside_temperature
-  benchmark_inside_temperatures.push(benchmark_inside_temperature)
-  show_cube_temperature(benchmark_inside_temperature.get_celsius())
+  //let benchmark_inside_temperature =
+  inside.value = res['benchmark']['rooms'][2]['temperature']
+  //benchmark_inside_temperatures.push(benchmark_inside_temperature)
+  show_cube_temperature(inside.value.get_celsius())
 
-  let decision_inside_temperature = res['decision']['rooms'][2]['temperature']
-  decision_inside_temperatures.push(decision_inside_temperature)
+  //let decision_inside_temperature = res['decision']['rooms'][2]['temperature']
+  //decision_inside_temperatures.push(decision_inside_temperature)
+  for (let i = 0; i < rooms_named.length; i++) {
+    temperatures_graph[rooms_named[i] as keyof IRooms].push(res['benchmark']['rooms'][i]['temperature']);
+  }
+  temperatures_graph['Benchmark First Inside'].push(res['benchmark']['rooms'][2]['temperature']);
+  temperatures_graph['Decision First Inside'].push(res['decision']['rooms'][2]['temperature']);
 
   for (const algorithm of ['benchmark', 'decision']) {
     co2[algorithm as keyof Algorithms].push(res[algorithm as keyof Algorithms]['co2'])
@@ -229,7 +268,7 @@ function add_simulation_raw(res: Simulation, update: boolean) {
 
   let total = new Appliance({ name: 'Total', 'demand': 0, 'usage': 0, 'on': false })
   for (const appliance of res['benchmark']['rooms'][2]['appliances']) {
-    if (bob.includes(appliance.name as keyof IAppliances)) {
+    if (appliances_named.includes(appliance.name as keyof IAppliances)) {
       demand[appliance['name'] as keyof IAppliances].push(appliance)
     }
     total.demand = total.demand.add(appliance.demand)
@@ -257,9 +296,12 @@ function add_simulation_raw(res: Simulation, update: boolean) {
     let end = dates.length;
     let begin = Math.max(0, end - lookback) // only watch back 12h
     dates_view = dates.slice(begin, end)
-    temperatures_view.value = temperatures.slice(begin, end)
-    benchmark_inside_temperatures_view.value = benchmark_inside_temperatures.slice(begin, end)
-    decision_inside_temperatures_view.value = decision_inside_temperatures.slice(begin, end)
+    //temperatures_view.value = temperatures.slice(begin, end)
+    //benchmark_inside_temperatures_view.value = benchmark_inside_temperatures.slice(begin, end)
+    //decision_inside_temperatures_view.value = decision_inside_temperatures.slice(begin, end)
+    for (const room_name of Object.keys(temperatures_graph)) {
+      temperatures_graph_view.value[room_name] = temperatures_graph[room_name].slice(begin, end)
+    }
     precipitations_view.value = precipitations.slice(begin, end)
     radiations_view.value = radiations.slice(begin, end)
     winds_view.value = winds.slice(begin, end)
@@ -319,16 +361,22 @@ function get_field(bucket, field: string, index: string) {
   return bucket[field].map<Energy>(item => item[index]);
 }
 
+function extract_keys(bucket, indexes: string[]) {
+  console.log(temperatures_graph.length, temperatures_graph)
+  console.log(temperatures_graph_view.value.length, temperatures_graph_view.value)
+  let arrays = [];
+  for (const index of indexes) {
+    arrays.push(bucket[index]);
+  }
+  console.log(arrays.length);
+  return arrays;
+}
+
 </script>
 
 <template>
   <div>
     <h1>Data</h1>
-    <!--<p>{{start}}</p>
-    <p>{{end}}</p>-->
-    <!--<datepicker placeholder="Start Date" v-model="start" name="start-date"></datepicker>
-    <datepicker placeholder="End Date" v-model="end" name="end-date"></datepicker>-->
-    <!--<font-awesome-icon :icon="['fas', 'pause']" />-->
     <div>
       <v-btn class="mr-1" density="default" aria-label="Pause" icon="mdi-pause" :disabled="timer === -1" @click="pause_sim()"></v-btn>
       <v-btn class="mx-1" density="default" aria-label="Step" icon="mdi-step-forward" :disabled="timer !== -1" @click="step()"></v-btn>
@@ -388,8 +436,8 @@ function get_field(bucket, field: string, index: string) {
                     id="temperature_plot"
                     :key="currentIndex"
                     :keys="dates_view"
-                    :axes="['Outside Temperature', 'Benchmark Inside Temperature', 'Decision Inside Temperature']"
-                    :values="[temperatures_view, benchmark_inside_temperatures_view, decision_inside_temperatures_view]"/>
+                    :axes="Object.keys(temperatures_graph)"
+                    :values="extract_keys(temperatures_graph_view, Object.keys(temperatures_graph))"/>
       </div>
       <div class="singleChart">
         <LinesChart v-if="dataFetched"

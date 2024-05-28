@@ -67,18 +67,21 @@ export interface IEnvironment {
   "wind_directions": number,
 }
 
-export interface Rooms {
-  'Cellar left': Room,
-  'Cellar right': Room,
-  'First left': Room,
-  'First right': Room,
-  'Second left': Room,
-  'Second right': Room,
-  'Third left': Room,
-  'Third right': Room,
-  'Attic left': Room,
-  'Attic right': Room,
+export class Rooms {
+  'Cellar left': Room;
+  'Cellar right': Room;
+  'First left': Room;
+  'First right': Room;
+  'Second left': Room;
+  'Second right': Room;
+  'Third left': Room;
+  'Third right': Room;
+  'Attic left': Room;
+  'Attic right': Room;
 }
+export interface IRooms extends Rooms {}
+export type TRooms = Array<keyof IRooms>;
+export const rooms_named: TRooms = Object.keys(new Rooms()) as TRooms;
 
 export class Room {
   "name": string;
@@ -107,9 +110,9 @@ export class Appliances {
   'Lights': Appliance;
   'ElectricHeater': Appliance;
 }
-export interface IAppliances extends Appliances {};
+export interface IAppliances extends Appliances {}
 export type TAppliances = Array<keyof IAppliances>;
-export const bob: TAppliances = Object.keys(new Appliances()) as TAppliances;
+export const appliances_named: TAppliances = Object.keys(new Appliances()) as TAppliances;
 
 export class Appliance {
   "name": string;
