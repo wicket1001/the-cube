@@ -1,16 +1,24 @@
 <script setup lang="ts">
 import { onMounted, reactive, type Ref, ref, watch, getCurrentInstance, computed } from 'vue'
 import { getData, patch_future, patching, simulate } from '@/utils/resources'
+import Mode from '@/components/LinesChart.vue'
 import LinesChart from '@/components/LinesChart.vue'
 import WindComponent from '@/components/WindComponent.vue'
-import {toColor, calculateHeat, map, stepHeat} from '@/utils/utils'
+import {toColor, calculateHeat, mapping, stepHeat} from '@/utils/utils'
+import {
+  type IGenerator,
+  type Generators,
+  type IAppliances,
+  type IGrid,
+  type Algorithms, bob
+} from '@/@types/components'
 import { Appliance, Battery, Generator, Grid } from '@/@types/components'
 import { Energy, Money, Temperature } from '@/@types/physics'
-import Mode from '@/components/LinesChart.vue'
 import VueDatePicker from '@vuepic/vue-datepicker';
 import '@vuepic/vue-datepicker/dist/main.css'
 import { getMonth, addMonths, addMinutes, differenceInMinutes } from 'date-fns'
 import { type ISimulation, Simulation } from '@/@types/simulation'
+
 
 const INITIAL_HEAT = 21;
 
@@ -37,6 +45,11 @@ let playBtn = ref('Play')
 let dates: Date[] = [];
 let dates_view: Date[] = [];
 
+let temperatures_graph: {"Outside": Temperature[], "Benchmark First Inside": Temperature[], "Decision First Inside": Temperature[]} =
+  {'Outside': [], 'Benchmark First Inside': [], 'Decision First Inside': []};
+let temperatures_graph_view: Ref<{"Outside": Temperature[], "Benchmark First Inside": Temperature[], "Decision First Inside": Temperature[]}> =
+  ref({'Outside': [], 'Benchmark First Inside': [], 'Decision First Inside': []});
+
 let temperatures: Temperature[] = [];
 let temperatures_view: Ref<Temperature[]> = ref([]);
 
@@ -55,10 +68,10 @@ let winds: number[] = [];
 let winds_view: Ref<number[]> = ref([]);
 let wind_direction = ref(0);
 
-let benchmark_co2: number[] = [];
-let decision_co2: number[] = [];
-let benchmark_co2_view: Ref<number[]> = ref([]);
-let decision_co2_view: Ref<number[]> = ref([]);
+let co2: {'benchmark': number[], 'decision': number[]} =
+  {'benchmark': [], 'decision': []};
+let co2_view: Ref<{'benchmark': number[], 'decision': number[]}> =
+  ref({'benchmark': [], 'decision': []});
 
 let money: Money[] = [];
 let money_view: Ref<Money[]> = ref([]);
@@ -202,18 +215,17 @@ function add_simulation_raw(res: Simulation, update: boolean) {
   let decision_inside_temperature = res['decision']['rooms'][2]['temperature']
   decision_inside_temperatures.push(decision_inside_temperature)
 
-  let benchmark_co2_value = res['benchmark']['co2']
-  benchmark_co2.push(benchmark_co2_value)
-  let decision_co2_value = res['decision']['co2']
-  decision_co2.push(decision_co2_value)
+  for (const algorithm of ['benchmark', 'decision']) {
+    co2[algorithm as keyof Algorithms].push(res[algorithm as keyof Algorithms]['co2'])
+  }
 
   let money_value = res['benchmark']['money']
   money.push(money_value)
 
   let total = new Appliance({ name: 'Total', 'demand': 0, 'usage': 0, 'on': false })
   for (const appliance of res['benchmark']['rooms'][2]['appliances']) {
-    if (['Fridge', 'Lights', 'ElectricHeater'].includes(appliance.name)) {
-      demand[appliance['name']].push(appliance)
+    if (bob.includes(appliance.name as keyof IAppliances)) {
+      demand[appliance['name'] as keyof IAppliances].push(appliance)
     }
     total.demand = total.demand.add(appliance.demand)
     total.usage = total.usage.add(appliance.usage)
@@ -222,7 +234,7 @@ function add_simulation_raw(res: Simulation, update: boolean) {
   let total1 = new Generator({ name: 'Total', supply: 0, generation: 0 })
   for (const generator of res['benchmark']['generators']) {
     if (['SolarPanel', 'Windturbine'].includes(generator.name)) {
-      generation[generator.name].push(generator)
+      generation[generator.name as keyof Generators].push(generator)
     }
     total1.supply = total1.supply.add(generator.supply)
     total1.generation = total1.generation.add(generator.generation)
@@ -232,7 +244,7 @@ function add_simulation_raw(res: Simulation, update: boolean) {
   battery_level.push(battery.level)
   let grid_raw = res['benchmark']['grid']
   for (const gridParameter of ['sold', 'bought', 'sell', 'buy']) {
-    grid[gridParameter].push(grid_raw[gridParameter])
+    grid[gridParameter as keyof IGrid].push(grid_raw[gridParameter as keyof IGrid])
   }
 
   if (update && currentIndex.value >= 3) {
@@ -247,22 +259,23 @@ function add_simulation_raw(res: Simulation, update: boolean) {
     radiations_view.value = radiations.slice(begin, end)
     winds_view.value = winds.slice(begin, end)
     for (const applianceParameter of ['Fridge', 'Lights', 'ElectricHeater', 'Total']) {
-      demand_view.value[applianceParameter] = demand[applianceParameter].slice(begin, end)
+      demand_view.value[applianceParameter as keyof IAppliances] = demand[applianceParameter as keyof IAppliances].slice(begin, end)
     }
     for (const generatorParameter of ['SolarPanel', 'Windturbine', 'Total']) {
-      generation_view.value[generatorParameter] = generation[generatorParameter].slice(begin, end)
+      generation_view.value[generatorParameter as keyof Generators] = generation[generatorParameter as keyof Generators].slice(begin, end)
     }
     battery_level_view.value = battery_level.slice(begin, end)
     for (const gridParameter of ['sold', 'bought', 'sell', 'buy']) {
-      grid_view.value[gridParameter] = grid[gridParameter].slice(begin, end)
+      grid_view.value[gridParameter as keyof IGrid] = grid[gridParameter as keyof IGrid].slice(begin, end)
     }
-    benchmark_co2_view.value = benchmark_co2.slice(begin, end)
-    decision_co2_view.value = decision_co2.slice(begin, end)
+    for (const algorithm of ['benchmark', 'decision']) {
+      co2_view.value[algorithm as keyof Algorithms] = co2[algorithm as keyof Algorithms].slice(begin, end)
+    }
     money_view.value = money.slice(begin, end)
   }
 }
 
-const handleDate = (modelData) => {
+const handleDate = (modelData: Date) => {
   // https://date-fns.org/v3.6.0/docs/differenceInMinutes
   let minuteDifference = differenceInMinutes(modelData, presetDates.value[0].value);
   if (minuteDifference > 0) {
@@ -276,6 +289,7 @@ const handleDate = (modelData) => {
         add_simulation_raw(res[i], false);
       }
       add_simulation_raw(res[res.length - 1], true);
+      console.log('ARMER RAM', radiations.length, radiations_view.value.length);
     });
   }
 }
@@ -295,7 +309,7 @@ function patch_outside() {
   });
 }
 
-function get_field(bucket, field, index) {
+function get_field(bucket, field: string, index: string) {
   return bucket[field].map<Energy>(item => item[index]);
 }
 
@@ -369,7 +383,7 @@ function get_field(bucket, field, index) {
                     :key="currentIndex"
                     :keys="dates_view"
                     :axes="['Benchmark CO2', 'Decision CO2']"
-                    :values="[benchmark_co2_view, decision_co2_view]"/>
+                    :values="[co2_view['benchmark'], co2_view['decision']]"/>
       </div>
       <div class="singleChart">
         <LinesChart v-if="dataFetched"

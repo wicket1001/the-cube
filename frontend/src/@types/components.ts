@@ -1,5 +1,10 @@
 import { Energy, Money, Temperature } from '@/@types/physics'
 
+export interface Algorithms {
+  "benchmark": Algorithm,
+  "decision": Algorithm,
+}
+
 export class Algorithm {
   "co2": number;
   "money": Money;
@@ -62,6 +67,19 @@ export interface IEnvironment {
   "wind_directions": number,
 }
 
+export interface Rooms {
+  'Cellar left': Room,
+  'Cellar right': Room,
+  'First left': Room,
+  'First right': Room,
+  'Second left': Room,
+  'Second right': Room,
+  'Third left': Room,
+  'Third right': Room,
+  'Attic left': Room,
+  'Attic right': Room,
+}
+
 export class Room {
   "name": string;
   "temperature": Temperature;
@@ -84,6 +102,15 @@ export interface IRoom {
   ],
 }
 
+export class Appliances {
+  'Fridge': Appliance;
+  'Lights': Appliance;
+  'ElectricHeater': Appliance;
+}
+export interface IAppliances extends Appliances {};
+export type TAppliances = Array<keyof IAppliances>;
+export const bob: TAppliances = Object.keys(new Appliances()) as TAppliances;
+
 export class Appliance {
   "name": string;
   "demand": Energy;
@@ -102,6 +129,11 @@ export interface IAppliance {
   "demand": number,
   "usage": number,
   "on": boolean
+}
+
+export interface Generators {
+  'SolarPanel': Generator,
+  'Windturbine': Generator,
 }
 
 export class Generator {

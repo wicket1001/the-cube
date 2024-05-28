@@ -13,10 +13,10 @@ export function stepHeat(time, inside, outside) {
   return inside + delta;
 }
 
-export function map(x, in_min, in_max, out_min, out_max) {
+export function mapping(x, in_min, in_max, out_min, out_max) {
   return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 
 export function toColor(heat) {
-  return map(heat, 0, 30, 180, 0)
+  return mapping(heat, 0, 30, 180, 0)
 }
