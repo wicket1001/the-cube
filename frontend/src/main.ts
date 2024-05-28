@@ -17,19 +17,30 @@ import {createPinia} from 'pinia'
 import VueDatePicker from '@vuepic/vue-datepicker'
 import '@vuepic/vue-datepicker/dist/main.css'
 
+import '@fortawesome/fontawesome-free/css/all.css' // Ensure your project is capable of handling css files
+//import { aliases, fa } from 'vuetify/iconsets/fa'
+import '@mdi/font/css/materialdesignicons.css' // Ensure you are using css-loader
+
 const vuetify = createVuetify({
   components,
   directives,
   /*date: {
     adapter: DayJSAdapter
   },*/
+  /*icons: {
+    defaultSet: 'fa',
+    aliases,
+    sets: {
+      fa,
+    },
+  },*/
   icons: {
     defaultSet: 'mdi',
     aliases,
     sets: {
-      mdi,
-    },
-  },
+      mdi
+    }
+  }
 })
 
 const pinia = createPinia()

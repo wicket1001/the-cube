@@ -85,3 +85,10 @@ export async function patch_future(absolute_step: number): Promise<Simulation[]>
   }
   return simulations;
 }
+
+export async function reset_simulation(): Promise<number> {
+  const url = `${baseURL}reset`;
+  const response = await axios.post(url, {});
+  return response.status;
+  // return response.data;
+}

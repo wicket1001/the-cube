@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, reactive, type Ref, ref, watch, getCurrentInstance, computed } from 'vue'
-import { getData, patch_future, patching, simulate } from '@/utils/resources'
+import { getData, patch_future, patching, reset_simulation, simulate } from '@/utils/resources'
 import Mode from '@/components/LinesChart.vue'
 import LinesChart from '@/components/LinesChart.vue'
 import WindComponent from '@/components/WindComponent.vue'
@@ -171,6 +171,11 @@ function fast() {
   play(250)
 }
 
+function reset_sim() {
+  dataFetched.value = false;
+  reset_simulation().then();
+}
+
 function show_cube_temperature(inner_temperature: number) {
   let color = toColor(inner_temperature)
   let cube = document.querySelector<HTMLElement>('.cube')
@@ -282,6 +287,7 @@ const handleDate = (modelData: Date) => {
     // console.log(minuteDifference)
     let absolute_step = minuteDifference / 10;
     // console.log(absolute_step)
+    dataFetched.value = false;
     patch_future(absolute_step).then(res => {
       currentIndex.value = absolute_step;
 
@@ -289,7 +295,7 @@ const handleDate = (modelData: Date) => {
         add_simulation_raw(res[i], false);
       }
       add_simulation_raw(res[res.length - 1], true);
-      console.log('ARMER RAM', radiations.length, radiations_view.value.length);
+      dataFetched.value = true;
     });
   }
 }
@@ -322,19 +328,13 @@ function get_field(bucket, field: string, index: string) {
     <p>{{end}}</p>-->
     <!--<datepicker placeholder="Start Date" v-model="start" name="start-date"></datepicker>
     <datepicker placeholder="End Date" v-model="end" name="end-date"></datepicker>-->
+    <!--<font-awesome-icon :icon="['fas', 'pause']" />-->
     <div>
-      <v-btn variant="outlined" @click="pause_sim()">
-        Pause
-      </v-btn>
-      <v-btn variant="outlined" @click="step()">
-        Step
-      </v-btn>
-      <v-btn variant="outlined" @click="play()">
-        {{ playBtn }}
-      </v-btn>
-      <v-btn variant="outlined" @click="fast()">
-        Fast
-      </v-btn>
+      <v-btn class="mr-1" density="default" aria-label="Pause" icon="mdi-pause" :disabled="timer === -1" @click="pause_sim()"></v-btn>
+      <v-btn class="mx-1" density="default" aria-label="Step" icon="mdi-step-forward" :disabled="timer !== -1" @click="step()"></v-btn>
+      <v-btn class="mx-1" density="default" aria-label="Play" icon="mdi-play" :disabled="timer !== -1" @click="play()"></v-btn>
+      <v-btn class="mx-1" density="default" aria-label="Fast" icon="mdi-fast-forward" :disabled="timer !== -1" @click="fast()"></v-btn>
+      <v-btn class="ml-1" density="default" aria-label="Reset" icon="mdi-replay" @click="reset_sim()"></v-btn>
     </div>
     <div class="d-inline">
       {{currentIndex}}
@@ -355,7 +355,7 @@ function get_field(bucket, field: string, index: string) {
         no-today
         :loading="!dataFetched"
         :min-date="presetDates[0].value"
-        :max-date="presetDates[1].value"
+        :max-date="presetDates[2].value"
         minutes-increment="10"
         minutes-grid-increment="10"
         select-text="Auswählen"
@@ -371,9 +371,7 @@ function get_field(bucket, field: string, index: string) {
     <input type="range" min="0" :max="lookback" value="0" v-model="currentIndex" />
   </div>
   <div class="overrides mb-16">
-    <v-btn variant="outlined" @click="patch_outside()">
-      heat
-    </v-btn>
+    <v-btn density="default" icon="mdi-sun-thermometer-outline" @click="patch_outside()"></v-btn>
   </div>
   <div>
     <div class="charts">
