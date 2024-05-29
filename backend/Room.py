@@ -80,7 +80,7 @@ class Room:
 
     energy_consumption = Energy(0)
 
-    electricHeater = ElectricHeater(36_600)  # 600W  600 * 4 * 4
+    electricHeater = ElectricHeater(600)  # 600W  600 * 4 * 4
     lights = Lights(25)
     fridge = Fridge(150)
     appliances = [electricHeater, lights, fridge]
@@ -454,10 +454,16 @@ class Room:
                 heat_generated = self.electricHeater.get_energy_demand()
                 self.temperature += self.heat(heat_generated)
         elif algorithms == Algorithms.DECISION_TREE:
-            if 6 * 6 < step_of_the_day < 18 * 6 and self.temperature < Temperature.from_celsius(19):
-                self.electricHeater.activate()
-                heat_generated = self.electricHeater.get_energy_demand()
-                self.temperature += self.heat(heat_generated)
+            if 6 * 6 < step_of_the_day < 18 * 6:
+                if self.temperature < Temperature.from_celsius(19):
+                    self.electricHeater.activate()
+                    heat_generated = self.electricHeater.get_energy_demand()
+                    self.temperature += self.heat(heat_generated)
+            else:
+                if self.temperature < Temperature.from_celsius(10):
+                    self.electricHeater.activate()
+                    heat_generated = self.electricHeater.get_energy_demand()
+                    self.temperature += self.heat(heat_generated)
         else:
             raise NotImplementedError('Other Algorithms are not implemented for room.')
 

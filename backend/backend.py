@@ -143,10 +143,12 @@ class RestAPI(BaseHTTPRequestHandler):
                     self.send_unprocessable_entity()
                     return
 
+            if diff > 144:
+                print()
             for i in range(diff):
                 step = absolute_step % 144
                 if diff > 144 and step == 0:
-                    print(weather['dates'][absolute_step])
+                    print(weather['dates'][absolute_step], '\r', end='')
                 response = {
                     'step': step,
                     'absolute_step': absolute_step,

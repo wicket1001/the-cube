@@ -40,6 +40,7 @@ let current_date = ref('');
 let outside = ref(new Temperature(0));
 let inside = ref(new Temperature(0));
 let dataFetched: Ref<boolean> = ref(false);
+let stepped = true;
 let playBtn = ref('Play')
 
 let dates: Date[] = [];
@@ -177,15 +178,21 @@ watch(future, async(newValue, oldValue) => {
 function pause_sim() {
   if (timer !== -1) {
     clearInterval(timer);
-    timer = -1;
   }
+  timer = -1;
 }
 
 function step() {
-  currentIndex.value ++;
-  simulate().then(res => {
-    add_simulation_raw(res, true);
-  });
+  if (stepped) {
+    stepped = false;
+    currentIndex.value++;
+    simulate().then(res => {
+      add_simulation_raw(res, true);
+      stepped = true;
+    });
+  } else {
+    console.log('Still in timeout');
+  }
 }
 
 function play(timeout = 1000) {
@@ -326,19 +333,24 @@ const handleDate = (modelData: Date) => {
   // https://date-fns.org/v3.6.0/docs/differenceInMinutes
   let minuteDifference = differenceInMinutes(modelData, presetDates.value[0].value);
   if (minuteDifference > 0) {
-    // console.log(minuteDifference)
     let absolute_step = minuteDifference / 10;
-    // console.log(absolute_step)
-    dataFetched.value = false;
-    patch_future(absolute_step).then(res => {
-      currentIndex.value = absolute_step;
+    if (modelData > dates[dates.length - 1]) {
+      dataFetched.value = false;
+      stepped = false;
+      patch_future(absolute_step).then(res => {
+        currentIndex.value = absolute_step;
 
-      for (let i = 0; i < res.length - 1; i ++) {
-        add_simulation_raw(res[i], false);
-      }
-      add_simulation_raw(res[res.length - 1], true);
-      dataFetched.value = true;
-    });
+        for (let i = 0; i < res.length - 1; i++) {
+          add_simulation_raw(res[i], false);
+        }
+        add_simulation_raw(res[res.length - 1], true);
+        dataFetched.value = true;
+        stepped = true;
+      });
+    } else {
+      console.log('Date picked is already in simulation past.')
+      // TODO Error handling
+    }
   }
 }
 
@@ -362,13 +374,10 @@ function get_field(bucket, field: string, index: string) {
 }
 
 function extract_keys(bucket, indexes: string[]) {
-  console.log(temperatures_graph.length, temperatures_graph)
-  console.log(temperatures_graph_view.value.length, temperatures_graph_view.value)
   let arrays = [];
   for (const index of indexes) {
     arrays.push(bucket[index]);
   }
-  console.log(arrays.length);
   return arrays;
 }
 
