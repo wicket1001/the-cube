@@ -1,4 +1,5 @@
 from DebugLevel import DebugLevel
+from Generator import Generator
 from Physics import *
 from Fridge import Fridge
 from Lights import Lights
@@ -20,16 +21,16 @@ def to_co2(energy: Energy) -> float:
 
 
 class House(object):
-    solarPanel = SolarPanel(12 * 24)  # m^2
-    windturbine = Windturbine(24 * 0.5, 0)  # m^2
-    battery = Battery(Energy.from_kilo_watt_hours(200))
-    sand_battery = SandBattery(1, 1, 1)
+    solarPanel = None # SolarPanel(12 * 24)  # m^2
+    windturbine = None # Windturbine(24 * 0.5, 0)  # m^2
+    battery = None # Battery(Energy.from_kilo_watt_hours(200))
+    sand_battery = None # SandBattery(1, 1, 1)
     grid = Grid()
     money = Money(0)
     co2 = 0  # TODO CO2 unit
     energy_production = Energy(0)
     energy_consumption = Energy(0)
-    generators = [solarPanel, windturbine]
+    # generators = [solarPanel, windturbine]
     outer_temperature = Temperature(0)
     patched_temperature = None
     outer_temperature_patch = None
@@ -38,7 +39,7 @@ class House(object):
     def get_energy_production(self, response: dict, t: int, absolute_step: int, verbosity: DebugLevel):
         energy_produced = Energy(0)
         generators_response = []
-        for generator in self.generators:
+        for generator in self.get_generators():
             energy_supply = generator.step(t, absolute_step, verbosity)
             energy_produced += energy_supply
             generators_response.append({
@@ -48,6 +49,9 @@ class House(object):
             })
         response["generators"] = generators_response
         return energy_produced
+
+    def get_generators(self) -> [Generator]:
+        return self.solarPanel, self.windturbine
 
     def valid(self) -> bool:
         valid = True

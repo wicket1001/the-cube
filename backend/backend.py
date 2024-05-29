@@ -148,7 +148,7 @@ class RestAPI(BaseHTTPRequestHandler):
             for i in range(diff):
                 step = absolute_step % 144
                 if diff > 144 and step == 0:
-                    print(weather['dates'][absolute_step], '\r', end='')
+                    print('\r', weather['dates'][absolute_step], end='')
                 response = {
                     'step': step,
                     'absolute_step': absolute_step,
@@ -172,6 +172,8 @@ class RestAPI(BaseHTTPRequestHandler):
                 absolute_step += 1
                 if len(cache) > cache_size:
                     cache.pop(0)
+            if diff > 144:
+                print()
 
             self.send_empty_response()
 
@@ -191,6 +193,7 @@ class RestAPI(BaseHTTPRequestHandler):
 def setup():
     global benchmark_house
     global decision_house
+    global weather
     global cache
     cache = []
     benchmark_house = utils.get_house()

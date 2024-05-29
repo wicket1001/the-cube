@@ -4,6 +4,7 @@ from datetime import datetime
 from Battery import Battery
 from DebugLevel import DebugLevel
 from House import House
+from Lights import Lights
 from Occupancy import Occupancy
 from Physics import Length, Energy
 from Room import Room
@@ -133,9 +134,11 @@ def get_house():
              third_left, third_right,
              attic_left, attic_right]
     house = House()
+    for room in rooms:
+        room.lights = Lights(room.get_lights_estimation().value)
     house.set_rooms(rooms)
-    # house.solarPanel = SolarPanel(Length(12 * 24 * 0.5))
-    # house.windturbine = Windturbine(24 * 0.5, 0)
-    # house.battery = Battery(Energy.from_kilo_watt_hours(200))
-    # house.sand_battery = SandBattery(1, 1, 1)
+    house.solarPanel = SolarPanel(Length(12 * 24 * 0.5))
+    house.windturbine = Windturbine(24 * 0.5, 0)
+    house.battery = Battery(Energy.from_kilo_watt_hours(200))
+    house.sand_battery = SandBattery(1, 1, 1)
     return house

@@ -10,9 +10,9 @@ STEPS_PER_DAY = int((24 * 60) / 10)
 class Occupancy:
     __occupancy = {
         'empty': 0,
-        'low': 4,
-        'medium': 10,
-        'high': 15
+        'low': 0.1,
+        'medium': 0.15,
+        'high': 0.2
     }
 
     class Predefined(IntFlag):
@@ -48,7 +48,7 @@ class Occupancy:
     def from_predefined(density: Predefined, quadratic_metres: Length) -> Occupancy:
         return Occupancy(int(Occupancy.__occupancy[
                             density.name.lower().replace('_', ' ')
-                         ] * quadratic_metres.value / 10))
+                         ] * quadratic_metres.value))
 
     def generate_heat(self, verbosity: DebugLevel = DebugLevel.INFORMATIONAL) -> Energy:  # live
         energy = Power(100) * Time.from_minutes(10) * self.occupants

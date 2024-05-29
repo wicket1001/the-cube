@@ -357,16 +357,20 @@ class TestComponents(unittest.TestCase):
         empty_room = Occupancy.from_predefined(Occupancy.Predefined.EMPTY, room.get_quadratic_metres())
         self.assertEqual(empty_room.occupants, 0)
         low_room = Occupancy.from_predefined(Occupancy.Predefined.LOW, room.get_quadratic_metres())
-        self.assertEqual(low_room.occupants, 40)
+        self.assertEqual(low_room.occupants, 10)
+        medium_room = Occupancy.from_predefined(Occupancy.Predefined.MEDIUM, room.get_quadratic_metres())
+        self.assertEqual(medium_room.occupants, 15)
         high_room = Occupancy.from_predefined(Occupancy.Predefined.HIGH, room.get_quadratic_metres())
-        self.assertEqual(high_room.occupants, 150)
+        self.assertEqual(high_room.occupants, 20)
 
-        empty_room = Room(10, 10, 2.5, Occupancy.Predefined.EMPTY)
+        empty_room = Room(6, 24, 2.5, Occupancy.Predefined.EMPTY)
         self.assertEqual(empty_room.occupancy.occupants, 0)
-        low_room = Room(10, 10, 2.5, Occupancy.Predefined.LOW)
-        self.assertEqual(low_room.occupancy.occupants, 40)
-        high_room = Room(10, 10, 2.5, Occupancy.Predefined.HIGH)
-        self.assertEqual(high_room.occupancy.occupants, 150)
+        low_room = Room(6, 24, 2.5, Occupancy.Predefined.LOW)
+        self.assertEqual(low_room.occupancy.occupants, 14)
+        medium_room = Room(6, 24, 2.5, Occupancy.Predefined.MEDIUM)
+        self.assertEqual(medium_room.occupancy.occupants, 21)
+        high_room = Room(6, 24, 2.5, Occupancy.Predefined.HIGH)
+        self.assertEqual(high_room.occupancy.occupants, 28)
 
     def test_room(self):
         room = Room(5, 8, 2.5)
@@ -388,6 +392,18 @@ class TestComponents(unittest.TestCase):
                           Room.Surface.OUTSIDE)
         if not room.valid():
             raise AttributeError(f'A surface other than Ground should not be {Room.Surface.GROUND}.')
+
+    def test_room_estimations(self):
+        standard_room = Room(10, 10, 2.5, Occupancy.Predefined.HIGH)
+        power = standard_room.get_lights_estimation()
+        energy_hour = power * Time.from_hours(1)
+        self.assertEqual(energy_hour.format_kilo_watt_hours(), '0.50kWh')
+        energy_year = power * Time.from_years(1)
+        self.assertFalse(Energy.from_kilo_watt_hours(40).value < energy_year.value < Energy.from_kilo_watt_hours(70).value)
+
+        house_room = Room(6, 24, 2.5, Occupancy.Predefined.HIGH)
+        power = house_room.get_lights_estimation()
+        self.assertEqual(power.value, 720)
 
     def test_house(self):
         house = get_house()
@@ -468,6 +484,27 @@ class TestComponents(unittest.TestCase):
     def test_error(self):
         with self.assertRaises(ZeroDivisionError):
             value = 3 / 0
+
+    def test_water_buffer_real(self):
+        off = Temperature.from_celsius(70)
+        on = Temperature.from_celsius(20)
+        waterbuffer = WaterBuffer(Length.from_litre(500), on)
+        on_energy = waterbuffer.shc.calculate_energy(off, waterbuffer.weight)
+        off_energy = waterbuffer.shc.calculate_energy(on, waterbuffer.weight)
+        print(on_energy.format_kilo_watt_hours(), off_energy.format_kilo_watt_hours(), (on_energy - off_energy).format_kilo_watt_hours())
+
+    def test_alex(self):
+        sand_density = Density.from_predefined(Density.Predefined.SAND)
+        sand_mass = sand_density.calculate_mass(Length(1))
+        sand_shc = SpecificHeatCapacity.from_predefined(SpecificHeatCapacity.Predefined.SAND)
+        sand_energy = sand_shc.calculate_energy(Temperature(1), sand_mass)
+        print()
+        print(sand_energy.format_watt_hours())
+        water_density = Density.from_predefined(Density.Predefined.WATER)
+        water_mass = water_density.calculate_mass(Length(1))
+        water_shc = SpecificHeatCapacity.from_predefined(SpecificHeatCapacity.Predefined.WATER)
+        water_energy = water_shc.calculate_energy(Temperature(1), water_mass)
+        print(water_energy.format_watt_hours())
 
 
 if __name__ == '__main__':

@@ -2,6 +2,7 @@ import numbers
 import warnings
 from enum import IntFlag, auto
 
+from Appliance import Appliance
 from DebugLevel import DebugLevel
 from ElectricHeater import ElectricHeater
 from Fridge import Fridge
@@ -80,10 +81,10 @@ class Room:
 
     energy_consumption = Energy(0)
 
-    electricHeater = ElectricHeater(600)  # 600W  600 * 4 * 4
-    lights = Lights(25)
-    fridge = Fridge(150)
-    appliances = [electricHeater, lights, fridge]
+    electricHeater = None # ElectricHeater(600)  # 600W  600 * 4 * 4
+    lights = None # Lights(25)
+    fridge = None # Fridge(150)
+    # appliances = [electricHeater, lights, fridge]
 
     def __init__(self,
                  length: [numbers.Number, Length],
@@ -429,7 +430,7 @@ class Room:
     def get_energy_demand(self, response: dict, t: int, absolute_step: int, verbosity: DebugLevel):
         energy_demand = Energy(0)
         appliances_response = []
-        for appliance in self.appliances:
+        for appliance in self.get_appliances():
             appliance_demand = appliance.step(t, absolute_step, verbosity)
             energy_demand += appliance_demand
             appliances_response.append({
@@ -446,6 +447,9 @@ class Room:
         response["rooms"].append(room)
         self.energy_consumption += energy_demand
         return energy_demand
+
+    def get_appliances(self) -> [Appliance]:
+        return self.electricHeater, self.lights, self.fridge
 
     def step(self, step_of_the_day: int, absolute_step: int, algorithms: Algorithms, verbosity: DebugLevel) -> dict:
         if algorithms == Algorithms.BENCHMARK:
@@ -472,3 +476,14 @@ class Room:
 
     def reset_after(self):
         pass
+
+    def get_lights_estimation(self):
+        # Arbeitsschutzgesetz: 500 Lumen pro m^2, wenn Bürofläche
+        #
+        # https://www.beleuchtungdirekt.de/lumen-nach-watt
+        # Glühbirne        Approximation: 500 Lumen = 40 W
+        # Halogenlampe     Approximation: 500 Lumen = 35 W
+        # Energiesparlampe Approximation: 500 Lumen =  8 W
+        # LED              Approximation: 500 Lumen =  5 W
+        # Energy.from_kilo_watt_hours(40) - Energy.from_kilo_watt_hours(70)  # per m^2 per year
+        return Power(self.get_quadratic_metres().value * 5)  # LED
