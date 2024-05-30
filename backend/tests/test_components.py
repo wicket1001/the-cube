@@ -12,6 +12,7 @@ from DebugLevel import DebugLevel
 from ElectricHeater import ElectricHeater
 from Equipment import Equipment
 from Fridge import Fridge
+from Grid import Grid
 from HeatPump import HeatPump
 from Occupancy import Occupancy
 from Physics import *
@@ -255,6 +256,18 @@ class TestComponents(unittest.TestCase):
 
         with self.assertRaises(AttributeError):
             solar_thermal.step(0, 0)
+
+        date_to_explore = datetime(2022, 5, 31, 0, 0, 0, 0)
+        day = date_to_explore.timetuple()[7] + 365 - 1
+        water_shc = SpecificHeatCapacity.from_predefined(SpecificHeatCapacity.Predefined.WATER)
+        temperature = Temperature.from_celsius(7)
+        for step in range(self.STEPS_PER_DAY):
+            absolute_step = day * self.STEPS_PER_DAY + step
+
+            solar_thermal.input_water(Length.from_litre(100), temperature)
+            production_step = solar_thermal.step(step, absolute_step, verbosity)
+            water, temperature = solar_thermal.output_water()
+            print(temperature.format_celsius())
 
     def test_sand_battery(self):
         verbosity = DebugLevel.INFORMATIONAL
@@ -555,6 +568,16 @@ class TestComponents(unittest.TestCase):
         water_shc = SpecificHeatCapacity.from_predefined(SpecificHeatCapacity.Predefined.WATER)
         water_energy = water_shc.calculate_energy(Temperature(1), water_mass)
         print(water_energy.format_watt_hours())
+
+    def test_grid(self):
+        grid = Grid()
+        grid.buy(Energy.from_kilo_watt_hours(155070))
+        grid.print_statistics(DebugLevel.DEBUGGING)
+
+        grid = Grid()
+        grid.buy(Energy.from_kilo_watt_hours(1))
+        grid.sell(Energy.from_kilo_watt_hours(1))
+        grid.print_statistics(DebugLevel.DEBUGGING)
 
 
 if __name__ == '__main__':
