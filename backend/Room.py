@@ -83,7 +83,7 @@ class Room:
 
     electricHeater = None # ElectricHeater(600)  # 600W  600 * 4 * 4
     lights = None # Lights(25)
-    fridge = None # Fridge(150)
+    equipment = None # Fridge(150)
     # appliances = [electricHeater, lights, fridge]
 
     def __init__(self,
@@ -118,7 +118,8 @@ class Room:
         self.mass = air.calculate_mass(self.get_volume())
         # print(self.mass)
 
-        self.occupancy = Occupancy.from_predefined(occupancy, self.get_quadratic_metres())
+        self.occupancy = occupancy
+        self.occupants = Occupancy.from_predefined(occupancy, self.get_quadratic_metres())
 
         self.name = name
 
@@ -449,7 +450,7 @@ class Room:
         return energy_demand
 
     def get_appliances(self) -> [Appliance]:
-        return self.electricHeater, self.lights, self.fridge
+        return self.electricHeater, self.lights, self.equipment
 
     def step(self, step_of_the_day: int, absolute_step: int, algorithms: Algorithms, verbosity: DebugLevel) -> dict:
         if algorithms == Algorithms.BENCHMARK:
@@ -477,7 +478,7 @@ class Room:
     def reset_after(self):
         pass
 
-    def get_lights_estimation(self):
+    def get_lights_estimation(self) -> Power:
         # Arbeitsschutzgesetz: 500 Lumen pro m^2, wenn Bürofläche
         #
         # https://www.beleuchtungdirekt.de/lumen-nach-watt
@@ -486,4 +487,16 @@ class Room:
         # Energiesparlampe Approximation: 500 Lumen =  8 W
         # LED              Approximation: 500 Lumen =  5 W
         # Energy.from_kilo_watt_hours(40) - Energy.from_kilo_watt_hours(70)  # per m^2 per year
-        return Power(self.get_quadratic_metres().value * 5)  # LED
+        return Power(self.get_quadratic_metres().value * 5 * 0.5)  # LED, only half the day on
+
+    def get_equipment_estimation(self) -> Power:
+        if self.occupancy == Occupancy.Predefined.EMPTY:
+            return Power(0)
+        elif self.occupancy == Occupancy.Predefined.LOW:
+            return Power(self.get_quadratic_metres().value * 180)  # Equipment
+        elif self.occupancy == Occupancy.Predefined.MEDIUM:
+            return Power(self.get_quadratic_metres().value * 270)  # Equipment
+        elif self.occupancy == Occupancy.Predefined.HIGH:
+            return Power(self.get_quadratic_metres().value * 360)  # Equipment
+        else:
+            raise NotImplementedError('Occupancy not implemented for room.')

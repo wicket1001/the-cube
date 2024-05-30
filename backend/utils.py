@@ -3,6 +3,8 @@ from datetime import datetime
 
 from Battery import Battery
 from DebugLevel import DebugLevel
+from ElectricHeater import ElectricHeater
+from Equipment import Equipment
 from House import House
 from Lights import Lights
 from Occupancy import Occupancy
@@ -10,6 +12,7 @@ from Physics import Length, Energy
 from Room import Room
 from SandBattery import SandBattery
 from SolarPanel import SolarPanel
+from SolarThermal import SolarThermal
 from Windturbine import Windturbine
 
 
@@ -136,9 +139,12 @@ def get_house():
     house = House()
     for room in rooms:
         room.lights = Lights(room.get_lights_estimation().value)
+        room.electricHeater = ElectricHeater(600)
+        room.equipment = Equipment(room.get_equipment_estimation().value)
     house.set_rooms(rooms)
     house.solarPanel = SolarPanel(Length(12 * 24 * 0.5))
     house.windturbine = Windturbine(24 * 0.5, 0)
+    house.solarThermal = SolarThermal(Length(12 * 24 * 0.5))
     house.battery = Battery(Energy.from_kilo_watt_hours(200))
     house.sand_battery = SandBattery(1, 1, 1)
     return house

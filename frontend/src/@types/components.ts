@@ -1,9 +1,12 @@
 import { Energy, Money, Temperature } from '@/@types/physics'
 
-export interface Algorithms {
-  "benchmark": Algorithm,
-  "decision": Algorithm,
+export class Algorithms {
+  "benchmark": Algorithm;
+  "decision": Algorithm;
 }
+export interface IAlgorithms extends Algorithms {}
+export type TAlgorithms = Array<keyof IAlgorithms>;
+export const algorithms_named: TAlgorithms = Object.keys(new Algorithms()) as TAlgorithms;
 
 export class Algorithm {
   "co2": number;
@@ -106,9 +109,10 @@ export interface IRoom {
 }
 
 export class Appliances {
-  'Fridge': Appliance;
+  'Equipment': Appliance;
   'Lights': Appliance;
   'ElectricHeater': Appliance;
+  'Total': Appliance;
 }
 export interface IAppliances extends Appliances {}
 export type TAppliances = Array<keyof IAppliances>;
@@ -134,10 +138,15 @@ export interface IAppliance {
   "on": boolean
 }
 
-export interface Generators {
-  'SolarPanel': Generator,
-  'Windturbine': Generator,
+export class Generators {
+  'SolarPanel': Generator;
+  'Windturbine': Generator;
+  'SolarThermal': Generator;
+  'Total': Generator;
 }
+export interface IGenerators extends Generators {}
+export type TGenerators = Array<keyof IGenerators>
+export const generators_named: TGenerators = Object.keys(new Generators()) as TGenerators
 
 export class Generator {
   "name": string;

@@ -5,7 +5,7 @@ from urllib.parse import urlparse, parse_qs
 
 import utils
 from DebugLevel import DebugLevel
-from Physics import SIEncoder, Temperature
+from Physics import SIEncoder, Temperature, Length
 from algorithm_utils import Algorithms
 
 hostName = "localhost"
@@ -201,8 +201,13 @@ def setup():
 
     benchmark_house.solarPanel.save_weather(weather['radiations'])
     benchmark_house.windturbine.save_weather(weather['winds'], weather['wind_directions'])
+    benchmark_house.solarThermal.save_weather(weather['radiations'])
     decision_house.solarPanel.save_weather(weather['radiations'])
     decision_house.windturbine.save_weather(weather['winds'], weather['wind_directions'])
+    decision_house.solarThermal.save_weather(weather['radiations'])
+
+    benchmark_house.solarThermal.input_water(Length.from_litre(1_000_000), Temperature.from_celsius(7))
+    decision_house.solarThermal.input_water(Length.from_litre(1_000_000), Temperature.from_celsius(7))
 
 
 if __name__ == "__main__":

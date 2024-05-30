@@ -20,10 +20,15 @@ def main():
 
     benchmark_house.solarPanel.save_weather(weather['radiations'])
     benchmark_house.windturbine.save_weather(weather['winds'], weather['wind_directions'])
+    benchmark_house.solarThermal.save_weather(weather['radiations'])
 
     decision_house = get_house()
     decision_house.solarPanel.save_weather(weather['radiations'])
     decision_house.windturbine.save_weather(weather['winds'], weather['wind_directions'])
+    decision_house.solarThermal.save_weather(weather['radiations'])
+
+    benchmark_house.solarThermal.input_water(Length.from_litre(1_000_000), Temperature.from_celsius(7))
+    decision_house.solarThermal.input_water(Length.from_litre(1_000_000), Temperature.from_celsius(7))
 
     trying = 365
     start = time.time()
@@ -65,7 +70,7 @@ def main():
     benchmark_house.electricHeater.print_statistics()
     benchmark_house.solarPanel.print_statistics()
     benchmark_house.windturbine.print_statistics()
-    benchmark_house.fridge.print_statistics()
+    benchmark_house.equipment.print_statistics()
     benchmark_house.lights.print_statistics()
     print(f'Money: {benchmark_house.money}') # 4,18
 

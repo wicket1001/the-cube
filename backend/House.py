@@ -23,6 +23,7 @@ def to_co2(energy: Energy) -> float:
 class House(object):
     solarPanel = None # SolarPanel(12 * 24)  # m^2
     windturbine = None # Windturbine(24 * 0.5, 0)  # m^2
+    solarThermal = None
     battery = None # Battery(Energy.from_kilo_watt_hours(200))
     sand_battery = None # SandBattery(1, 1, 1)
     grid = Grid()
@@ -51,7 +52,7 @@ class House(object):
         return energy_produced
 
     def get_generators(self) -> [Generator]:
-        return self.solarPanel, self.windturbine
+        return self.solarPanel, self.windturbine, self.solarThermal
 
     def valid(self) -> bool:
         valid = True

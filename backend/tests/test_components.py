@@ -1,6 +1,6 @@
 #!/usr/bin python3
 # encoding=utf-8
-
+import math
 # python test_components.py TestComponents
 # python test_components.py TestComponents.test_solar_panel
 
@@ -10,6 +10,7 @@ import csv
 from Battery import Battery
 from DebugLevel import DebugLevel
 from ElectricHeater import ElectricHeater
+from Equipment import Equipment
 from Fridge import Fridge
 from HeatPump import HeatPump
 from Occupancy import Occupancy
@@ -364,13 +365,13 @@ class TestComponents(unittest.TestCase):
         self.assertEqual(high_room.occupants, 20)
 
         empty_room = Room(6, 24, 2.5, Occupancy.Predefined.EMPTY)
-        self.assertEqual(empty_room.occupancy.occupants, 0)
+        self.assertEqual(empty_room.occupants.occupants, 0)
         low_room = Room(6, 24, 2.5, Occupancy.Predefined.LOW)
-        self.assertEqual(low_room.occupancy.occupants, 14)
+        self.assertEqual(low_room.occupants.occupants, 14)
         medium_room = Room(6, 24, 2.5, Occupancy.Predefined.MEDIUM)
-        self.assertEqual(medium_room.occupancy.occupants, 21)
+        self.assertEqual(medium_room.occupants.occupants, 21)
         high_room = Room(6, 24, 2.5, Occupancy.Predefined.HIGH)
-        self.assertEqual(high_room.occupancy.occupants, 28)
+        self.assertEqual(high_room.occupants.occupants, 28)
 
     def test_room(self):
         room = Room(5, 8, 2.5)
@@ -394,16 +395,65 @@ class TestComponents(unittest.TestCase):
             raise AttributeError(f'A surface other than Ground should not be {Room.Surface.GROUND}.')
 
     def test_room_estimations(self):
+        square_meter = Room(1, 1, 1, Occupancy.Predefined.HIGH)
+        power = square_meter.get_lights_estimation()
+        energy_hour = power * Time.from_hours(1)
+        self.assertEqual(energy_hour.format_watt_hours(), '2.50Wh')
+        energy_year = power * Time.from_years(1)
+        self.assertEqual(energy_year.format_kilo_watt_hours(), '21.90kWh')
+        self.assertTrue(
+            (Energy.from_kilo_watt_hours(40).value * 0.5)
+            < energy_year.value <
+            (Energy.from_kilo_watt_hours(70).value * 0.5))
+
         standard_room = Room(10, 10, 2.5, Occupancy.Predefined.HIGH)
         power = standard_room.get_lights_estimation()
         energy_hour = power * Time.from_hours(1)
-        self.assertEqual(energy_hour.format_kilo_watt_hours(), '0.50kWh')
+        self.assertEqual(energy_hour.format_kilo_watt_hours(), '0.25kWh')
         energy_year = power * Time.from_years(1)
         self.assertFalse(Energy.from_kilo_watt_hours(40).value < energy_year.value < Energy.from_kilo_watt_hours(70).value)
 
         house_room = Room(6, 24, 2.5, Occupancy.Predefined.HIGH)
         power = house_room.get_lights_estimation()
-        self.assertEqual(power.value, 720)
+        self.assertEqual(power.value, 360)
+
+    def test_equipment(self):
+        equipment = Equipment(100)
+        sum = Energy(0)
+        solutions = ['', '', '', '', '', '']
+        for i in range(6):
+            energy = equipment.step(i, i)
+            print(energy.format_watt_seconds())
+            sum += energy
+        print(sum.format_watt_hours())
+
+        sum = Energy(0)
+        for i in range(144):
+            energy = equipment.step(i, i)
+            sum += energy
+        print(sum.format_kilo_watt_hours())
+
+        sum = Energy(0)
+        for i in range(144 * 365):
+            energy = equipment.step(i % 144, i)
+            sum += energy
+        print(sum.format_kilo_watt_hours())
+
+        square_meter = Room(1, 1, 1, Occupancy.Predefined.EMPTY)
+        equipment = Equipment(square_meter.get_equipment_estimation().value)
+        sum = Energy(0)
+        for i in range(144 * 365):
+            energy = equipment.step(i % 144, i)
+            sum += energy
+        self.assertEqual('0.00kWh', sum.format_kilo_watt_hours())
+
+        square_meter = Room(1, 1, 1, Occupancy.Predefined.HIGH)
+        equipment = Equipment(square_meter.get_equipment_estimation().value)
+        sum = Energy(0)
+        for i in range(144 * 365):
+            energy = equipment.step(i % 144, i)
+            sum += energy
+        self.assertEqual('21.90kWh', sum.format_kilo_watt_hours())
 
     def test_house(self):
         house = get_house()

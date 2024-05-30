@@ -10,7 +10,7 @@ import {
   type Generators,
   type IAppliances,
   type IGrid,
-  type Algorithms, appliances_named, rooms_named, type IRooms
+  type Algorithms, algorithms_named, appliances_named, generators_named, rooms_named, type IRooms
 } from '@/@types/components'
 import { Appliance, Battery, Generator, Grid } from '@/@types/components'
 import { Energy, Money, Temperature } from '@/@types/physics'
@@ -105,14 +105,6 @@ let temperatures_graph_view: Ref<{
   'Attic right': [],
 });
 
-let temperatures: Temperature[] = [];
-let temperatures_view: Ref<Temperature[]> = ref([]);
-
-let benchmark_inside_temperatures: Temperature[] = [];
-let benchmark_inside_temperatures_view: Ref<Temperature[]> = ref([]);
-let decision_inside_temperatures: Temperature[] = [];
-let decision_inside_temperatures_view: Ref<Temperature[]> = ref([]);
-
 let precipitations: number[] = [];
 let precipitations_view: Ref<number[]> = ref([]);
 
@@ -131,15 +123,15 @@ let co2_view: Ref<{'benchmark': number[], 'decision': number[]}> =
 let money: Money[] = [];
 let money_view: Ref<Money[]> = ref([]);
 
-let demand: {"Fridge": Appliance[], "Lights": Appliance[], "ElectricHeater": Appliance[], "Total": Appliance[]} =
-  {"Fridge": [], "Lights": [], "ElectricHeater": [], "Total": []};
-let demand_view: Ref<{"Fridge": Appliance[], "Lights": Appliance[], "ElectricHeater": Appliance[], "Total": Appliance[]}> =
-  ref({"Fridge": [], "Lights": [], "ElectricHeater": [], "Total": []});
+let demand: {"Equipment": Appliance[], "Lights": Appliance[], "ElectricHeater": Appliance[], "Total": Appliance[]} =
+  {"Equipment": [], "Lights": [], "ElectricHeater": [], "Total": []};
+let demand_view: Ref<{"Equipment": Appliance[], "Lights": Appliance[], "ElectricHeater": Appliance[], "Total": Appliance[]}> =
+  ref({"Equipment": [], "Lights": [], "ElectricHeater": [], "Total": []});
 
-let generation: {"SolarPanel": Generator[], "Windturbine": Generator[], "Total": Generator[]} =
-  {"SolarPanel": [], "Windturbine": [], "Total": []};
-let generation_view: Ref<{"SolarPanel": Generator[], "Windturbine": Generator[], "Total": Generator[]}> =
-  ref({"SolarPanel": [], "Windturbine": [], "Total": []});
+let generation: {"SolarPanel": Generator[], "Windturbine": Generator[], "SolarThermal": Generator[], "Total": Generator[]} =
+  {"SolarPanel": [], "Windturbine": [], "SolarThermal": [], "Total": []};
+let generation_view: Ref<{"SolarPanel": Generator[], "Windturbine": Generator[], "SolarThermal": Generator[], "Total": Generator[]}> =
+  ref({"SolarPanel": [], "Windturbine": [], "SolarThermal": [], "Total": []});
 
 let battery_level: Energy[] = [];
 let battery_level_view: Ref<Energy[]> = ref([]);
@@ -266,7 +258,7 @@ function add_simulation_raw(res: Simulation, update: boolean) {
   temperatures_graph['Benchmark First Inside'].push(res['benchmark']['rooms'][2]['temperature']);
   temperatures_graph['Decision First Inside'].push(res['decision']['rooms'][2]['temperature']);
 
-  for (const algorithm of ['benchmark', 'decision']) {
+  for (const algorithm of algorithms_named) {
     co2[algorithm as keyof Algorithms].push(res[algorithm as keyof Algorithms]['co2'])
   }
 
@@ -284,7 +276,7 @@ function add_simulation_raw(res: Simulation, update: boolean) {
   demand['Total'].push(total)
   let total1 = new Generator({ name: 'Total', supply: 0, generation: 0 })
   for (const generator of res['benchmark']['generators']) {
-    if (['SolarPanel', 'Windturbine'].includes(generator.name)) {
+    if (generators_named.includes(generator.name)) {
       generation[generator.name as keyof Generators].push(generator)
     }
     total1.supply = total1.supply.add(generator.supply)
@@ -312,17 +304,17 @@ function add_simulation_raw(res: Simulation, update: boolean) {
     precipitations_view.value = precipitations.slice(begin, end)
     radiations_view.value = radiations.slice(begin, end)
     winds_view.value = winds.slice(begin, end)
-    for (const applianceParameter of ['Fridge', 'Lights', 'ElectricHeater', 'Total']) {
+    for (const applianceParameter of appliances_named) {
       demand_view.value[applianceParameter as keyof IAppliances] = demand[applianceParameter as keyof IAppliances].slice(begin, end)
     }
-    for (const generatorParameter of ['SolarPanel', 'Windturbine', 'Total']) {
+    for (const generatorParameter of generators_named) {
       generation_view.value[generatorParameter as keyof Generators] = generation[generatorParameter as keyof Generators].slice(begin, end)
     }
     battery_level_view.value = battery_level.slice(begin, end)
     for (const gridParameter of ['sold', 'bought', 'sell', 'buy']) {
       grid_view.value[gridParameter as keyof IGrid] = grid[gridParameter as keyof IGrid].slice(begin, end)
     }
-    for (const algorithm of ['benchmark', 'decision']) {
+    for (const algorithm of algorithms_named) {
       co2_view.value[algorithm as keyof Algorithms] = co2[algorithm as keyof Algorithms].slice(begin, end)
     }
     money_view.value = money.slice(begin, end)
@@ -469,9 +461,10 @@ function extract_keys(bucket, indexes: string[]) {
                     id="solar_plot"
                     :key="currentIndex"
                     :keys="dates_view"
-                    :axes="['Solar generation', 'Windturbine generation', 'Total']"
+                    :axes="['Solar generation', 'Windturbine generation', 'SolarThermal generation', 'Total']"
                     :values="[get_field(generation_view, 'SolarPanel', 'supply'),
                       get_field(generation_view, 'Windturbine', 'supply'),
+                      get_field(generation_view, 'SolarThermal', 'supply'),
                       get_field(generation_view, 'Total', 'supply')]"/>
       </div>
       <div class="singleChart">
@@ -503,8 +496,8 @@ function extract_keys(bucket, indexes: string[]) {
                     id="appliances_plot"
                     :key="currentIndex"
                     :keys="dates_view"
-                    :axes="['Fridge', 'Lights', 'ElectricHeater', 'Total']"
-                    :values="[get_field(demand_view, 'Fridge', 'demand'),
+                    :axes="['Equipment', 'Lights', 'ElectricHeater', 'Total']"
+                    :values="[get_field(demand_view, 'Equipment', 'demand'),
                       get_field(demand_view, 'Lights', 'demand'),
                       get_field(demand_view, 'ElectricHeater', 'demand'),
                       get_field(demand_view, 'Total', 'demand')]"/>
@@ -539,10 +532,11 @@ function extract_keys(bucket, indexes: string[]) {
                     id="sum_generators"
                     :key="currentIndex"
                     :keys="dates_view"
-                    :axes="['Solar generation', 'Windturbine generation', 'Total']"
+                    :axes="['Solar generation', 'Windturbine generation', 'SolarThermal generation', 'Total']"
                     :mode="'Mode.KILO_WATT_HOURS'"
                     :values="[get_field(generation_view, 'SolarPanel', 'generation'),
                       get_field(generation_view, 'Windturbine', 'generation'),
+                      get_field(generation_view, 'SolarThermal', 'generation'),
                       get_field(generation_view, 'Total', 'generation')]"/>
       </div>
       <div class="singleChart">
@@ -550,9 +544,9 @@ function extract_keys(bucket, indexes: string[]) {
                     id="sum_appliances"
                     :key="currentIndex"
                     :keys="dates_view"
-                    :axes="['Fridge', 'Lights', 'ElectricHeater', 'Total']"
+                    :axes="['Equipment', 'Lights', 'ElectricHeater', 'Total']"
                     :mode="'Mode.KILO_WATT_HOURS'"
-                    :values="[get_field(demand_view, 'Fridge', 'usage'),
+                    :values="[get_field(demand_view, 'Equipment', 'usage'),
                       get_field(demand_view, 'Lights', 'usage'),
                       get_field(demand_view, 'ElectricHeater', 'usage'),
                       get_field(demand_view, 'Total', 'usage')]"/>
