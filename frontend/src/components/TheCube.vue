@@ -157,6 +157,11 @@ let cubeColor = ref('hsl(90, 100%, 50%)');
 const pause = defineModel();
 const rolling = defineModel('rolling', {default: true});
 
+const temperatureBtn = defineModel('temperatureBtn', {default: 'mdi-weather-cloudy'});
+const windBtn = defineModel('windBtn', {default: 'mdi-weather-cloudy'});
+const precipitationBtn = defineModel('precipitationBtn', {default: 'mdi-weather-cloudy'});
+const radiationBtn = defineModel('radiationBtn', {default: 'mdi-weather-cloudy'});
+
 let timer = -1
 const lookback = 144
 
@@ -297,6 +302,8 @@ function add_simulation_raw(res: Simulation, update: boolean) {
   temperatures_graph['Benchmark First Inside'].push(res['benchmark']['rooms'][2]['temperature']);
   temperatures_graph['Decision First Inside'].push(res['decision']['rooms'][2]['temperature']);
 
+  update_weather(absolute_step % 144, temperature, wind, precipitation, radiation);
+
   for (const algorithm of algorithms_named) {
     co2[algorithm as keyof Algorithms].push(res[algorithm as keyof Algorithms]['co2'])
   }
@@ -409,6 +416,54 @@ function patch_outside() {
   });
 }
 
+function update_weather(step: number, temperature: Temperature, wind: number, precipitation: number, radiation: number) {
+  /*
+|                    | Radiation | Wind direction | Wind speed | Precipitation | Temperature |
+|:------------------ |:--------- |:-------------- |:---------- |:------------- |:----------- |
+| MIN                | 0         | 0              | 0          | 0             | -7.3        |
+| MAX                | 1160      | 360            | 15.1       | 19            | 36.8        |
+| MEDIAN             | 0         | 257            | 3          | 0             | 12.7        |
+| AVERAGE            | 149       | 225            | 3.39       | 0.01          | 13.1        |
+| STANDARD deviation | 240       | 90.4           | 1.94       | 0.13          | 8.36        |
+*/
+  if (temperature.get_celsius() < 0) {
+    temperatureBtn.value = 'mdi-snowflake-thermometer';
+  } else if (temperature.get_celsius() < 15) {
+    temperatureBtn.value = 'mdi-thermometer-low';
+  } else if (temperature.get_celsius() < 25) {
+    temperatureBtn.value = 'mdi-thermometer-high';
+  } else { // 'mdi-thermometer'
+    temperatureBtn.value = 'mdi-sun-thermometer-outline'; // 'mdi-sum-thermometer'
+  }
+  if (wind < 3) {
+    windBtn.value = 'mdi-grain';
+  } else if (wind < 6) {
+    windBtn.value = 'mdi-weather-windy-variant';
+  } else if (wind < 9) {
+    windBtn.value = 'mdi-weather-windy';
+  } else {
+    windBtn.value = 'mdi-weather-dust';
+  }
+  if (precipitation < 1) {
+    precipitationBtn.value = 'mdi-weather-cloudy';
+  } else if (precipitation < 5) {
+    precipitationBtn.value = 'mdi-weather-partly-rainy';
+  } else if (precipitation < 10) {
+    precipitationBtn.value = 'mdi-weather-rainy';
+  } else {
+    precipitationBtn.value = 'mdi-weather-pouring';
+  }
+  if (step < 6 * 6 || step > 20 * 6) {
+    radiationBtn.value = 'mdi-weather-night';
+  } else if (radiation < 250) {
+    radiationBtn.value = 'mdi-weather-partly-cloudy';
+  } else if (radiation < 500) {
+    radiationBtn.value = 'mdi-weather-hazy';
+  } else {
+    radiationBtn.value = 'mdi-weather-sunny';
+  }
+}
+
 function get_field(bucket, field: string, index: string) {
   return bucket[field].map<Energy>(item => item[index]);
 }
@@ -467,8 +522,7 @@ function extract_keys(bucket, indexes: string[]) {
   <div class="controls" v-if="dataFetched">
     <input type="range" min="0" :max="lookback" value="0" v-model="currentIndex" />
   </div>
-  <div class="overrides mb-16">
-    <v-btn class="d-inline" density="default" icon="mdi-sun-thermometer-outline" @click="patch_outside()"></v-btn>
+  <div class="overrides">
     <v-switch
       class="d-inline mx-1"
       v-model="rolling"
@@ -477,7 +531,53 @@ function extract_keys(bucket, indexes: string[]) {
       inset
   ></v-switch>
   </div>
-  <div>
+  <div id="weather" class="v-container">
+    <div class="v-row">
+      <div class="v-col">
+        Temperature: <v-btn id="btn-temperature" density="default" :icon="temperatureBtn"></v-btn>
+      </div>
+      <div class="v-col">
+        <v-btn icon="mdi-snowflake-thermometer"></v-btn>
+      </div>
+      <div class="v-col">
+        <v-btn class="d-inline" density="default" icon="mdi-sun-thermometer-outline" @click="patch_outside()"></v-btn>
+      </div>
+    </div>
+    <div class="v-row">
+      <div class="v-col">
+        Wind speed: <v-btn id="btn-wind" density="default" :icon="windBtn"></v-btn>
+      </div>
+      <div class="v-col">
+        <v-btn icon="mdi-grain"></v-btn>
+      </div>
+      <div class="v-col">
+        <v-btn icon="mdi-weather-dust"></v-btn>
+      </div>
+    </div>
+    <div class="v-row">
+      <div class="v-col">
+        Rain: <v-btn id="btn-precipitation" density="default" :icon="precipitationBtn"></v-btn>
+      </div>
+      <div class="v-col">
+        <v-btn icon="mdi-weather-cloudy"></v-btn>
+      </div>
+      <div class="v-col">
+        <v-btn icon="mdi-weather-pouring"></v-btn>
+      </div>
+    </div>
+    <div class="v-row">
+      <div class="v-col">
+        Sun intensity: <v-btn id="btn-radiation" density="default" :icon="radiationBtn"></v-btn>
+      </div>
+      <div class="v-col">
+        <v-btn icon="mdi-weather-partly-cloudy"></v-btn>
+      </div>
+      <div class="v-col">
+        <v-btn icon="mdi-weather-sunny"></v-btn>
+      </div>
+    </div>
+  </div>
+  <div class="mt-16">
     <div class="charts">
       <div class="singleChart">
         <LinesChart v-if="dataFetched"
