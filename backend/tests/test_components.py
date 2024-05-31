@@ -16,6 +16,7 @@ from Grid import Grid
 from HeatPump import HeatPump
 from Occupancy import Occupancy
 from Physics import *
+from Radiator import Radiator
 from Room import Room
 from SandBattery import SandBattery
 from SolarPanel import SolarPanel
@@ -578,6 +579,27 @@ class TestComponents(unittest.TestCase):
         grid.buy(Energy.from_kilo_watt_hours(1))
         grid.sell(Energy.from_kilo_watt_hours(1))
         grid.print_statistics(DebugLevel.DEBUGGING)
+
+    def test_radiator(self):
+        radiator = Radiator()
+        flow_rate = Length.from_litre(0.015)  # l / s
+        litres = flow_rate * Time.from_minutes(10).value
+        self.assertEqual(litres.format_litre(), '9.00l')
+        self.assertEqual((litres * 6).format_litre(), '54.00l')
+
+        t_in = Temperature.from_celsius(80)
+        t_out, q_out = radiator.getRadiatorData(t_in, Temperature.from_celsius(17), flow_rate)  # l/s
+        e_out = q_out * Time.from_minutes(10)
+        self.assertEqual(t_out.format_celsius(), '61.10°C')
+        self.assertEqual(str(q_out), '1184.76W')
+        self.assertEqual(e_out.format_watt_hours(), '197.46Wh')
+
+        water_shc = SpecificHeatCapacity.from_predefined(SpecificHeatCapacity.Predefined.WATER)
+        water_density = Density.from_predefined(Density.Predefined.WATER)
+        energy_in = water_shc.calculate_energy(t_in, water_density.calculate_mass(litres))
+        energy_out = water_shc.calculate_energy(t_out, water_density.calculate_mass(litres))
+        energy = energy_in - energy_out
+        self.assertAlmostEqual(energy.value, e_out.value)
 
 
 if __name__ == '__main__':

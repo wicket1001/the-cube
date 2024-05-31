@@ -82,6 +82,7 @@ class Room:
     energy_consumption = Energy(0)
 
     electricHeater = None # ElectricHeater(600)  # 600W  600 * 4 * 4
+    # radiator = None
     lights = None # Lights(25)
     equipment = None # Fridge(150)
     # appliances = [electricHeater, lights, fridge]

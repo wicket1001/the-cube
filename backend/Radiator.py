@@ -1,13 +1,15 @@
 import math
 
+from Physics import Temperature, Power, Length
+
 
 class Radiator:
     # Water properties
-    rho_water = 971.8  # kg/m^3, density of water at 80C
+    rho_water = 1000 # 971.8  # kg/m^3, density of water at 80C
     dyn_visc = 0.000355  # Ns/m^2, dynamic viscosity of water at 80C
     k_water = 0.67  # W/mK, thermal conductivity of water at 80C
     Pr = 2.22  # Prandtl number at 80C
-    c_p_water = 4196.9  # J/kgK, heat capacity of water at 80C
+    c_p_water = 4180 # 4196.9  # J/kgK, heat capacity of water at 80C
 
     # Radiator properties
     D_pipe = 14 / 1000  # m, diameter of pipe
@@ -31,8 +33,11 @@ class Radiator:
 
     h_air = 7.5  # W/m^2K, natural convection heat transfer coefficient of air
 
-    def getRadiatorData(self, T_in, T_room, V_flow):
+    def getRadiatorData(self, T_in: Temperature, T_room: Temperature, V_flow: Length) -> (Temperature, Power):
         # Flow properties
+        T_in = T_in.get_celsius()
+        T_room = T_room.get_celsius()
+        V_flow = V_flow.value * 1000
         v_water = (V_flow / 1000) / self.A_pipe  # m/s, velocity of water through radiator
         Re_d = (self.rho_water * v_water * self.D_pipe) / self.dyn_visc  # Reynolds number of pipe
 
@@ -74,4 +79,4 @@ class Radiator:
 
         Q_out = mass_flow_rate * self.c_p_water * (T_in - T_out)
 
-        return T_out, Q_out
+        return Temperature.from_celsius(T_out), Power(Q_out)
