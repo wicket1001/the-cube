@@ -1,6 +1,14 @@
 <script setup lang="ts">
 import { onMounted, reactive, type Ref, ref, watch, getCurrentInstance, computed } from 'vue'
-import { getData, patch_future, patching, reset_simulation, simulate } from '@/utils/resources'
+import {
+  getData,
+  getSimulation,
+  lookback_sim,
+  patch_future,
+  patching,
+  reset_simulation,
+  simulate
+} from '@/utils/resources'
 import Mode from '@/components/LinesChart.vue'
 import LinesChart from '@/components/LinesChart.vue'
 import WindComponent from '@/components/WindComponent.vue'
@@ -45,6 +53,7 @@ let playBtn = ref('Play')
 
 let dates: Date[] = [];
 let dates_view: Date[] = [];
+let mock_dates: Date[] = [];
 
 let temperatures_graph: {
   'Outside': Temperature[],
@@ -146,14 +155,43 @@ let rotationY = 0;
 let cubeColor = ref('hsl(90, 100%, 50%)');
 
 const pause = defineModel();
+const rolling = defineModel('rolling', {default: true});
 
 let timer = -1
-const lookback = 72
+const lookback = 144
 
 let lang = 'de'
 
 onMounted(() => {
+  let begin: Date = presetDates.value[0].value;
+  for (let i = 0; i < 3; i ++) {
+    for (let j = 0; j < 365; j ++) {
+      for (let k = 0; k < 144; k ++) {
+        mock_dates.push(begin);
+        begin = addMinutes(begin, 10);
+      }
+    }
+  }
+  getSimulation().then(
+    res => {
+      if (res.absolute_step >= 3) {
+        dataFetched.value = false;
+        stepped = false;
+        let absolute_step = Math.min(res.absolute_step, lookback);
+        lookback_sim(absolute_step).then(res => {
+          currentIndex.value = absolute_step;
 
+          for (let i = 0; i < res.length - 1; i++) {
+            add_simulation_raw(res[i], false);
+          }
+          add_simulation_raw(res[res.length - 1], true);
+          dataFetched.value = true;
+          stepped = true;
+        });
+      }
+    }).catch(error => {
+    console.log('Error in loading.');
+  })
 })
 
 watch(currentIndex, async (newValue, oldValue) => {
@@ -220,6 +258,7 @@ function show_cube_temperature(inner_temperature: number) {
 }
 
 function add_simulation_raw(res: Simulation, update: boolean) {
+  let absolute_step = res['absolute_step']
   let date = res['environment']['dates']
   current_time.value = date.toLocaleTimeString('de-DE')
   current_date.value = date.toLocaleDateString('de-DE')
@@ -291,10 +330,18 @@ function add_simulation_raw(res: Simulation, update: boolean) {
   }
 
   if (update && currentIndex.value >= 3) {
-    dataFetched.value = true
-    let end = dates.length;
-    let begin = Math.max(0, end - lookback) // only watch back 12h
-    dates_view = dates.slice(begin, end)
+    dataFetched.value = true;
+    let end = 0;
+    let begin = 0;
+    if (rolling.value) {
+      end = dates.length;
+      begin = Math.max(0, end - lookback) // only watch back 12h
+      dates_view = dates.slice(begin, end)
+    } else {
+      end = dates.length;
+      begin = end - end % lookback;
+      dates_view = mock_dates.slice(begin, begin + lookback) // TODO fill with imaginary
+    }
     //temperatures_view.value = temperatures.slice(begin, end)
     //benchmark_inside_temperatures_view.value = benchmark_inside_temperatures.slice(begin, end)
     //decision_inside_temperatures_view.value = decision_inside_temperatures.slice(begin, end)
@@ -319,6 +366,7 @@ function add_simulation_raw(res: Simulation, update: boolean) {
     }
     money_view.value = money.slice(begin, end)
   }
+  // TODO cache cleanup
 }
 
 const handleDate = (modelData: Date) => {
@@ -420,7 +468,14 @@ function extract_keys(bucket, indexes: string[]) {
     <input type="range" min="0" :max="lookback" value="0" v-model="currentIndex" />
   </div>
   <div class="overrides mb-16">
-    <v-btn density="default" icon="mdi-sun-thermometer-outline" @click="patch_outside()"></v-btn>
+    <v-btn class="d-inline" density="default" icon="mdi-sun-thermometer-outline" @click="patch_outside()"></v-btn>
+    <v-switch
+      class="d-inline mx-1"
+      v-model="rolling"
+      :label="`Rolling: ${rolling.toString()}`"
+      hide-details
+      inset
+  ></v-switch>
   </div>
   <div>
     <div class="charts">

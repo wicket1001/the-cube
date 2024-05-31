@@ -4,7 +4,7 @@ import type { ISimulation } from '@/@types/simulation'
 import { Simulation } from '@/@types/simulation'
 
 const baseURL = `http://localhost:8080/`
-const cache_size = 72;
+const cache_size = 144;
 
 const host = 'https://dataset.api.hub.geosphere.at'
 const version = 'v1'
@@ -50,6 +50,37 @@ function export_dates(raw_data: GeosphereRaw): Dates {
   }
 }
 
+export async function getSimulation(): Promise<Simulation> {
+  const url = `${baseURL}step`;
+  const response = await axios.get(url, {
+    validateStatus(status) {
+        return status !== 422;
+    },
+  })
+    .catch(function (error) {
+      console.log('Nothing ever happens', error);
+      return Promise.reject(error);
+    });
+  const data: ISimulation = response.data;
+  return new Simulation(data);
+}
+
+export async function lookback_sim(absolute_step: number): Promise<Simulation[]> {
+  const url = `${baseURL}step`;
+  const response = await axios.get(url, {
+    params: {
+      lookback: Math.min(absolute_step, cache_size),
+    },
+    paramsSerializer: { indexes: null }
+  });
+  const raw_simulation: [ISimulation] = response.data;
+  const simulations: Simulation[] = [];
+  for (const raw of raw_simulation) {
+    simulations.push(new Simulation(raw));
+  }
+  return simulations;
+}
+
 export async function simulate(): Promise<Simulation> {
   const url = `${baseURL}step`;
   await axios.patch(url);
@@ -78,7 +109,7 @@ export async function patch_future(absolute_step: number): Promise<Simulation[]>
     paramsSerializer: { indexes: null }
   });
   const raw_simulation: [ISimulation] = response.data;
-  let simulations: Simulation[] = [];
+  const simulations: Simulation[] = [];
   // return raw_simulation.map(isimulation => new Simulation(isimulation));
   for (const raw of raw_simulation) {
     simulations.push(new Simulation(raw));

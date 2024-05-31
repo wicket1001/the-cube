@@ -17,7 +17,7 @@ benchmark_house = utils.get_house()
 decision_house = utils.get_house()
 weather = utils.read_csv(DebugLevel.INFORMATIONAL)
 cache = []
-cache_size = 72
+cache_size = 144
 
 
 class RestAPI(BaseHTTPRequestHandler):
@@ -147,7 +147,8 @@ class RestAPI(BaseHTTPRequestHandler):
                 print()
             for i in range(diff):
                 step = absolute_step % 144
-                if diff > 144 and step == 0:
+                month = absolute_step % (144 * 30)
+                if diff > 144 and month == 0:
                     print('\r', weather['dates'][absolute_step], end='')
                 response = {
                     'step': step,

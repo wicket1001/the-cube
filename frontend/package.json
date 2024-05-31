@@ -15,6 +15,7 @@
   "dependencies": {
     "@vuepic/vue-datepicker": "^8.5.0",
     "axios": "^1.6.8",
+    "bootstrap-toggle": "^2.2.2",
     "chart.js": "^4.4.2",
     "font-awesome": "^4.7.0",
     "moment": "^2.30.1",
