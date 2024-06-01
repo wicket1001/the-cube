@@ -17,6 +17,8 @@ class HeatPump(Appliance):
 
     should_activate = False
 
+    flow_rate = Length.from_litre(0.015)
+
     def __init__(self, watts: float):
         super().__init__(watts)
 

@@ -1,9 +1,17 @@
 import math
 
-from Physics import Temperature, Power, Length
+from Appliance import Appliance
+from DebugLevel import DebugLevel
+from Physics import Temperature, Power, Length, Time
 
 
-class Radiator:
+class Radiator (Appliance):
+    name = 'Radiator'
+    should_activate = False
+
+    flow_rate = Length.from_litre(0.015)
+    litres = flow_rate * Time.from_minutes(10).value
+
     # Water properties
     rho_water = 1000 # 971.8  # kg/m^3, density of water at 80C
     dyn_visc = 0.000355  # Ns/m^2, dynamic viscosity of water at 80C
@@ -32,6 +40,9 @@ class Radiator:
     k_air = 28.15e-3  # W/mK, thermal conductivity of air at 325K
 
     h_air = 7.5  # W/m^2K, natural convection heat transfer coefficient of air
+
+    def __init__(self):
+        super().__init__(0)
 
     def getRadiatorData(self, T_in: Temperature, T_room: Temperature, V_flow: Length) -> (Temperature, Power):
         # Flow properties
@@ -80,3 +91,19 @@ class Radiator:
         Q_out = mass_flow_rate * self.c_p_water * (T_in - T_out)
 
         return Temperature.from_celsius(T_out), Power(Q_out)
+
+    def set_flow_rate(self, flow_rate):
+        self.flow_rate = flow_rate
+        self.litres = flow_rate * Time.from_minutes(10).value
+
+    def step(self, t: int, absolute_step: int, verbosity: DebugLevel = DebugLevel.INFORMATIONAL):
+        self.on = self.should_activate
+
+    def heat(self):
+        pass
+
+    def activate(self):
+        self.should_activate = True
+
+    def deactivate(self):
+        self.should_activate = False

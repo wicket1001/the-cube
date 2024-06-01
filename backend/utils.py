@@ -5,14 +5,17 @@ from Battery import Battery
 from DebugLevel import DebugLevel
 from ElectricHeater import ElectricHeater
 from Equipment import Equipment
+from HeatPump import HeatPump
 from House import House
 from Lights import Lights
 from Occupancy import Occupancy
-from Physics import Length, Energy
+from Physics import Length, Energy, Temperature
+from Radiator import Radiator
 from Room import Room
 from SandBattery import SandBattery
 from SolarPanel import SolarPanel
 from SolarThermal import SolarThermal
+from WaterBuffer import WaterBuffer
 from Windturbine import Windturbine
 
 
@@ -138,13 +141,19 @@ def get_house():
              attic_left, attic_right]
     house = House()
     for room in rooms:
+        # print(room.get_volume().format_qubic_metres())
         room.lights = Lights(room.get_lights_estimation().value)
-        room.electricHeater = ElectricHeater(600)
+        # room.electricHeater = ElectricHeater(600)
+        room.radiator = Radiator()
+        room.radiators = 2
+        # room.radiator.set_flow_rate(Length.from_litre(room.radiator.flow_rate.value * 10_000))  #  / 100 * 576
         room.equipment = Equipment(room.get_equipment_estimation().value)
+    house.heatPump = HeatPump(10_000)
     house.set_rooms(rooms)
     house.solarPanel = SolarPanel(Length(12 * 24 * 0.5))
     house.windturbine = Windturbine(24 * 0.5, 0)
     house.solarThermal = SolarThermal(Length(12 * 24 * 0.5))
     house.battery = Battery(Energy.from_kilo_watt_hours(200))
     house.sand_battery = SandBattery(1, 1, 1)
+    house.water_buffer = WaterBuffer(Length.from_litre(1000), Temperature.from_celsius(80))
     return house

@@ -240,6 +240,9 @@ class Temperature:
     def __rdiv__(self, other):
         raise UnsupportedOperation('/')
 
+    def get_celsius(self) -> float:
+        return self.value - 273.15
+
     @staticmethod
     def from_celsius(temperature: float) -> Temperature:
         return Temperature(temperature + 273.15)
@@ -270,6 +273,18 @@ class Weight:
         else:
             raise UnsupportedOperation('+')
 
+    def __sub__(self, other):
+        if isinstance(other, Weight):
+            return Weight(self.value - other.value)
+        else:
+            raise UnsupportedOperation('-')
+
+    def __mul__(self, other):
+        if isinstance(other, numbers.Number):
+            return Weight(self.value * other)
+        else:
+            raise UnsupportedOperation('*')
+
     @staticmethod
     def from_kilo_gramm(value: float) -> Weight:
         return Weight(value * 1000)
@@ -280,6 +295,8 @@ class Weight:
 
 class Length:
     value = 0
+
+    # https://de.wikipedia.org/wiki/Angloamerikanisches_Ma%C3%9Fsystem
 
     def __init__(self, value: float):
         self.value = value

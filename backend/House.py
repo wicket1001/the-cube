@@ -1,5 +1,7 @@
+from Appliance import Appliance
 from DebugLevel import DebugLevel
 from Generator import Generator
+from HeatPump import HeatPump
 from Physics import *
 from Fridge import Fridge
 from Lights import Lights
@@ -9,6 +11,8 @@ from Battery import Battery
 from ElectricHeater import ElectricHeater
 from Grid import Grid
 from Room import Room
+from SolarThermal import SolarThermal
+from WaterBuffer import WaterBuffer
 from Windturbine import Windturbine
 from algorithm_utils import Season, Algorithms
 
@@ -21,11 +25,13 @@ def to_co2(energy: Energy) -> float:
 
 
 class House(object):
-    solarPanel = None # SolarPanel(12 * 24)  # m^2
-    windturbine = None # Windturbine(24 * 0.5, 0)  # m^2
-    solarThermal = None
-    battery = None # Battery(Energy.from_kilo_watt_hours(200))
-    sand_battery = None # SandBattery(1, 1, 1)
+    solarPanel: SolarPanel = None # SolarPanel(12 * 24)  # m^2
+    windturbine: Windturbine = None # Windturbine(24 * 0.5, 0)  # m^2
+    solarThermal: SolarThermal = None
+    battery: Battery = None # Battery(Energy.from_kilo_watt_hours(200))
+    sand_battery: SandBattery = None # SandBattery(1, 1, 1)
+    water_buffer: WaterBuffer = None
+    heatPump: HeatPump = None
     grid = Grid()
     money = Money(0)
     co2 = 0  # TODO CO2 unit
@@ -36,6 +42,23 @@ class House(object):
     patched_temperature = None
     outer_temperature_patch = None
     rooms = []
+
+    def get_energy_demand(self, repsponse: dict, t: int, absolute_step: int, verbosity: DebugLevel):
+        energy_demand = Energy(0)
+        appliances_response = []
+        for appliance in self.get_appliances():
+            appliance_demand = appliance.step(t, absolute_step, verbosity)
+            energy_demand += appliance_demand
+            appliances_response.append({
+                'name': appliance.name,
+                'demand': appliance_demand,
+                'usage': appliance.usage,
+                'on': appliance.on
+            })
+        return energy_demand
+
+    def get_appliances(self) -> [Appliance]:
+        return [self.heatPump]
 
     def get_energy_production(self, response: dict, t: int, absolute_step: int, verbosity: DebugLevel):
         energy_produced = Energy(0)
@@ -64,6 +87,9 @@ class House(object):
 
     def set_rooms(self, rooms: [Room]):
         self.rooms = rooms
+        self.heatPump.flow_rate = Length.from_litre(0)
+        for room in self.rooms:
+            self.heatPump.flow_rate += room.radiator.litres
 
     def heat_loss(self, outside) -> Energy:
         energy_sum = Energy(0)
@@ -114,6 +140,42 @@ class House(object):
             room.step(step_of_the_day, absolute_step, algorithms, verbosity)
 
         energy_demand = Energy(0)
+        if self.water_buffer.temperature < Temperature.from_celsius(80):
+            # print(self.heatPump.flow_rate.format_litre())
+            weight, temperature = self.water_buffer.take_water(self.heatPump.flow_rate)
+            self.heatPump.input_water(self.heatPump.flow_rate, temperature)
+            self.heatPump.activate()
+            energy_demand += self.heatPump.step(step_of_the_day, absolute_step, verbosity)
+            self.heatPump.deactivate()
+            weight, temperature = self.heatPump.output_water()
+            self.water_buffer.add_water(self.heatPump.flow_rate, temperature)
+
+        back_weight = []
+        back_temperatures = []
+        for i, room in enumerate(self.rooms):
+            if room.temperature < Temperature.from_celsius(19):
+                room.radiator.activate()
+            if room.radiator.should_activate:
+                weight, temperature = self.water_buffer.take_water(room.radiator.litres * room.radiators)
+                temperature, power = room.radiator.getRadiatorData(temperature, room.temperature, room.radiator.flow_rate)
+                back_weight.append(weight * room.radiators)
+                back_temperatures.append(temperature)
+                delta_t = room.heat(power * Time.from_minutes(10) * room.radiators)
+                # print(delta_t)
+                room.temperature += delta_t
+        back_temperatures_index = 0
+        for i, room in enumerate(self.rooms):
+            if room.radiator.should_activate:
+                self.water_buffer.add_water(room.radiator.litres * room.radiators, back_temperatures[back_temperatures_index])
+                back_temperatures_index += 1
+            room.radiator.deactivate()
+        # print(self.water_buffer.temperature.format_celsius())
+
+        # if algorithms == Algorithms.BENCHMARK:
+        # elif algorithms == Algorithms.DECISION_TREE:
+        # else:
+        #    raise NotImplementedError('No other Algorithm is implemented.')
+
         for room in self.rooms:
             energy_demand_room = room.get_energy_demand(
                 response,
@@ -166,7 +228,8 @@ class House(object):
 
     def reset_after(self):
         for room in self.rooms:
-            room.electricHeater.deactivate()
+            # room.electricHeater.deactivate()
+            room.radiator.deactivate()
 
     def patch_outside_temperature(self, temp, verbosity):
         if self.patched_temperature is not None:

@@ -81,8 +81,9 @@ class Room:
 
     energy_consumption = Energy(0)
 
-    electricHeater = None # ElectricHeater(600)  # 600W  600 * 4 * 4
-    # radiator = None
+    # electricHeater = None # ElectricHeater(600)  # 600W  600 * 4 * 4
+    radiator = None
+    radiators = 0
     lights = None # Lights(25)
     equipment = None # Fridge(150)
     # appliances = [electricHeater, lights, fridge]
@@ -451,25 +452,28 @@ class Room:
         return energy_demand
 
     def get_appliances(self) -> [Appliance]:
-        return self.electricHeater, self.lights, self.equipment
+        return self.lights, self.equipment
 
     def step(self, step_of_the_day: int, absolute_step: int, algorithms: Algorithms, verbosity: DebugLevel) -> dict:
         if algorithms == Algorithms.BENCHMARK:
             if self.temperature < Temperature.from_celsius(19):
-                self.electricHeater.activate()
-                heat_generated = self.electricHeater.get_energy_demand()
-                self.temperature += self.heat(heat_generated)
+                self.radiator.activate()
+                # self.electricHeater.activate()
+                # heat_generated = self.electricHeater.get_energy_demand()
+                # self.temperature += self.heat(heat_generated)
         elif algorithms == Algorithms.DECISION_TREE:
             if 6 * 6 < step_of_the_day < 18 * 6:
                 if self.temperature < Temperature.from_celsius(19):
-                    self.electricHeater.activate()
-                    heat_generated = self.electricHeater.get_energy_demand()
-                    self.temperature += self.heat(heat_generated)
+                    self.radiator.activate()
+                    # self.electricHeater.activate()
+                    # heat_generated = self.electricHeater.get_energy_demand()
+                    # self.temperature += self.heat(heat_generated)
             else:
                 if self.temperature < Temperature.from_celsius(10):
-                    self.electricHeater.activate()
-                    heat_generated = self.electricHeater.get_energy_demand()
-                    self.temperature += self.heat(heat_generated)
+                    self.radiator.activate()
+                    # self.electricHeater.activate()
+                    # heat_generated = self.electricHeater.get_energy_demand()
+                    # self.temperature += self.heat(heat_generated)
         else:
             raise NotImplementedError('Other Algorithms are not implemented for room.')
 
