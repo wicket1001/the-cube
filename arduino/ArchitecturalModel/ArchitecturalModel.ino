@@ -28,14 +28,40 @@
 // 25 Radiators Third
 // 26 ---
 
+// Net Overproduction Electricity Lime
+// Battery Supply Green
+// Net Grid Yellow
+
+// Grid Purple
+
+// Radiators SandBattery, HeatPump Olive
+// Radiators Grid Maroon
+
 #define SEGMENTS 26
+
+#define CONVERTER 182
+
+#define   BLACK pixels.ColorHSV(0, 0, 0)
+#define   WHITE pixels.ColorHSV(0, 0, 255)
+#define     RED pixels.ColorHSV(0, 255, 255)
+#define    LIME pixels.ColorHSV(120 * CONVERTER, 255, 255)
+#define  YELLOW pixels.ColorHSV(60 * CONVERTER, 255, 255)
+#define    CYAN pixels.ColorHSV(180 * CONVERTER, 255, 255)
+#define MAGENTA pixels.ColorHSV(300 * CONVERTER, 255, 255)
+#define  MAROON pixels.ColorHSV(0, 255, 192)
+#define   OLIVE pixels.ColorHSV(60 * CONVERTER, 255, 128)
+#define   GREEN pixels.ColorHSV(120 * CONVERTER, 255, 128)
+
 int pin = 5;                // input pin Neopixel is attached to
 int totalNum = 350;         // number of neopixels in whole strip
 unsigned long currentTime;  // running time for program
 int redColors[SEGMENTS] = {255, 255, 0, 0, 0, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255};
 int greenColors[SEGMENTS] = {0, 200, 255, 255, 255, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 0, 0, 0, 0, 0, 0, 0, 0};
 int blueColors[SEGMENTS] = {255, 0, 255, 255, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-int directions[SEGMENTS] = {1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+int hueColors[SEGMENTS] = {300, 47, 180, 180, 180, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 0, 0, 0, 0, 0, 0, 0, 0};
+int saturationColors[SEGMENTS] = {255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255};
+int valueColors[SEGMENTS] = {255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255};
+int directions[SEGMENTS] = {1, -1, -1, 1, -1, -1, 1, -1, -1, 1, -1, -1, 1, -1, -1, 1, -1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
 int intervals[SEGMENTS] = {20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20};
 bool newPeriods[SEGMENTS] = {true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true};
 unsigned long periodStarts[SEGMENTS] = {};
@@ -52,13 +78,17 @@ int forwardBlink(int start, int N, int prevN, int num, int red, int green, int b
         prevN = start + num - 1;
     }
     LED_move(prevN, N, red, green, blue);
-    N++;
-    if (N == num + start) {
-        N = start;
-    }
-    return N;
+    return start + (N + 1) % num;
 }
 
+int forwardBlink_HSV(int start, int N, int prevN, int num, int h, int s, int v) {
+    prevN = N - 1;
+    if (N == start && currentTime > 0) {
+        prevN = start + num - 1;
+    }
+    LED_move_HSV(prevN, N, h, s, v);
+    return start + (N + 1) % num;
+}
 
 int backwardBlink(int start, int N, int prevN, int num, int red, int green, int blue) {
     prevN = N + 1;
@@ -66,11 +96,59 @@ int backwardBlink(int start, int N, int prevN, int num, int red, int green, int 
         prevN = start - num + 1;
     }
     LED_move(prevN, N, red, green, blue);
-    N--;
-    if (N == start - num) {
-        N = start;
+    return start - (start - N + 1) % num;
+}
+
+int backwardBlink_HSV(int start, int N, int prevN, int num, int h, int s, int v) {
+    prevN = N + 1;
+    if (N == start && currentTime > 0) {
+        prevN = start - num + 1;
     }
-    return N;
+    LED_move_HSV(prevN, N, h, s, v);
+  N--;
+  if (N == start - num) {
+    N = start;
+  }
+  return N;
+}
+
+int forwardGaus(int start, int N, int prevN, int num, int h, int s, int v) {
+    pixels.setPixelColor((N - 3 + num) % num + start, pixels.ColorHSV(0, 0, 0));
+    pixels.setPixelColor((N - 2 + num) % num + start, pixels.ColorHSV(h, s / 4 * 3, v));
+    pixels.setPixelColor((N - 1 + num) % num + start, pixels.ColorHSV(h, s / 8 * 7, v));
+    pixels.setPixelColor((N + 0 + num) % num + start, pixels.ColorHSV(h, s, v));
+    pixels.setPixelColor((N + 1 + num) % num + start, pixels.ColorHSV(h, s / 8 * 7, v));
+    pixels.setPixelColor((N + 2 + num) % num + start, pixels.ColorHSV(h, s / 4 * 3, v));
+    pixels.setPixelColor((N + 3 + num) % num + start, pixels.ColorHSV(0, 0, 0));
+    return start + (N + 1) % num;
+}
+
+int forwardStrip(int start, int N, int prevN, int num, int h, int s, int v) {
+    pixels.setPixelColor((N - 3 + num) % num + start, pixels.ColorHSV(0, 0, 0));
+    pixels.setPixelColor((N - 2 + num) % num + start, pixels.ColorHSV(h, s, v / 10 * 1));
+    pixels.setPixelColor((N - 1 + num) % num + start, pixels.ColorHSV(h, s, v / 10 * 3));
+    pixels.setPixelColor((N + 0 + num) % num + start, pixels.ColorHSV(h, s, v / 10 * 5));
+    pixels.setPixelColor((N + 1 + num) % num + start, pixels.ColorHSV(h, s, v / 10 * 7));
+    pixels.setPixelColor((N + 2 + num) % num + start, pixels.ColorHSV(h, s, v));
+    pixels.setPixelColor((N + 3 + num) % num + start, pixels.ColorHSV(0, 0, 0));
+    return start + (N + 1) % num;
+}
+
+int backwardStrip(int start, int N, int prevN, int num, int h, int s, int v) {
+    pixels.setPixelColor(start - (start - N - 3 + num) % num, pixels.ColorHSV(0, 0, 0));
+    pixels.setPixelColor(start - (start - N - 2 + num) % num, pixels.ColorHSV(h, s, v / 6 * 2));
+    pixels.setPixelColor(start - (start - N - 1 + num) % num, pixels.ColorHSV(h, s, v / 6 * 3));
+    pixels.setPixelColor(start - (start - N + 0 + num) % num, pixels.ColorHSV(h, s, v / 6 * 4));
+    pixels.setPixelColor(start - (start - N + 1 + num) % num, pixels.ColorHSV(h, s, v / 6 * 5));
+    pixels.setPixelColor(start - (start - N + 2 + num) % num, pixels.ColorHSV(h, s, v));
+    pixels.setPixelColor(start - (start - N + 3 + num) % num, pixels.ColorHSV(0, 0, 0));
+    return start - (start - N + 1 + num) % num;
+}
+
+void LED_move_HSV(int prevN, int N, int h, int s, int v) {
+    pixels.setPixelColor(N, pixels.ColorHSV(h, s, v));
+    pixels.setPixelColor(prevN, pixels.ColorHSV(0, 0, 0));
+    //pixels.show();
 }
 
 void LED_move(int prevN, int N, int red, int green, int blue) {
@@ -85,24 +163,44 @@ void setup() {
     // Initialize the NeoPixel library.
     pixels.begin();
     for (int i = 0; i < SEGMENTS; i++) {
-        pixels.setPixelColor(firstIndices[i], pixels.Color(redColors[i], greenColors[i], blueColors[i]));
+        pixels.setPixelColor(firstIndices[i], pixels.ColorHSV(hueColors[i], saturationColors[i], valueColors[i]));
     }
     // defineInterval();
+    for (int i = 0; i < SEGMENTS; i++) {
+        intervals[i] = 20;
+        hueColors[i] *= 182;
+    }
 }
 
 void loop() {
     // put your main code here, to run repeatedly:
     currentTime = millis();
-    for (int i = 0; i < SEGMENTS; i++) {
+    for (int i = 12; i < 13; i++) {
         if (newPeriods[i] == true) {
             periodStarts[i] = currentTime;
             newPeriods[i] = false;
         }
         if (currentTime - periodStarts[i] > intervals[i]) {
-            if (directions[i] == 0) {
-                currentIndices[i] = backwardBlink(firstIndices[i], currentIndices[i], prevIndices[i], numLEDS[i], redColors[i], greenColors[i], blueColors[i]);
+            if (i == 2) { // PV
+                if (currentIndices[i] == firstIndices[i]) {
+                    directions[i] = -1;
+                }
+                if (currentIndices[i] == firstIndices[i] - numLEDS[i] + 1) {
+                    directions[i] = 1;
+                }
+            }
+            if (directions[i] >= 6) {
+                /*if (numLEDS[i] == -1) {
+                    currentIndices[i] = backwardStrip(firstIndices[i], currentIndices[i], prevIndices[i], numLEDS[i], hueColors[i], saturationColors[i], valueColors[i]);
+                } else {
+                    currentIndices[i] = backwardBlink_HSV(firstIndices[i], currentIndices[i], prevIndices[i], numLEDS[i], hueColors[i], saturationColors[i], valueColors[i]);
+                }*/
             } else {
-                currentIndices[i] = forwardBlink(firstIndices[i], currentIndices[i], prevIndices[i], numLEDS[i], redColors[i], greenColors[i], blueColors[i]);
+                if (numLEDS[i] == -1) {
+                    currentIndices[i] = forwardStrip(firstIndices[i], currentIndices[i], prevIndices[i], numLEDS[i], hueColors[i], saturationColors[i], valueColors[i]);
+                } else {
+                    currentIndices[i] = forwardBlink_HSV(firstIndices[i], currentIndices[i], prevIndices[i], numLEDS[i], hueColors[i], saturationColors[i], valueColors[i]);
+                }
             }
             newPeriods[i] = true;
         }
