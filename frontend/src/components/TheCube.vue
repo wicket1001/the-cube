@@ -162,7 +162,7 @@ const windBtn = defineModel('windBtn', {default: 'mdi-weather-cloudy'});
 const precipitationBtn = defineModel('precipitationBtn', {default: 'mdi-weather-cloudy'});
 const radiationBtn = defineModel('radiationBtn', {default: 'mdi-weather-cloudy'});
 
-let timer = -1
+const timer = defineModel('timer', {default: -1});
 const lookback = 144
 
 let lang = 'de'
@@ -211,10 +211,10 @@ watch(future, async(newValue, oldValue) => {
 })
 
 function pause_sim() {
-  if (timer !== -1) {
-    clearInterval(timer);
+  if (timer.value !== -1) {
+    clearInterval(timer.value);
   }
-  timer = -1;
+  timer.value = -1;
 }
 
 function step() {
@@ -231,13 +231,13 @@ function step() {
 }
 
 function play(timeout = 1000) {
-  if (timer !== -1) {
-    clearInterval(timer)
-    timer = -1
+  if (timer.value !== -1) {
+    clearInterval(timer.value)
+    timer.value = -1
     playBtn.value = 'Play'
   } else {
     step()
-    timer = setInterval(step, timeout)
+    timer.value = setInterval(step, timeout)
     playBtn.value = 'Pause'
   }
 }
