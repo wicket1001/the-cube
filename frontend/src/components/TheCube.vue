@@ -132,10 +132,10 @@ let co2_view: Ref<{'benchmark': number[], 'decision': number[]}> =
 let money: Money[] = [];
 let money_view: Ref<Money[]> = ref([]);
 
-let demand: {"Equipment": Appliance[], "Lights": Appliance[], "ElectricHeater": Appliance[], "Total": Appliance[]} =
-  {"Equipment": [], "Lights": [], "ElectricHeater": [], "Total": []};
-let demand_view: Ref<{"Equipment": Appliance[], "Lights": Appliance[], "ElectricHeater": Appliance[], "Total": Appliance[]}> =
-  ref({"Equipment": [], "Lights": [], "ElectricHeater": [], "Total": []});
+let demand: {"Equipment": Appliance[], "Lights": Appliance[], "ElectricHeater": Appliance[], "HeatPump": Appliance[], "Total": Appliance[]} =
+  {"Equipment": [], "Lights": [], "ElectricHeater": [], "HeatPump": [], "Total": []};
+let demand_view: Ref<{"Equipment": Appliance[], "Lights": Appliance[], "ElectricHeater": Appliance[], "HeatPump": Appliance[], "Total": Appliance[]}> =
+  ref({"Equipment": [], "Lights": [], "ElectricHeater": [], "HeatPump": [], "Total": []});
 
 let generation: {"SolarPanel": Generator[], "Windturbine": Generator[], "SolarThermal": Generator[], "Total": Generator[]} =
   {"SolarPanel": [], "Windturbine": [], "SolarThermal": [], "Total": []};
@@ -312,13 +312,29 @@ function add_simulation_raw(res: Simulation, update: boolean) {
   money.push(money_value)
 
   let total = new Appliance({ name: 'Total', 'demand': 0, 'usage': 0, 'on': false })
-  for (const appliance of res['benchmark']['rooms'][2]['appliances']) {
-    if (appliances_named.includes(appliance.name as keyof IAppliances)) {
-      demand[appliance['name'] as keyof IAppliances].push(appliance)
+  let equipment = new Appliance({name: 'Equipment', 'demand': 0, 'usage': 0, 'on': false});
+  let lights = new Appliance({name: 'Lights', 'demand': 0, 'usage': 0, 'on': false});
+  for (let i = 0; i < rooms_named.length; i++) {
+    for (const appliance of res['benchmark']['rooms'][i]['appliances']) {
+      if (appliances_named.includes(appliance.name as keyof IAppliances)) {
+        if (appliance.name === 'Equipment') {
+          equipment.demand = equipment.demand.add(appliance.demand)
+          equipment.usage = equipment.usage.add(appliance.usage)
+        } else if (appliance.name === 'Lights') {
+          lights.demand = lights.demand.add(appliance.demand)
+          lights.usage = lights.usage.add(appliance.usage)
+        }
+      }
+      total.demand = total.demand.add(appliance.demand)
+      total.usage = total.usage.add(appliance.usage)
     }
-    total.demand = total.demand.add(appliance.demand)
-    total.usage = total.usage.add(appliance.usage)
   }
+  total.demand = total.demand.add(res['benchmark']['HeatPump'].demand)
+  total.usage = total.usage.add(res['benchmark']['HeatPump'].usage)
+  demand['Equipment'].push(equipment)
+  demand['Lights'].push(lights)
+  console.log(res['benchmark']['HeatPump'])
+  demand['HeatPump'].push(res['benchmark']['HeatPump'])
   demand['Total'].push(total)
   let total1 = new Generator({ name: 'Total', supply: 0, generation: 0 })
   for (const generator of res['benchmark']['generators']) {
@@ -651,10 +667,10 @@ function extract_keys(bucket, indexes: string[]) {
                     id="appliances_plot"
                     :key="currentIndex"
                     :keys="dates_view"
-                    :axes="['Equipment', 'Lights', 'ElectricHeater', 'Total']"
+                    :axes="['Equipment', 'Lights', 'HeatPump', 'Total']"
                     :values="[get_field(demand_view, 'Equipment', 'demand'),
                       get_field(demand_view, 'Lights', 'demand'),
-                      get_field(demand_view, 'ElectricHeater', 'demand'),
+                      get_field(demand_view, 'HeatPump', 'demand'),
                       get_field(demand_view, 'Total', 'demand')]"/>
       </div>
       <div class="singleChart">
@@ -699,11 +715,11 @@ function extract_keys(bucket, indexes: string[]) {
                     id="sum_appliances"
                     :key="currentIndex"
                     :keys="dates_view"
-                    :axes="['Equipment', 'Lights', 'ElectricHeater', 'Total']"
+                    :axes="['Equipment', 'Lights', 'HeatPump', 'Total']"
                     :mode="'Mode.KILO_WATT_HOURS'"
                     :values="[get_field(demand_view, 'Equipment', 'usage'),
                       get_field(demand_view, 'Lights', 'usage'),
-                      get_field(demand_view, 'ElectricHeater', 'usage'),
+                      get_field(demand_view, 'HeatPump', 'usage'),
                       get_field(demand_view, 'Total', 'usage')]"/>
       </div>
     </div>

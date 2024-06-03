@@ -15,20 +15,23 @@ export class Algorithm {
   "grid": Grid;
   "generators": Generator[];
   "rooms": Room[];
+  "HeatPump": Appliance;
 
-  constructor({co2, money, battery, grid, generators, rooms}: IAlgorithm) {
+  constructor({co2, money, battery, grid, generators, rooms, HeatPump}: IAlgorithm) { // appliances
     this.co2 = co2;
     this.money = new Money(money);
     this.battery = new Battery(battery);
     this.grid = new Grid(grid);
     this.generators = [];
     this.rooms = [];
+    this.HeatPump = new Appliance(HeatPump);
     for (const generator of generators) {
       this.generators.push(new Generator(generator));
     }
     for (const room of rooms) {
       this.rooms.push(new Room(room));
     }
+
   }
 }
 export interface IAlgorithm {
@@ -41,7 +44,8 @@ export interface IAlgorithm {
   ],
   "rooms": [
     IRoom
-  ]
+  ],
+  "HeatPump": IAppliance
 }
 
 export class Environment {
@@ -90,11 +94,13 @@ export class Room {
   "name": string;
   "temperature": Temperature;
   "appliances": Appliance[];
+  "radiator": boolean;
 
-  constructor({name, temperature, appliances}: IRoom) {
+  constructor({name, temperature, appliances, radiator}: IRoom) {
     this.name = name;
     this.temperature = new Temperature(temperature);
     this.appliances = [];
+    this.radiator = radiator;
     for (const appliance of appliances) {
       this.appliances.push(new Appliance(appliance));
     }
@@ -106,12 +112,14 @@ export interface IRoom {
   "appliances": [
     IAppliance
   ],
+  "radiator": boolean,
 }
 
 export class Appliances {
   'Equipment': Appliance;
   'Lights': Appliance;
   'ElectricHeater': Appliance;
+  'HeatPump': Appliance;
   'Total': Appliance;
 }
 export interface IAppliances extends Appliances {}
@@ -169,17 +177,20 @@ export class Battery {
   "level": Energy;
   "stored": Energy;
   "taken": Energy;
+  "diff": Energy;
 
-  constructor({level, stored, taken}: IBattery) {
+  constructor({level, stored, taken, diff}: IBattery) {
     this.level = new Energy(level);
     this.stored = new Energy(stored);
     this.taken = new Energy(taken);
+    this.diff = new Energy(diff);
   }
 }
 export interface IBattery {
   "level": number,
   "stored": number,
-  "taken": number
+  "taken": number,
+  "diff": number
 }
 
 export class Grid {
