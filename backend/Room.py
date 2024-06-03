@@ -43,6 +43,7 @@ class Room:
     front = Surface.UNDEFINED
     back = Surface.UNDEFINED
     # surfaces = [top, bottom, left, right, front, back]
+    floor = -1
 
     name = ''
 
@@ -442,10 +443,22 @@ class Room:
                 'usage': appliance.usage,
                 'on': appliance.on
             })
+            # all_appliances = [x['name'] for x in response['appliances']]
+            # if appliance.name in all_appliances:
+            #     appliance_index = all_appliances.index(appliance.name)
+            #     response['appliances'][appliance_index]['demand'] += appliance_demand
+            #     response['appliances'][appliance_index]['usage'] += appliance.usage
+            # else:
+            #     response['appliances'].append({
+            #         'name': appliance.name,
+            #         'demand': appliance_demand,
+            #         'usage': appliance.usage,
+            #     })
         room = {
             'name': self.name,
             'temperature': self.temperature,
-            'appliances': appliances_response
+            'appliances': appliances_response,
+            'radiator': self.radiator.should_activate
         }
         response["rooms"].append(room)
         self.energy_consumption += energy_demand
@@ -505,3 +518,6 @@ class Room:
             return Power(self.get_quadratic_metres().value * 360)  # Equipment
         else:
             raise NotImplementedError('Occupancy not implemented for room.')
+
+    def set_floor(self, floor):
+        self.floor = floor

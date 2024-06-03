@@ -139,6 +139,16 @@ def get_house():
              second_left, second_right,
              third_left, third_right,
              attic_left, attic_right]
+    cellar_left.set_floor(0)
+    cellar_right.set_floor(0)
+    first_left.set_floor(1)
+    first_right.set_floor(1)
+    second_left.set_floor(2)
+    second_right.set_floor(2)
+    third_left.set_floor(3)
+    third_right.set_floor(3)
+    attic_left.set_floor(4)
+    attic_right.set_floor(4)
     house = House()
     for room in rooms:
         # print(room.get_volume().format_qubic_metres())
@@ -148,11 +158,11 @@ def get_house():
         room.radiators = 2
         # room.radiator.set_flow_rate(Length.from_litre(room.radiator.flow_rate.value * 10_000))  #  / 100 * 576
         room.equipment = Equipment(room.get_equipment_estimation().value)
+    house.solarThermal = SolarThermal(Length(12 * 24 * 0.5))
     house.heatPump = HeatPump(10_000)
     house.set_rooms(rooms)
     house.solarPanel = SolarPanel(Length(12 * 24 * 0.5))
-    house.windturbine = Windturbine(24 * 0.5, 0)
-    house.solarThermal = SolarThermal(Length(12 * 24 * 0.5))
+    house.windturbine = Windturbine(37.5, 0)
     house.battery = Battery(Energy.from_kilo_watt_hours(200))
     house.sand_battery = SandBattery(1, 1, 1)
     house.water_buffer = WaterBuffer(Length.from_litre(1000), Temperature.from_celsius(80))

@@ -17,6 +17,7 @@ class Battery:
         self.stored = Energy(0)  # Stored in total over the lifetime of the battery
         self.taken = Energy(0)  # Taken in total over the lifetime of the battery, should be 0.85 * stored
         self.capacity = capacity
+        self.diff = Energy(0)
 
     def __str__(self):
         return f'Battery {self.battery_level}'
@@ -34,11 +35,13 @@ class Battery:
         if energy * self.efficiency + self.battery_level > self.capacity:
             # print("Battery full")
             diff = self.capacity - self.battery_level
+            self.diff = diff
             self.battery_level += diff
             self.stored += diff
             return energy - diff / self.efficiency
         else:
             self.battery_level += energy * self.efficiency
+            self.diff = energy
             self.stored += energy
             return Energy(0)
 
@@ -47,6 +50,7 @@ class Battery:
             raise ValueError("Energy")
         if energy > self.battery_level:
             raise ValueError("Battery")
+        self.diff = Energy(-energy.value)
         self.taken += energy
         self.battery_level -= energy
 
@@ -63,3 +67,6 @@ class Battery:
         else:
             raise NotImplementedError('Something went wrong in the implementation of the capacity.')
         return status
+
+    def reset(self):
+        self.diff = Energy(0)

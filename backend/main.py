@@ -10,7 +10,7 @@ from utils import get_house
 
 STEPS_PER_DAY = int((24 * 60) / 10)
 
-verbosity = DebugLevel.NOTIFICATION
+verbosity = DebugLevel.EMERGENCY
 
 
 def main():
@@ -67,11 +67,11 @@ def main():
     print(end - start, 's')
     print('\n---------')
     benchmark_house.grid.print_statistics(verbosity)
-    benchmark_house.electricHeater.print_statistics()
+    # benchmark_house.electricHeater.print_statistics()
     benchmark_house.solarPanel.print_statistics()
     benchmark_house.windturbine.print_statistics()
-    benchmark_house.equipment.print_statistics()
-    benchmark_house.lights.print_statistics()
+    #benchmark_house.equipment.print_statistics()
+    #benchmark_house.lights.print_statistics()
     print(f'Money: {benchmark_house.money}') # 4,18
 
     print(f'CO2: {benchmark_house.co2}')
