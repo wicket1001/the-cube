@@ -25,7 +25,7 @@ class Windturbine(Generator):
         self.wind_directions = array2
 
     def step(self, t: int, absolute_step: int, verbosity: DebugLevel) -> Energy:
-        wind = self.winds[absolute_step]
+        wind = self.winds[absolute_step] * 2
         if verbosity >= DebugLevel.DEBUGGING:
             print(f'v={wind}')
         relative_angle = float(self.angle) + self.wind_directions[absolute_step]
@@ -37,7 +37,7 @@ class Windturbine(Generator):
         direction_loss = abs(foo)
         if verbosity >= DebugLevel.DEBUGGING:
             print(f'direction_loss={direction_loss}')
-        watt = Power(0.5 * self.RHO * self.area.value * (wind ** 3))
+        watt = Power(0.25 * self.RHO * self.area.value * (wind ** 3))
         if verbosity >= DebugLevel.DEBUGGING:
             print(f'watt={watt}')
         effective_watt = Power(watt.value * direction_loss)

@@ -13,7 +13,7 @@ class SolarPanel(Generator):
     # 576m^2 Solarpanel
     # 0.003009 MW pro Panel pro Tag
     # 3009 W pro Panel pro Tag
-    EFFICIENCY = 0.2
+    EFFICIENCY = 0.2 * 0.54
     # JOULE_TO_KWH = 0.000000278
 
     watt_sum = Power(0)
@@ -48,10 +48,10 @@ class SolarPanel(Generator):
             joule_per_10min = watt * Time.from_minutes(10)
             # print('Joule', joule_per_10min)
 
-            factor = math.sin(t / (144/3))
+            # factor = math.sin(t / (144/3))
             # print('Time factor', factor)
-            effective_watt = watt * factor
-            effective_joule = joule_per_10min * factor
+            # effective_watt = watt * factor
+            # effective_joule = joule_per_10min * factor
             # print('Effective Joule', effective_joule)
 
             self.solar_energy += joule_per_10min

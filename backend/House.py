@@ -87,9 +87,10 @@ class House(object):
 
     def set_rooms(self, rooms: [Room]):
         self.rooms = rooms
-        self.heatPump.flow_rate = Length.from_litre(0)
+        self.heatPump.litres = Length.from_litre(0)
         for room in self.rooms:
-            self.heatPump.flow_rate += room.radiator.litres
+            self.heatPump.litres += room.radiator.litres
+        self.solarThermal.litres = Length(self.heatPump.litres.value)
 
     def heat_loss(self, outside) -> Energy:
         energy_sum = Energy(0)
@@ -111,7 +112,7 @@ class House(object):
 
     def step(self, step_of_the_day: int, absolute_step: int, algorithms: Algorithms, weather, verbosity: DebugLevel) -> dict:
         response = {
-            'rooms': []
+            'rooms': [],
         }
         self.reset_before()
 
@@ -139,16 +140,34 @@ class House(object):
         for room in self.rooms:
             room.step(step_of_the_day, absolute_step, algorithms, verbosity)
 
+        #weight, temperature = self.water_buffer.take_water(self.solarThermal.litres)
+        #self.solarThermal.input_water(self.solarThermal.litres, temperature)
+        #self.solarThermal.get_solar_thermal_data()
+        # Send water to SolarThermal
+        # if hotter than 80
+        # then to WaterBuffer
+        #
+        # else
+        # to HeatPump
+        # then to WaterBuffer
+
         energy_demand = Energy(0)
+        energy_demand_heat_pump = Energy(0)
         if self.water_buffer.temperature < Temperature.from_celsius(80):
             # print(self.heatPump.flow_rate.format_litre())
-            weight, temperature = self.water_buffer.take_water(self.heatPump.flow_rate)
-            self.heatPump.input_water(self.heatPump.flow_rate, temperature)
+            weight, temperature = self.water_buffer.take_water(self.heatPump.litres)
+            self.heatPump.input_water(self.heatPump.litres, temperature)
             self.heatPump.activate()
-            energy_demand += self.heatPump.step(step_of_the_day, absolute_step, verbosity)
-            self.heatPump.deactivate()
+            energy_demand_heat_pump += self.heatPump.step(step_of_the_day, absolute_step, verbosity)
+            energy_demand += energy_demand_heat_pump
             weight, temperature = self.heatPump.output_water()
-            self.water_buffer.add_water(self.heatPump.flow_rate, temperature)
+            self.water_buffer.add_water(self.heatPump.litres, temperature)
+        response['HeatPump'] = {
+            'name': self.heatPump.name,
+            'demand': energy_demand_heat_pump,
+            'usage': self.heatPump.usage,
+            'on': self.heatPump.should_activate
+        }
 
         back_weight = []
         back_temperatures = []
@@ -157,7 +176,7 @@ class House(object):
                 room.radiator.activate()
             if room.radiator.should_activate:
                 weight, temperature = self.water_buffer.take_water(room.radiator.litres * room.radiators)
-                temperature, power = room.radiator.getRadiatorData(temperature, room.temperature, room.radiator.flow_rate)
+                temperature, power = room.radiator.getRadiatorData(temperature, room.temperature, room.radiator.litres)
                 back_weight.append(weight * room.radiators)
                 back_temperatures.append(temperature)
                 delta_t = room.heat(power * Time.from_minutes(10) * room.radiators)
@@ -205,7 +224,8 @@ class House(object):
         response['battery'] = {
             'level': self.battery.battery_level,
             'stored': self.battery.stored,
-            'taken': self.battery.taken
+            'taken': self.battery.taken,
+            'diff': self.battery.diff
         }
         response['grid'] = {
             'sold': self.grid.sold,
@@ -222,11 +242,13 @@ class House(object):
         return response
 
     def reset_before(self):
+        self.battery.reset()
         self.grid.reset()
         for room in self.rooms:
             room.reset_before()
 
     def reset_after(self):
+        self.heatPump.deactivate()
         for room in self.rooms:
             # room.electricHeater.deactivate()
             room.radiator.deactivate()
