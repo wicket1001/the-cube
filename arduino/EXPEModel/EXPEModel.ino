@@ -81,7 +81,7 @@ void LED_move(int prevN, int N, int red, int green, int blue) {
 
 void setup() {
   // put your setup code here, to run once:
-  Serial.begin(115200);
+  Serial.begin(9600);
   // Initialize the NeoPixel library.
   pixels.begin();
   for (int i = 0; i < SEGMENTS; i++) {

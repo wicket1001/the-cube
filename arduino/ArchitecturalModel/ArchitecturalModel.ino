@@ -201,11 +201,11 @@ void loop() {
             data = data.substring(0, data.length() - 1);
             int len = data.length();
 
-            name = data.substring(0, 2);
-            percent_str = data.substring(3, 8);
+            name = data.substring(0, 2); // 2
+            color_str = data.substring(3, 5); // 2
+            percent_str = data.substring(6, 11); // 5
             //mini_str = data.substring(0, data.indexOf(";"));
             //maxi_str = data.substring(0, data.indexOf(";"));
-            color_str = data.substring(9, 11);
             //value = value_str.toFloat();
             //mini = mini_str.toFloat();
             //maxi = maxi_str.toFloat();
@@ -217,10 +217,10 @@ void loop() {
             int color_index = color_str.toInt();
             
             if (percent < 0.01) {
-              percent = 1;
+              percent = 0.01;
             }
 
-            Serial.println("Putting |" + String(index) + "| speeding |" + String(percent) + "| to |" + String(color_index) + "|");
+            Serial.println("Putting |" + String(index) + "| speeding |" + percent_str + "| to (" + String(percent) + ") |" + String(color_index) + "|");
 
             intervals[index] = percent * 1000;
             strip[index] = color_index;
