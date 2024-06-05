@@ -302,8 +302,6 @@ function add_simulation_raw(res: Simulation, update: boolean) {
   temperatures_graph['Benchmark First Inside'].push(res['benchmark']['rooms'][2]['temperature']);
   temperatures_graph['Decision First Inside'].push(res['decision']['rooms'][2]['temperature']);
 
-  update_weather(absolute_step % 144, temperature, wind, precipitation, radiation);
-
   for (const algorithm of algorithms_named) {
     co2[algorithm as keyof Algorithms].push(res[algorithm as keyof Algorithms]['co2'])
   }
@@ -352,6 +350,9 @@ function add_simulation_raw(res: Simulation, update: boolean) {
     grid[gridParameter as keyof IGrid].push(grid_raw[gridParameter as keyof IGrid])
   }
 
+  if (update) {
+    update_weather(absolute_step % 144, temperature, wind, precipitation, radiation);
+  }
   if (update && currentIndex.value >= 3) {
     dataFetched.value = true;
     let end = 0;
@@ -496,14 +497,22 @@ function extract_keys(bucket, indexes: string[]) {
 
 <template>
   <div>
-    <h1>Data</h1>
+    <h1 class="mb-5">OMNI Management Dashboard</h1>
     <div>
       <v-btn class="mr-1" density="default" aria-label="Pause" icon="mdi-pause" :disabled="timer === -1" @click="pause_sim()"></v-btn>
       <v-btn class="mx-1" density="default" aria-label="Step" icon="mdi-step-forward" :disabled="timer !== -1" @click="step()"></v-btn>
       <v-btn class="mx-1" density="default" aria-label="Play" icon="mdi-play" :disabled="timer !== -1" @click="play()"></v-btn>
       <v-btn class="mx-1" density="default" aria-label="Fast" icon="mdi-fast-forward" :disabled="timer !== -1" @click="fast()"></v-btn>
-      <v-btn class="ml-1" density="default" aria-label="Reset" icon="mdi-replay" @click="reset_sim()"></v-btn>
+      <v-btn class="mx-1" density="default" aria-label="Reset" icon="mdi-replay" @click="reset_sim()"></v-btn>
     </div>
+    <v-switch
+      class="d-inline-block mx-1 ml-auto"
+      v-model="rolling"
+      :label="`Rolling: ${rolling.toString()}`"
+      hide-details
+      inset
+    ></v-switch>
+    <!--
     <div class="d-inline">
       {{currentIndex}}
     </div>
@@ -515,6 +524,7 @@ function extract_keys(bucket, indexes: string[]) {
     <div class="d-inline">
       {{ current_date }}
     </div>
+    -->
     <div>
       <VueDatePicker
         v-model="future"
@@ -538,58 +548,47 @@ function extract_keys(bucket, indexes: string[]) {
   <div class="controls" v-if="dataFetched">
     <input type="range" min="0" :max="lookback" value="0" v-model="currentIndex" />
   </div>
-  <div class="overrides">
-    <v-switch
-      class="d-inline mx-1"
-      v-model="rolling"
-      :label="`Rolling: ${rolling.toString()}`"
-      hide-details
-      inset
-  ></v-switch>
-  </div>
   <div id="weather" class="v-container">
-    <div class="v-row">
+    <div class="v-row align-center justify-center">
       <div class="v-col">
-        Temperature: <v-btn id="btn-temperature" density="default" :icon="temperatureBtn"></v-btn>
+        Temperature
       </div>
       <div class="v-col">
-        <v-btn icon="mdi-snowflake-thermometer"></v-btn>
+        Wind speed
       </div>
       <div class="v-col">
-        <v-btn class="d-inline" density="default" icon="mdi-sun-thermometer-outline" @click="patch_outside()"></v-btn>
-      </div>
-    </div>
-    <div class="v-row">
-      <div class="v-col">
-        Wind speed: <v-btn id="btn-wind" density="default" :icon="windBtn"></v-btn>
+        Precipitation
       </div>
       <div class="v-col">
-        <v-btn icon="mdi-grain"></v-btn>
-      </div>
-      <div class="v-col">
-        <v-btn icon="mdi-weather-dust"></v-btn>
+        Sun intensity
       </div>
     </div>
-    <div class="v-row">
+    <div class="v-row align-center justify-center">
       <div class="v-col">
-        Rain: <v-btn id="btn-precipitation" density="default" :icon="precipitationBtn"></v-btn>
+        <v-btn id="btn-temperature" density="default" :icon="temperatureBtn"></v-btn>
       </div>
       <div class="v-col">
-        <v-btn icon="mdi-weather-cloudy"></v-btn>
+        <v-btn id="btn-wind" density="default" :icon="windBtn"></v-btn>
       </div>
       <div class="v-col">
-        <v-btn icon="mdi-weather-pouring"></v-btn>
+        <v-btn id="btn-precipitation" density="default" :icon="precipitationBtn"></v-btn>
+      </div>
+      <div class="v-col">
+        <v-btn id="btn-radiation" density="default" :icon="radiationBtn"></v-btn>
       </div>
     </div>
-    <div class="v-row">
-      <div class="v-col">
-        Sun intensity: <v-btn id="btn-radiation" density="default" :icon="radiationBtn"></v-btn>
+    <div class="v-row align-center justify-center">
+      <div class="v-col align-center justify-center">
+        {{ outside.format_celsius() }}
       </div>
-      <div class="v-col">
-        <v-btn icon="mdi-weather-partly-cloudy"></v-btn>
+      <div class="v-col align-center justify-center">
+        3
       </div>
-      <div class="v-col">
-        <v-btn icon="mdi-weather-sunny"></v-btn>
+      <div class="v-col align-center justify-center">
+        5
+      </div>
+      <div class="v-col align-center justify-center">
+        7
       </div>
     </div>
   </div>
@@ -605,28 +604,37 @@ function extract_keys(bucket, indexes: string[]) {
       </div>
       <div class="singleChart">
         <LinesChart v-if="dataFetched"
+                    id="money_plot"
+                    :key="currentIndex"
+                    :keys="dates_view"
+                    :axes="['Money']"
+                    :values="[money_view]"/>
+      </div>
+      <!--
+      <div class="singleChart">
+        <LinesChart v-if="dataFetched"
                     id="temperature_plot"
                     :key="currentIndex"
                     :keys="dates_view"
                     :axes="Object.keys(temperatures_graph)"
                     :values="extract_keys(temperatures_graph_view, Object.keys(temperatures_graph))"/>
-      </div>
-      <div class="singleChart">
+      </div>-->
+      <!--<div class="singleChart">
         <LinesChart v-if="dataFetched"
                     id="precipitation_plot"
                     :key="currentIndex"
                     :keys="dates_view"
                     :axes="['Precipitation']"
                     :values="[precipitations_view]"/>
-      </div>
-      <div class="singleChart">
+      </div>-->
+      <!--<div class="singleChart">
         <LinesChart v-if="dataFetched"
                     id="radiation_plot"
                     :key="currentIndex"
                     :keys="dates_view"
                     :axes="['Radiation']"
                     :values="[radiations_view]"/>
-      </div>
+      </div>-->
       <div class="singleChart">
         <LinesChart v-if="dataFetched"
                     id="solar_plot"
@@ -640,28 +648,32 @@ function extract_keys(bucket, indexes: string[]) {
       </div>
       <div class="singleChart">
         <LinesChart v-if="dataFetched"
-                    id="battery_plot"
+                    id="sum_generators"
                     :key="currentIndex"
                     :keys="dates_view"
-                    :axes="['Battery Level']"
-                    :values="[battery_level_view]"/>
+                    :axes="['Solar generation', 'Windturbine generation', 'SolarThermal generation', 'Total']"
+                    :mode="'Mode.KILO_WATT_HOURS'"
+                    :values="[get_field(generation_view, 'SolarPanel', 'generation'),
+                      get_field(generation_view, 'Windturbine', 'generation'),
+                      get_field(generation_view, 'SolarThermal', 'generation'),
+                      get_field(generation_view, 'Total', 'generation')]"/>
       </div>
-      <div class="singleChart">
+      <!--<div class="singleChart">
         <LinesChart v-if="dataFetched"
                     id="wind_plot"
                     :key="currentIndex"
                     :keys="dates_view"
                     :axes="['Wind']"
                     :values="[winds_view]"/>
-      </div>
-      <div class="singleChart">
+      </div>-->
+      <!--<div class="singleChart">
         <WindComponent v-if="dataFetched"
                        id="wind_direction"
                        :key="currentIndex"
                        :keys="dates_view"
                        :axes="'Wind direction'"
                        :values="wind_direction"/>
-      </div>
+      </div>-->
       <div class="singleChart">
         <LinesChart v-if="dataFetched"
                     id="appliances_plot"
@@ -675,11 +687,15 @@ function extract_keys(bucket, indexes: string[]) {
       </div>
       <div class="singleChart">
         <LinesChart v-if="dataFetched"
-                    id="money_plot"
+                    id="sum_appliances"
                     :key="currentIndex"
                     :keys="dates_view"
-                    :axes="['Money']"
-                    :values="[money_view]"/>
+                    :axes="['Equipment', 'Lights', 'HeatPump', 'Total']"
+                    :mode="'Mode.KILO_WATT_HOURS'"
+                    :values="[get_field(demand_view, 'Equipment', 'usage'),
+                      get_field(demand_view, 'Lights', 'usage'),
+                      get_field(demand_view, 'HeatPump', 'usage'),
+                      get_field(demand_view, 'Total', 'usage')]"/>
       </div>
       <div class="singleChart">
         <LinesChart v-if="dataFetched"
@@ -700,27 +716,11 @@ function extract_keys(bucket, indexes: string[]) {
       </div>
       <div class="singleChart">
         <LinesChart v-if="dataFetched"
-                    id="sum_generators"
+                    id="battery_plot"
                     :key="currentIndex"
                     :keys="dates_view"
-                    :axes="['Solar generation', 'Windturbine generation', 'SolarThermal generation', 'Total']"
-                    :mode="'Mode.KILO_WATT_HOURS'"
-                    :values="[get_field(generation_view, 'SolarPanel', 'generation'),
-                      get_field(generation_view, 'Windturbine', 'generation'),
-                      get_field(generation_view, 'SolarThermal', 'generation'),
-                      get_field(generation_view, 'Total', 'generation')]"/>
-      </div>
-      <div class="singleChart">
-        <LinesChart v-if="dataFetched"
-                    id="sum_appliances"
-                    :key="currentIndex"
-                    :keys="dates_view"
-                    :axes="['Equipment', 'Lights', 'HeatPump', 'Total']"
-                    :mode="'Mode.KILO_WATT_HOURS'"
-                    :values="[get_field(demand_view, 'Equipment', 'usage'),
-                      get_field(demand_view, 'Lights', 'usage'),
-                      get_field(demand_view, 'HeatPump', 'usage'),
-                      get_field(demand_view, 'Total', 'usage')]"/>
+                    :axes="['Battery Level']"
+                    :values="[battery_level_view]"/>
       </div>
     </div>
     <p v-if="!dataFetched">Loading...</p>
@@ -735,6 +735,7 @@ function extract_keys(bucket, indexes: string[]) {
       <div class="font-weight-bold d-inline">{{inside.format_celsius()}}</div>
     </div>
   </div>
+  <!--
   <div class="cube-container">
     <div class="cube">
       <div class="face front">Front</div>
@@ -743,9 +744,9 @@ function extract_keys(bucket, indexes: string[]) {
       <div class="face right">Right</div>
       <div class="face top">Top</div>
       <div class="face bottom">Bottom</div>
-      <!--<SolarPanel/>-->
     </div>
   </div>
+  -->
   <!--<Spectator/>-->
 </template>
 

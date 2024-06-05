@@ -95,12 +95,14 @@ export class Room {
   "temperature": Temperature;
   "appliances": Appliance[];
   "radiator": boolean;
+  "demand": Energy;
 
-  constructor({name, temperature, appliances, radiator}: IRoom) {
+  constructor({name, temperature, appliances, radiator, demand}: IRoom) {
     this.name = name;
     this.temperature = new Temperature(temperature);
     this.appliances = [];
     this.radiator = radiator;
+    this.demand = new Energy(demand);
     for (const appliance of appliances) {
       this.appliances.push(new Appliance(appliance));
     }
@@ -113,6 +115,7 @@ export interface IRoom {
     IAppliance
   ],
   "radiator": boolean,
+  "demand": number
 }
 
 export class Appliances {
@@ -198,17 +201,20 @@ export class Grid {
   "bought": Energy;
   "sell": Energy;
   "buy": Energy;
+  "diff": Energy;
 
-  constructor({sold, bought, sell, buy}: IGrid) {
+  constructor({sold, bought, sell, buy, diff}: IGrid) {
     this.sold = new Energy(sold);
     this.bought = new Energy(bought);
     this.sell = new Energy(sell);
     this.buy = new Energy(buy);
+    this.diff = new Energy(diff);
   }
 }
 export interface IGrid {
   "sold": number,
   "bought": number,
   "sell": number,
-  "buy": number
+  "buy": number,
+  "diff": number
 }
