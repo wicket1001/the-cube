@@ -1,5 +1,6 @@
 import csv
 from datetime import datetime
+from enum import IntFlag, auto, IntEnum
 
 from Battery import Battery
 from DebugLevel import DebugLevel
@@ -19,9 +20,91 @@ from WaterBuffer import WaterBuffer
 from Windturbine import Windturbine
 
 
+# colors = ['BLACK', 'WHITE', 'RED', 'LIME', 'YELLOW', 'CYAN', 'MAGENTA', 'MAROON', 'OLIVE', 'GREEN']
+class Colors(IntEnum):
+    BLACK = 0
+    WHITE = auto()
+    RED = auto()
+    LIME = auto()
+    YELLOW = auto()
+    CYAN = auto()
+    MAGENTA = auto()
+    MAROON = auto()
+    OLIVE = auto()
+    GREEN = auto()
+
+
+class Strips(IntEnum):
+    GRID = 0
+    BATTERY = auto()
+    SOLAR_PANEL = auto()
+    WIND_TURBINE = auto()
+    SOLAR_THERMAL_WATER = auto()
+    ATTIC_RIGHT = auto()
+    ATTIC_LEFT = auto()
+    ATTIC_UP = auto()
+    THIRD_RIGHT = auto()
+    THIRD_LEFT = auto()
+    THIRD_UP = auto()
+    SECOND_RIGHT = auto()
+    SECOND_LEFT = auto()
+    SECOND_UP = auto()
+    FIRST_RIGHT = auto()
+    FIRST_LEFT = auto()
+    HEATPUMP = auto()
+    THERMAL_BATTERY = auto()
+    WATER_BUFFER_THERMAL_BATTERY = auto()
+    WATER_BUFFER_HEATPUMP = auto()
+    FIRST_UP_RADIATORS = auto()
+    FIRST_RADIATORS = auto()
+    SECOND_UP_RADIATORS = auto()
+    SECOND_RADIATORS = auto()
+    THIRD_UP_RADIATORS = auto()
+    THIRD_RADIATORS = auto()
+
+
+
+def mapper(x: float, in_min: float, in_max: float, out_min: float, out_max: float):
+    return abs((x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min)
+
+
 def read_mat(verbosity: DebugLevel):
     # https://stackoverflow.com/questions/874461/read-mat-files-in-python
     pass
+
+
+boundaries_file = 'res/boundaries.csv'
+
+def write_boundaries(keys, maxis, minis):
+    all = [e.name for e in Strips]
+    with open(boundaries_file, 'w') as f:
+        for keys in sorted(maxis.keys()):
+            try:
+                if isinstance(keys, Strips):
+                    name = keys.name
+                else:
+                    name = all[keys - 1]
+            except IndexError:
+                name = keys
+            f.write(f'{keys};{maxis[keys]};{minis[keys]}\n')
+
+
+def get_boundaries() -> (dict, dict):
+    all = [e.value for e in Strips]
+    max_boundaries = {}
+    min_boundaries = {}
+    for x in range(len(all)):
+        max_boundaries[all[x]] = Energy(0)
+        min_boundaries[all[x]] = Energy(0)
+    with open(boundaries_file) as csvfile:
+        reader = csv.reader(csvfile, delimiter=';')
+        for row in reader:
+            index = row[0]
+            maxi = row[1]
+            mini = row[2]
+            max_boundaries[int(index)] = Energy(float(maxi))
+            min_boundaries[int(index)] = Energy(float(mini))
+    return max_boundaries, min_boundaries
 
 
 def read_csv(verbosity: DebugLevel):

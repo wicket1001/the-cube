@@ -44,6 +44,27 @@ def rgb_to_hsv(r, g, b):
     return h, s, v
 
 
+def forward_old(start, N, prevN, num):
+    N += 1
+    if N == num + start:
+        N = start
+    return N
+
+def backward_old(start, N, prevN, num):
+    N -= 1
+    if N == start - num:
+        N = start
+    return N
+
+
+def forward(start, N, prevN, num):
+    return start + (N - start + 1) % num
+
+
+def backward(start, N, prevN, num):
+    return start - (start - N + 1 + num) % num
+
+
 class TestComponents(unittest.TestCase):
     def test_distinct(self):
         print()
@@ -66,8 +87,43 @@ class TestComponents(unittest.TestCase):
     def test_indices(self):
         for i in range(SEGMENTS):
             print(firstIndices[i], numLEDS[i], directions[i])
-            self.assertTrue(firstIndices[i] == currentIndices[i])
+            self.assertEqual(firstIndices[i], currentIndices[i])
+            for k in range(50):
+                if directions[i] == 1:
+                    check = forward(firstIndices[i], currentIndices[i], 0, numLEDS[i])
+                    currentIndices[i] = forward_old(firstIndices[i], currentIndices[i], 0, numLEDS[i])
+                    # print(currentIndices[i], check)
+                    self.assertEqual(currentIndices[i], check)
+                else:
+                    check = backward(firstIndices[i], currentIndices[i], 0, numLEDS[i])
+                    currentIndices[i] = backward_old(firstIndices[i], currentIndices[i], 0, numLEDS[i])
+                    print(currentIndices[i], check)
+                    self.assertEqual(currentIndices[i], check)
 
+    def test_single_element(self):
+        checker = [0 for x in range(350)]
+        for i in range(SEGMENTS):
+            if directions[i] == 1:
+                start = firstIndices[i]
+                for k in range(numLEDS[i]):
+                    checker[start + k] += 1
+                    if (start + k) in (292, 293):
+                        print(i, directions[i], firstIndices[i], numLEDS[i])
+            else:
+                start = firstIndices[i]
+                for k in range(numLEDS[i]):
+                    checker[start - k] += 1
+                    if (start + k) in (292, 293):
+                        print(i, directions[i], firstIndices[i], numLEDS[i])
+        for i in range(len(checker)):
+            if checker[i] != 1:
+                print(i, checker[i])
+
+    def test_print(self):
+        print()
+        print(f'|{22/7:>6.3f}|')
+        print(f'|{-22/7:>6.3f}|')
+        print(f'|{22/7:.3f}|')
 
 if __name__ == '__main__':
     unittest.main()
