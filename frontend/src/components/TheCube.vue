@@ -165,7 +165,7 @@ const radiationBtn = defineModel('radiationBtn', {default: 'mdi-weather-cloudy'}
 const timer = defineModel('timer', {default: -1});
 const lookback = 144
 
-let lang = 'de'
+let lang = defineModel('lang', {default: 'de'});
 
 onMounted(() => {
   let begin: Date = presetDates.value[0].value;
@@ -277,11 +277,7 @@ function add_simulation_raw(res: Simulation, update: boolean) {
   radiations.push(radiation)
 
   let temperature = res['environment']['temperatures']
-  if (lang === 'de') {
-    outside.value = temperature
-  } else if (lang === 'en') {
-    outside.value = temperature
-  }
+  outside.value = temperature
   // temperatures.push(temperature)
   temperatures_graph['Outside'].push(temperature);
 
@@ -505,13 +501,14 @@ function extract_keys(bucket, indexes: string[]) {
       <v-btn class="mx-1" density="default" aria-label="Fast" icon="mdi-fast-forward" :disabled="timer !== -1" @click="fast()"></v-btn>
       <v-btn class="mx-1" density="default" aria-label="Reset" icon="mdi-replay" @click="reset_sim()"></v-btn>
     </div>
-    <v-switch
-      class="d-inline-block mx-1 ml-auto"
-      v-model="rolling"
-      :label="`Rolling: ${rolling.toString()}`"
-      hide-details
-      inset
-    ></v-switch>
+    <div>
+      <v-switch
+        v-model="rolling"
+        :label="`Rolling: ${rolling.toString()}`"
+        hide-details
+        inset
+      ></v-switch>
+    </div>
     <!--
     <div class="d-inline">
       {{currentIndex}}
@@ -699,20 +696,20 @@ function extract_keys(bucket, indexes: string[]) {
       </div>
       <div class="singleChart">
         <LinesChart v-if="dataFetched"
+                    id="grid_cur_plot"
+                    :key="currentIndex"
+                    :keys="dates_view"
+                    :axes="['Grid buying', 'Grid selling']"
+                    :values="[grid_view['buy'], grid_view['sell']]"/>
+      </div>
+      <div class="singleChart">
+        <LinesChart v-if="dataFetched"
                     id="grid_plot"
                     :key="currentIndex"
                     :keys="dates_view"
                     :axes="['Grid bought', 'Grid sold']"
                     :mode="'Mode.KILO_WATT_HOURS'"
                     :values="[grid_view['bought'], grid_view['sold']]"/>
-      </div>
-      <div class="singleChart">
-        <LinesChart v-if="dataFetched"
-                    id="grid_cur_plot"
-                    :key="currentIndex"
-                    :keys="dates_view"
-                    :axes="['Grid buying', 'Grid selling']"
-                    :values="[grid_view['buy'], grid_view['sell']]"/>
       </div>
       <div class="singleChart">
         <LinesChart v-if="dataFetched"
@@ -725,6 +722,7 @@ function extract_keys(bucket, indexes: string[]) {
     </div>
     <p v-if="!dataFetched">Loading...</p>
   </div>
+  <!--
   <div class="stats mt-16">
     <div>
       Outside temperature:
@@ -735,6 +733,7 @@ function extract_keys(bucket, indexes: string[]) {
       <div class="font-weight-bold d-inline">{{inside.format_celsius()}}</div>
     </div>
   </div>
+  -->
   <!--
   <div class="cube-container">
     <div class="cube">
