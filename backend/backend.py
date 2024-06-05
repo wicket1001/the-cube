@@ -1,11 +1,11 @@
 import json
-from enum import IntFlag, auto
+import math
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import urlparse, parse_qs
 import serial
 
-import utils
+from utils import get_house, read_csv, Strips, Colors, mapper, get_boundaries
 from DebugLevel import DebugLevel
 from Physics import SIEncoder, Temperature, Length, Energy
 from algorithm_utils import Algorithms
@@ -24,57 +24,12 @@ except serial.serialutil.SerialException as e:
     arduino_found = False
 
 absolute_step = 0
-benchmark_house = utils.get_house()
-decision_house = utils.get_house()
-weather = utils.read_csv(DebugLevel.INFORMATIONAL)
+benchmark_house = get_house()
+decision_house = get_house()
+weather = read_csv(DebugLevel.INFORMATIONAL)
+max_boundaries, min_boundaries = get_boundaries()
 cache = []
 cache_size = 144
-
-
-# colors = ['BLACK', 'WHITE', 'RED', 'LIME', 'YELLOW', 'CYAN', 'MAGENTA', 'MAROON', 'OLIVE', 'GREEN']
-class Colors(IntFlag):
-    BLACK = auto()
-    WHITE = auto()
-    RED = auto()
-    LIME = auto()
-    YELLOW = auto()
-    CYAN = auto()
-    MAGENTA = auto()
-    MAROON = auto()
-    OLIVE = auto()
-    GREEN = auto()
-
-class Strips(IntFlag):
-    GRID = auto()
-    BATTERY = auto()
-    SOLAR_PANEL = auto()
-    WIND_TURBINE = auto()
-    SOLAR_THERMAL_WATER = auto()
-    ATTIC_RIGHT = auto()
-    ATTIC_LEFT = auto()
-    ATTIC_UP = auto()
-    THIRD_RIGHT = auto()
-    THIRD_LEFT = auto()
-    THIRD_UP = auto()
-    SECOND_RIGHT = auto()
-    SECOND_LEFT = auto()
-    SECOND_UP = auto()
-    FIRST_RIGHT = auto()
-    FIRST_LEFT = auto()
-    HEATPUMP = auto()
-    THERMAL_BATTERY = auto()
-    WATER_BUFFER_THERMAL_BATTERY = auto()
-    WATER_BUFFER_HEATPUMP = auto()
-    FIRST_UP_RADIATORS = auto()
-    FIRST_RADIATORS = auto()
-    SECOND_UP_RADIATORS = auto()
-    SECOND_RADIATORS = auto()
-    THIRD_UP_RADIATORS = auto()
-    THIRD_RADIATORS = auto()
-
-#maxlen = max([len(x) for x in colors])
-maxi_value = {}
-mini_value = {}
 
 
 def trim(value: float):
@@ -136,13 +91,13 @@ class RestAPI(BaseHTTPRequestHandler):
                     self.send_unprocessable_entity()
                 else:
                     self.send_json(cache[len(cache) - lookback:])
-                    # self.serial_control(cache[len(cache) - 1])
+                    self.serial_control(cache[len(cache) - 1])
 
             else:
                 response = cache[len(cache) - 1]
                 self.send_json(response)
-                # if response['step'] % 6 == 0:
-                self.serial_control(response)
+                if response['step'] % 6 == 0:
+                    self.serial_control(response)
 
     def send_json(self, data):
         response_data = json.dumps(data, cls=SIEncoder).encode('utf-8')
@@ -260,85 +215,97 @@ class RestAPI(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(0))
         self.end_headers()
 
-    @staticmethod
-    def mapper(x: float, in_min: float, in_max: float, out_min: float, out_max: float):
-        return abs((x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min)
-
-    def peaks(self, strip: Strips, value: float):
-        if strip in maxi_value.keys():
-            if value > maxi_value[strip]:
-                maxi_value[strip] = value
-        else:
-            maxi_value[strip] = value
-        if strip in mini_value.keys():
-            if value < mini_value[strip]:
-                mini_value[strip] = value
-        else:
-            mini_value[strip] = value
-
-    def send_info(self, strip: Strips, color: Colors, value: float):
-        self.write_read(f'{strip:2};{color:2};{trim(value):.3f}\n')  # TODO trim negative, negative transmission
+    def send_info(self, strip: Strips, color: Colors, value: (float, Energy), reverse=False):
+        if isinstance(value, Energy):
+            value = value.value
+        if reverse:
+            value = 1 - value
+        self.write_read(f'{strip:2};{color:2};{trim(value):>6.3f};x\n')  # TODO trim negative, negative transmission
 
     def serial_control(self, response: dict):
-        if response['absolute_step'] % (144 * 30) == 0:
-            print(maxi_value)
-            print(mini_value)
+        diff = response['benchmark']['grid']['diff']
+        if diff.value < 0:
+            pass
+            #self.send_info(Strips.GRID, Colors.MAGENTA, diff / min_boundaries[Strips.GRID], True)
+        else:
+            pass
+            #self.send_info(Strips.GRID, Colors.BLACK, diff / max_boundaries[Strips.GRID], True)
 
-        sell = response['benchmark']['grid']['sell'].value
-        buy = response['benchmark']['grid']['buy'].value
-        value = self.mapper(sell - buy, Energy.from_watt_hours(10).value, Energy.from_watt_hours(5).value, -1, 1)
-        self.peaks(Strips.GRID, sell - buy)
-        self.send_info(Strips.GRID, Colors.MAGENTA if value > 0 else Colors.BLACK, value)
-
-        value = self.mapper(response['benchmark']['battery']['diff'].value, Energy.from_watt_hours(10).value, Energy.from_watt_hours(5).value, -1, 1)
-        self.peaks(Strips.BATTERY, response['benchmark']['battery']['diff'].value)
-        self.send_info(Strips.BATTERY, Colors.GREEN if value > 0 else Colors.RED, value)
+        diff = response['benchmark']['battery']['diff']
+        if diff.value < 0:
+            pass
+            # self.send_info(Strips.BATTERY, Colors.GREEN, diff / min_boundaries[Strips.BATTERY], True)
+        else:
+            pass
+            # self.send_info(Strips.BATTERY, Colors.RED, diff / max_boundaries[Strips.BATTERY], True)
         for generator in response['benchmark']['generators']:
             if generator['name'] == 'Windturbine':
-                value = self.mapper(generator['supply'].value, 0, Energy.from_watt_hours(5).value, 1, 0)
-                self.peaks(Strips.WIND_TURBINE, generator['supply'].value)
-                self.send_info(Strips.WIND_TURBINE, Colors.LIME, value)
+                self.send_info(Strips.WIND_TURBINE, Colors.LIME, generator['supply'] / max_boundaries[Strips.WIND_TURBINE], True)
             elif generator['name'] == 'SolarPanel':
-                value = self.mapper(generator['supply'].value, 0, Energy.from_watt_hours(1000).value, 1, 0)
-                self.peaks(Strips.SOLAR_PANEL, generator['supply'].value)
-                self.send_info(Strips.SOLAR_PANEL, Colors.LIME, value)
+                self.send_info(Strips.SOLAR_PANEL, Colors.LIME, generator['supply'] / max_boundaries[Strips.SOLAR_PANEL], True)
             elif generator['name'] == 'SolarThermal':
-                value = self.mapper(generator['supply'].value, 0, Energy.from_watt_hours(1000).value, 1, 0)
-                self.peaks(Strips.SOLAR_THERMAL_WATER, generator['supply'].value)
-                self.send_info(Strips.SOLAR_THERMAL_WATER, Colors.LIME, value)
-        room_demand = []
+                pass
+                # self.send_info(Strips.SOLAR_THERMAL_WATER, Colors.RED, generator['supply'] / max_boundaries[Strips.SOLAR_THERMAL_WATER], True)
         room_radiator = []
-        for i, room in enumerate(response['benchmark']['rooms']):
-            sum = Energy(0)
-            for appliance in room['appliances']:
-                sum += appliance['demand']
-            room_demand.append(sum)
-            room_radiator.append(room['radiator'])
-        # TODO
         cumulative = Energy(0)
         radiator = False
         room_index = 0
-        for i in range(len(room_demand) - 1, 0, -1):  # 0 is on purpose as there is no FIRST UP
-            value = self.mapper(room_demand[i].value, 0, Energy.from_watt_hours(5).value, 1, 0)
-            self.peaks(Strips.ATTIC_RIGHT + room_index, room_demand[i].value)
-            self.send_info(Strips.ATTIC_RIGHT + room_index, Colors.YELLOW, value)
-            cumulative += room_demand[i]
-            if room_radiator[i]:
+        for i in range(len(response['benchmark']['rooms']) - 1, -1, -1):  # 0 is on purpose as there is no FIRST UP
+            room_info = response['benchmark']['rooms'][i]
+            demand = room_info['demand']
+            index = Strips.ATTIC_RIGHT + room_index
+            # print(index)
+            self.send_info(index, Colors.YELLOW, demand / max_boundaries[index], True)
+            cumulative += demand
+            if room_info['radiator']:
                 radiator = True
             room_index += 1
             if i % 2 == 0:
-                value = self.mapper(cumulative.value, 0, Energy.from_watt_hours(5).value, 1, 0)
-                self.peaks(Strips.ATTIC_RIGHT + room_index, cumulative.value)
-                self.send_info(Strips.ATTIC_RIGHT + room_index, Colors.YELLOW, value)
+                self.send_info(
+                    Strips.ATTIC_RIGHT + room_index,
+                    Colors.YELLOW,
+                    cumulative / max_boundaries[Strips.ATTIC_RIGHT + room_index],
+                    True
+                )
                 # cumulative = Energy(0)
-                value = 0.5
-                self.peaks(Strips.THIRD_RADIATORS - (6 - room_index), 0.5)
-                self.send_info(Strips.THIRD_RADIATORS - (6 - room_index), Colors.RED, value)
+                up_radiators = Strips.THIRD_RADIATORS - (6 - math.floor(room_index / 3))
+                if radiator:
+                    pass
+                    # self.send_info(
+                    #     up_radiators,
+                    #     Colors.RED,
+                    #     0.5,
+                    #     True
+                    # )
+                else:
+                    pass
+                    # self.send_info(
+                    #     up_radiators,
+                    #     Colors.RED,
+                    #     0,
+                    #     True
+                    # )
                 # radiator = False  # does not make sense as there is no energy flow in between otherwise
                 room_index += 1
-        value = self.mapper(response['benchmark']['HeatPump']['demand'].value, Energy.from_watt_hours(6).value, Energy.from_watt_hours(5).value, 1, 0)
-        self.peaks(Strips.HEATPUMP, response['benchmark']['HeatPump']['demand'].value)
-        self.send_info(Strips.HEATPUMP, Colors.RED, value)
+                floor_radiators = Strips.THIRD_RADIATORS - (6 - math.ceil(room_index / 3))
+                if radiator:
+                    pass
+                    # self.send_info(
+                    #     floor_radiators,
+                    #     Colors.RED,
+                    #     0.5,
+                    #     True
+                    # )
+                else:
+                    pass
+                    # self.send_info(
+                    #     floor_radiators,
+                    #     Colors.RED,
+                    #     0,
+                    #     True
+                    # )
+        pass
+        #self.send_info(Strips.HEATPUMP, Colors.RED, response['benchmark']['HeatPump']['demand'] / max_boundaries[Strips.HEATPUMP], True)
 
 
     def write_read(self, x):
@@ -358,15 +325,15 @@ def setup():
     global weather
     global cache
     cache = []
-    benchmark_house = utils.get_house()
-    decision_house = utils.get_house()
+    benchmark_house = get_house()
+    decision_house = get_house()
 
     benchmark_house.solarPanel.save_weather(weather['radiations'])
     benchmark_house.windturbine.save_weather(weather['winds'], weather['wind_directions'])
-    benchmark_house.solarThermal.save_weather(weather['radiations'])
+    benchmark_house.solarThermal.save_weather(weather['radiations'], weather['winds'], weather['temperatures'])
     decision_house.solarPanel.save_weather(weather['radiations'])
     decision_house.windturbine.save_weather(weather['winds'], weather['wind_directions'])
-    decision_house.solarThermal.save_weather(weather['radiations'])
+    decision_house.solarThermal.save_weather(weather['radiations'], weather['winds'], weather['temperatures'])
 
     benchmark_house.solarThermal.input_water(Length.from_litre(1_000_000), Temperature.from_celsius(7))
     decision_house.solarThermal.input_water(Length.from_litre(1_000_000), Temperature.from_celsius(7))
