@@ -73,9 +73,9 @@ int directions[] = {1, -1, -1, 1, -1, -1, 1, -1, -1, 1, -1, -1, 1, -1, -1, 1, -1
 int intervals[] = {20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20};
 bool newPeriods[] = {true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true};
 unsigned long periodStarts[SEGMENTS] = {};
-int numLEDS[] = {5, 7, 35, 34, 36, 9, 9, 6, 9, 9, 6, 9, 9, 6, 9, 9, 16, 8, 7, 6, 3, 20, 7, 20, 8, 20};
-int firstIndices[] = {0, 11, 46, 47, 116, 125, 126, 140, 149, 150, 164, 173, 174, 188, 197, 198, 222, 223, 231, 238, 244, 247, 267, 274, 292, 300};
-int currentIndices[] = {0, 11, 46, 47, 116, 125, 126, 140, 149, 150, 164, 173, 174, 188, 197, 198, 222, 223, 231, 238, 244, 247, 267, 274, 292, 300};
+int numLEDS[] = {5, 7, 35, 34, 36, 9, 9, 6, 9, 9, 6, 9, 9, 6, 9, 9, 16, 8, 7, 6, 3, 20, 7, 20, 6, 20};
+int firstIndices[] = {0, 11, 46, 47, 116, 125, 126, 140, 149, 150, 164, 173, 174, 188, 197, 198, 222, 223, 231, 238, 244, 247, 267, 274, 294, 300};
+int currentIndices[] = {0, 11, 46, 47, 116, 125, 126, 140, 149, 150, 164, 173, 174, 188, 197, 198, 222, 223, 231, 238, 244, 247, 267, 274, 294, 300};
 int prevIndices[] = {100, 100, 100, 100, 200, 200, 200, 200, 200, 200, 200, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300};
 
 bool showing = false;
@@ -85,11 +85,9 @@ Adafruit_NeoPixel pixels = Adafruit_NeoPixel(totalNum, pin, NEO_GRB + NEO_KHZ800
 String temp;
 String data;
 String name;
-String mini_str;
-String maxi_str;
-String value_str;
 String percent_str;
 String color_str;
+String check_str;
 float mini;
 float maxi;
 float value;
@@ -101,11 +99,7 @@ int forwardBlink_HSV(int start, int N, int prevN, int num, int h, int s, int v) 
         prevN = start + num - 1;
     }
     LED_move_HSV(prevN, N, h, s, v);
-    N++;
-    if (N == num + start) {
-        N = start;
-    }
-    return N;
+    return start + (N - start + 1) % num;
 }
 
 int backwardBlink_HSV(int start, int N, int prevN, int num, int h, int s, int v) {
@@ -114,11 +108,7 @@ int backwardBlink_HSV(int start, int N, int prevN, int num, int h, int s, int v)
         prevN = start - num + 1;
     }
     LED_move_HSV(prevN, N, h, s, v);
-    N--;
-    if (N == start - num) {
-        N = start;
-    }
-    return N;
+    return start - (start - N + 1 + num) % num;
 }
 
 int forwardGaus(int start, int N, int prevN, int num, int h, int s, int v) {
@@ -133,14 +123,14 @@ int forwardGaus(int start, int N, int prevN, int num, int h, int s, int v) {
 }
 
 int forwardStrip(int start, int N, int prevN, int num, int h, int s, int v) {
-    pixels.setPixelColor((N - 3 + num) % num + start, pixels.ColorHSV(0, 0, 0));
-    pixels.setPixelColor((N - 2 + num) % num + start, pixels.ColorHSV(h, s, v / 10 * 1));
-    pixels.setPixelColor((N - 1 + num) % num + start, pixels.ColorHSV(h, s, v / 10 * 3));
-    pixels.setPixelColor((N + 0 + num) % num + start, pixels.ColorHSV(h, s, v / 10 * 5));
-    pixels.setPixelColor((N + 1 + num) % num + start, pixels.ColorHSV(h, s, v / 10 * 7));
-    pixels.setPixelColor((N + 2 + num) % num + start, pixels.ColorHSV(h, s, v));
-    pixels.setPixelColor((N + 3 + num) % num + start, pixels.ColorHSV(0, 0, 0));
-    return start + (N + 1) % num;
+    pixels.setPixelColor(start + (N - start - 3 + num) % num, pixels.ColorHSV(0, 0, 0));
+    pixels.setPixelColor(start + (N - start - 2 + num) % num, pixels.ColorHSV(h, s, v / 10 * 1));
+    pixels.setPixelColor(start + (N - start - 1 + num) % num, pixels.ColorHSV(h, s, v / 10 * 3));
+    pixels.setPixelColor(start + (N - start + 0 + num) % num, pixels.ColorHSV(h, s, v / 10 * 5));
+    pixels.setPixelColor(start + (N - start + 1 + num) % num, pixels.ColorHSV(h, s, v / 10 * 7));
+    pixels.setPixelColor(start + (N - start + 2 + num) % num, pixels.ColorHSV(h, s, v));
+    pixels.setPixelColor(start + (N - start + 3 + num) % num, pixels.ColorHSV(0, 0, 0));
+    return start + (N - start + 1 + num) % num;
 }
 
 int backwardStrip(int start, int N, int prevN, int num, int h, int s, int v) {
@@ -191,6 +181,8 @@ float mapper(float x, float in_min, float in_max, float out_min, float out_max) 
     return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 
+
+#define MIN_SPEED 0.1
 void loop() {
     if (Serial.available()) {
         temp = Serial.readString();
@@ -203,27 +195,38 @@ void loop() {
 
             name = data.substring(0, 2); // 2
             color_str = data.substring(3, 5); // 2
-            percent_str = data.substring(6, 11); // 5
-            //mini_str = data.substring(0, data.indexOf(";"));
-            //maxi_str = data.substring(0, data.indexOf(";"));
-            //value = value_str.toFloat();
-            //mini = mini_str.toFloat();
-            //maxi = maxi_str.toFloat();
-            //color_str = data.substring(17, 19);
+            percent_str = data.substring(6, 12); // 6
+            check_str = data.substring(13, 14); // 1
 
-            //percent = mapper(value, mini, maxi, 0.0, 1.0);
-            int index = name.toInt();
-            percent = percent_str.toFloat();
-            int color_index = color_str.toInt();
-            
-            if (percent < 0.01) {
-              percent = 0.01;
+            if (check_str.equals("x")) {
+
+              int index = name.toInt();
+              percent = percent_str.toFloat();
+              int color_index = color_str.toInt();
+  
+              if (percent > 0) {
+                if (percent < MIN_SPEED) {
+                  percent = MIN_SPEED;
+                }
+                directions[index] = 1;
+              } else if (percent < 0) {
+                if (percent > -MIN_SPEED) {
+                  percent = -MIN_SPEED;
+                }
+                directions[index] = -1;
+              } else { // if (percent == 0) {
+                // TODO current index off
+                // period auf infinity
+              }
+  
+              Serial.println("Putting |" + String(index) + "| speeding |" + percent_str + "| to (" + String(percent) + ") |" + String(color_index) + "|");
+  
+              intervals[index] = percent * 1000;
+              strip[index] = color_index;
+            } else {
+              // the serial connection mangled
+              // TODO maybe set every timer up
             }
-
-            Serial.println("Putting |" + String(index) + "| speeding |" + percent_str + "| to (" + String(percent) + ") |" + String(color_index) + "|");
-
-            intervals[index] = percent * 1000;
-            strip[index] = color_index;
 
             data = "";
         }
@@ -237,6 +240,7 @@ void loop() {
             showing = true;
         }
         if (currentTime - periodStarts[i] > intervals[i]) {
+            /*
             if (i == 2) { // PV
                 if (currentIndices[i] == firstIndices[i]) {
                     directions[i] = -1;
@@ -244,15 +248,15 @@ void loop() {
                 if (currentIndices[i] == firstIndices[i] - numLEDS[i] + 1) {
                     directions[i] = 1;
                 }
-            }
+            }*/
             if (directions[i] == -1) {
-                if (numLEDS[i] == -1) {
+                if (numLEDS[i] >= 6) {
                     currentIndices[i] = backwardStrip(firstIndices[i], currentIndices[i], prevIndices[i], numLEDS[i], hueColors[i], saturationColors[i], valueColors[i]);
                 } else {
                     currentIndices[i] = backwardBlink_HSV(firstIndices[i], currentIndices[i], prevIndices[i], numLEDS[i], h[strip[i]], s[strip[i]], v[strip[i]]);
                 }
             } else {
-                if (numLEDS[i] == -1) {
+                if (numLEDS[i] >= 6) {
                     currentIndices[i] = forwardStrip(firstIndices[i], currentIndices[i], prevIndices[i], numLEDS[i], hueColors[i], saturationColors[i], valueColors[i]);
                 } else {
                     currentIndices[i] = forwardBlink_HSV(firstIndices[i], currentIndices[i], prevIndices[i], numLEDS[i], h[strip[i]], s[strip[i]], v[strip[i]]);
