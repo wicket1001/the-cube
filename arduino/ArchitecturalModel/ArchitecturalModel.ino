@@ -266,13 +266,15 @@ void loop() {
                 percent = 10;
             }
 
+            intervals[index] = percent * 1000.0;
+
             if (index == 15) {
                 if (percent > 0.15) {
                     on[index] = 0;
+                    intervals[index] = percent * 2000.0;
                 }
-            } else {
-                intervals[index] = percent * 1000.0;
             }
+
             Serial.println("Putting |" + String(index) + "| speeding |" + percent_str + "| to (" + String(percent) + ") |" + String(color_index) + "|" + intervals[index]);
 
             strip[index] = color_index;
@@ -304,12 +306,13 @@ void loop() {
             if (directions[i] == -1) {
                 if (on[i] > 0) {
                     if (numLEDS[i] >= 6) {
-                        if (on[i] == 2) {
+                        /*if (on[i] == 2) {
                             currentIndices[i] = backwardStrip(firstIndices[i], currentIndices[i], prevIndices[i], numLEDS[i], hueColors[i], saturationColors[i], valueColors[i]);
                         } else {
                             backwardOff(firstIndices[i], currentIndices[i], prevIndices[i], numLEDS[i], h[strip[i]], s[strip[i]], v[strip[i]]);
+                            */
                             currentIndices[i] = backwardBlink_HSV(firstIndices[i], currentIndices[i], prevIndices[i], numLEDS[i], h[strip[i]], s[strip[i]], v[strip[i]]);
-                        }
+                        /*}*/
                     } else {
                         currentIndices[i] = backwardBlink_HSV(firstIndices[i], currentIndices[i], prevIndices[i], numLEDS[i], h[strip[i]], s[strip[i]], v[strip[i]]);
                     }
@@ -319,12 +322,13 @@ void loop() {
             } else {
                 if (on[i] > 0) {
                     if (numLEDS[i] >= 6) {
-                        if (on[i] == 2) {
+                        /*if (on[i] == 2) {
                             currentIndices[i] = forwardStrip(firstIndices[i], currentIndices[i], prevIndices[i], numLEDS[i], hueColors[i], saturationColors[i], valueColors[i]);
                         } else {
                             forwardOff(firstIndices[i], currentIndices[i], prevIndices[i], numLEDS[i], h[strip[i]], s[strip[i]], v[strip[i]]);
+                            */
                             currentIndices[i] = forwardBlink_HSV(firstIndices[i], currentIndices[i], prevIndices[i], numLEDS[i], h[strip[i]], s[strip[i]], v[strip[i]]);
-                        }
+                        /*}*/
                     } else {
                         currentIndices[i] = forwardBlink_HSV(firstIndices[i], currentIndices[i], prevIndices[i], numLEDS[i], h[strip[i]], s[strip[i]], v[strip[i]]);
                     }

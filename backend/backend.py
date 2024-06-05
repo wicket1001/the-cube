@@ -250,61 +250,63 @@ class RestAPI(BaseHTTPRequestHandler):
         cumulative = Energy(0)
         radiator = False
         room_index = 0
-        for i in range(len(response['benchmark']['rooms']) - 1, -1, -1):  # 0 is on purpose as there is no FIRST UP
-            room_info = response['benchmark']['rooms'][i]
-            demand = room_info['demand']
-            index = Strips.ATTIC_RIGHT + room_index
-            # print(index)
-            self.send_info(index, Colors.YELLOW, demand / max_boundaries[index], True)
-            cumulative += demand
-            if room_info['radiator']:
-                radiator = True
-            room_index += 1
-            if i % 2 == 0:
-                self.send_info(
-                    Strips.ATTIC_RIGHT + room_index,
-                    Colors.YELLOW,
-                    cumulative / max_boundaries[Strips.ATTIC_RIGHT + room_index],
-                    True
-                )
-                # cumulative = Energy(0)
-                up_radiators = Strips.THIRD_RADIATORS - (6 - math.floor(room_index / 3))
-                if radiator:
-                    pass
-                    # self.send_info(
-                    #     up_radiators,
-                    #     Colors.RED,
-                    #     0.5,
-                    #     True
-                    # )
-                else:
-                    pass
-                    # self.send_info(
-                    #     up_radiators,
-                    #     Colors.RED,
-                    #     0,
-                    #     True
-                    # )
-                # radiator = False  # does not make sense as there is no energy flow in between otherwise
-                room_index += 1
-                floor_radiators = Strips.THIRD_RADIATORS - (6 - math.ceil(room_index / 3))
-                if radiator:
-                    pass
-                    # self.send_info(
-                    #     floor_radiators,
-                    #     Colors.RED,
-                    #     0.5,
-                    #     True
-                    # )
-                else:
-                    pass
-                    # self.send_info(
-                    #     floor_radiators,
-                    #     Colors.RED,
-                    #     0,
-                    #     True
-                    # )
-        pass
+        demand = response['benchmark']['rooms'][2]['demand']
+        self.send_info(Strips.FIRST_LEFT, Colors.YELLOW, demand / max_boundaries[Strips.FIRST_LEFT], True)
+        # for i in range(len(response['benchmark']['rooms']) - 1, -1, -1):  # 0 is on purpose as there is no FIRST UP
+        #     room_info = response['benchmark']['rooms'][i]
+        #     demand = room_info['demand']
+        #     index = Strips.ATTIC_RIGHT + room_index
+        #     # print(index)
+        #     self.send_info(index, Colors.YELLOW, demand / max_boundaries[index], True)
+        #     cumulative += demand
+        #     if room_info['radiator']:
+        #         radiator = True
+        #     room_index += 1
+        #     if i % 2 == 0:
+        #         self.send_info(
+        #             Strips.ATTIC_RIGHT + room_index,
+        #             Colors.YELLOW,
+        #             cumulative / max_boundaries[Strips.ATTIC_RIGHT + room_index],
+        #             True
+        #         )
+        #         # cumulative = Energy(0)
+        #         up_radiators = Strips.THIRD_RADIATORS - (6 - math.floor(room_index / 3))
+        #         if radiator:
+        #             pass
+        #             # self.send_info(
+        #             #     up_radiators,
+        #             #     Colors.RED,
+        #             #     0.5,
+        #             #     True
+        #             # )
+        #         else:
+        #             pass
+        #             # self.send_info(
+        #             #     up_radiators,
+        #             #     Colors.RED,
+        #             #     0,
+        #             #     True
+        #             # )
+        #         # radiator = False  # does not make sense as there is no energy flow in between otherwise
+        #         room_index += 1
+        #         floor_radiators = Strips.THIRD_RADIATORS - (6 - math.ceil(room_index / 3))
+        #         if radiator:
+        #             pass
+        #             # self.send_info(
+        #             #     floor_radiators,
+        #             #     Colors.RED,
+        #             #     0.5,
+        #             #     True
+        #             # )
+        #         else:
+        #             pass
+        #             # self.send_info(
+        #             #     floor_radiators,
+        #             #     Colors.RED,
+        #             #     0,
+        #             #     True
+        #             # )
+        # pass
         #self.send_info(Strips.HEATPUMP, Colors.RED, response['benchmark']['HeatPump']['demand'] / max_boundaries[Strips.HEATPUMP], True)
 
 
