@@ -16,6 +16,8 @@ class SolarThermal(Generator):
     INITIAL_TEMPERATURE_C = 0
     solar_energy = Energy(0)
     radiations = []
+    winds = []
+    temperatures = []
     weight = Weight(0)
     temperature = Temperature.from_celsius(INITIAL_TEMPERATURE_C)
     density = Density.from_predefined(Density.Predefined.WATER)
@@ -24,11 +26,16 @@ class SolarThermal(Generator):
     name = "SolarThermal"
     litres = Length.from_litre(0)
 
+    n = 100
+    flow_rate = Length.from_litre(0)
+
     def __init__(self, size: [numbers.Number, Length]):
         super().__init__(size)
 
-    def save_weather(self, array: List[float]):
-        self.radiations = array
+    def save_weather(self, radiation: List[float], wind: List[float], temperatures: List[float]):
+        self.radiations = radiation
+        self.winds = wind
+        self.temperatures = temperatures
 
     def step(self, t: int, absolute_step: int, verbosity: DebugLevel = DebugLevel.INFORMATIONAL) -> Energy:
         if self.weight.value == 0:
@@ -48,9 +55,14 @@ class SolarThermal(Generator):
         self.generation += energy_production
         return energy_production
 
-    def get_solar_thermal_data(self, T_in, T_amb, V_flow, G, v_air, n):
+    def get_solar_thermal_data(self, absolute_step: int, T_in: Temperature) -> (Temperature, Power):
+        T_in = T_in.get_celsius()
+        T_amb = self.temperatures[absolute_step]
+        G = self.radiations[absolute_step]
+        v_air = self.winds[absolute_step]
+
         #Outputs: outlet temp in C and generated heat (Q) in W
-        # Inputs: inlet temp in C, outside temp in C, volumetric flow rate in L/s,#
+        # Inputs: inlet temp in C, outside temp in C, volumetric flow rate in L/s,
         # global irradiation in W/m^2, velocity of outside air in m/s, number of
         #solar thermal heaters in #
 
@@ -62,18 +74,18 @@ class SolarThermal(Generator):
         c_p_mix = 3647.163  # J/kg.K, heat capacity of mix at 80C
 
         # Solar thermal heater (STH) properties
-        sth_length = math.sqrt(n) * 1.529  # m, length of STH
-        sth_height = math.sqrt(n) * 1.019  # m, height of STH
+        sth_length = math.sqrt(self.n) * 1.529  # m, length of STH
+        sth_height = math.sqrt(self.n) * 1.019  # m, height of STH
 
         D_pipe = 22 / 1000  # m, diameter of pipe
         A_pipe = math.pi * (D_pipe / 2) ** 2  # m^2
         t_pipe = 3 / 1000  # m, thickness of pipe
         k_pipe = 45  # W/mK, thermal conductivity of steel
-        L_pipe = n * (1.1 / 1000) / A_pipe
+        L_pipe = self.n * (1.1 / 1000) / A_pipe
         surf_area_sth = sth_length * sth_height
 
         # Flow properties of water
-        v_mix = (V_flow / 1000) / A_pipe  # m/s, velocity of water through radiator
+        v_mix = (self.flow_rate.get_litres() / 1000) / A_pipe  # m/s, velocity of water through radiator
         Re_d = (rho_mix * v_mix * D_pipe) / dyn_visc_mix  # Reynolds number of pipe
 
         # Laminar flow
@@ -86,6 +98,8 @@ class SolarThermal(Generator):
         # Dittus-Boelter Correlation
         elif Re_d >= 10000 and 0.6 <= Pr_mix <= 160:
             Nu_D = 0.023 * Re_d * (4 / 5) * Pr_mix * 0.3  # Nusselt number using Dittus-Boelter correlation
+        else:
+            raise NotImplementedError('SolarThermal data not available')
 
         h_mix = Nu_D * k_mix / D_pipe  # W/m^2K, convection heat transfer coefficient of water through pipe at 80C
         mass_flow_rate = v_mix * A_pipe * rho_mix  # kg/s, mass flow rate of water
@@ -96,19 +110,25 @@ class SolarThermal(Generator):
         k_air = 28.15 * 10 ** -3  # W/mK, thermal conductivity of air at 325K
         dyn_visc_air = 18.13 * 10 ** -6  # kg/m.s, dynamic viscosity of air
 
+        #print(rho_air, v_air, sth_length, dyn_visc_air)
         Re_L_air = (rho_air * v_air * sth_length) / dyn_visc_air  # Reynolds number of pipe
 
+        #print(Re_L_air, Pr_air)
         if Re_L_air <= 5 * 10**5:
             Nu_L_air = 0.664 * Re_L_air * 0.5 * Pr_air * (1 / 3)  # Nusselt number
         else:
             Nu_L_air = (0.037 * Re_L_air * (4 / 5) - 871) * Pr_air * (1 / 3)  # Nusselt number
 
+        #print(k_air, sth_length, Nu_L_air)
         h_air = 3.3 * (k_air / sth_length) * Nu_L_air  # W/m^2K, convection heat transfer coefficient of air
+        if Re_L_air == 0:
+            h_air = 5
 
         # Thermal resistance values
         R_water = 1 / (h_mix * math.pi * D_pipe * L_pipe)  # K/W, R value of water through pipe
         R_pipe = math.log(((D_pipe / 2) + t_pipe) / (D_pipe / 2)) / (2 * math.pi * k_pipe * L_pipe)  # K/W, R value of pipe
-        R_air = 1 / (h_air * sth_height * sth_length * n)  # K/W, R value of water through pipe
+        #print(h_air, sth_height, sth_length, self.n)
+        R_air = 1 / (h_air * sth_height * sth_length * self.n)  # K/W, R value of water through pipe
         R_total = R_water + R_pipe + R_air  # K/W, total R value of radiator
 
         # Heat gain
@@ -121,7 +141,7 @@ class SolarThermal(Generator):
 
         T_out = Q_out / (mass_flow_rate * c_p_mix) + T_in
 
-        return T_out, Q_out
+        return Temperature.from_celsius(T_out), Power(Q_out)
 
     def input_water(self, litre: Length, temperature: Temperature) -> None:
         self.weight = self.density.calculate_mass(litre)

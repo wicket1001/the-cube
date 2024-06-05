@@ -11,6 +11,7 @@ class Grid(object):
         self.sold = Energy(0)
         self.buying = Energy(0)
         self.selling = Energy(0)
+        self.diff = Energy(0)
 
     def __str__(self):
         return 'Grid'
@@ -19,6 +20,7 @@ class Grid(object):
         if energy < Energy(0):
             raise ValueError("Energy")
         self.buying = energy
+        self.diff = energy
         self.bought += energy
         return self.buy_price.calculate_kWh_cost(energy)
 
@@ -26,6 +28,7 @@ class Grid(object):
         if energy < Energy(0):
             raise ValueError("Energy")
         self.selling = energy
+        self.diff = -energy
         self.sold += energy
         return self.sell_price.calculate_kWh_cost(energy)
 
@@ -44,3 +47,4 @@ class Grid(object):
     def reset(self):
         self.buying = Energy(0)
         self.selling = Energy(0)
+        self.diff = Energy(0)

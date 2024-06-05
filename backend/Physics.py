@@ -106,6 +106,8 @@ class Energy:
     def __truediv__(self, other):
         if isinstance(other, numbers.Number):
             return Energy(self.value / other)
+        elif isinstance(other, Energy):
+            return Energy(self.value / other.value)
         else:
             raise UnsupportedOperation('/')
 
@@ -117,6 +119,9 @@ class Energy:
             return self.value < other.value
         else:
             raise UnsupportedOperation('<')
+
+    def __neg__(self):
+        return Energy(-self.value)
 
     @staticmethod
     def from_kilo_joule(energy: float) -> Energy:
@@ -323,6 +328,9 @@ class Length:
             return Length(self.value * other)
         else:
             raise UnsupportedOperation('*')
+
+    def get_litres(self) -> float:
+        return self.value * 1000.0
 
     @staticmethod
     def from_milli_meter(value: float) -> Length:

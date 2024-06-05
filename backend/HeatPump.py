@@ -28,7 +28,7 @@ class HeatPump(Appliance):
         if self.should_activate:
             energy_demand = self.get_energy_demand()
             self.usage += energy_demand
-            self.generate_heat(energy_demand, verbosity)
+            # self.generate_heat(energy_demand, verbosity)
             return energy_demand
         else:
             return Energy(0)

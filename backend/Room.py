@@ -458,7 +458,8 @@ class Room:
             'name': self.name,
             'temperature': self.temperature,
             'appliances': appliances_response,
-            'radiator': self.radiator.should_activate
+            'radiator': self.radiator.should_activate,
+            'demand': energy_demand
         }
         response["rooms"].append(room)
         self.energy_consumption += energy_demand

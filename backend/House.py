@@ -21,7 +21,7 @@ STEPS_PER_DAY = int((24 * 60) / 10)
 
 def to_co2(energy: Energy) -> float:
     # https://www.rensmart.com/Calculators/KWH-to-CO2
-    return (energy.value / 1000.0) * 0.076
+    return (energy.value / 3600.0) * 0.076
 
 
 class House(object):
@@ -89,8 +89,15 @@ class House(object):
         self.rooms = rooms
         self.heatPump.litres = Length.from_litre(0)
         for room in self.rooms:
-            self.heatPump.litres += room.radiator.litres
+            # print('Room', room.radiator.litres.format_litre())
+            self.heatPump.litres += room.radiator.litres * room.radiators
+        # print('HeatPump litres', self.heatPump.litres.format_litre())
         self.solarThermal.litres = Length(self.heatPump.litres.value)
+        # self.solarThermal.litres = Length.from_litre(self.heatPump.litres.get_litres())
+        # print('SolarThermal Litres', self.heatPump.litres.format_litre())
+        # self.solarThermal.flow_rate = Length.from_litre(0.015)  # Length.from_litre(self.heatPump.litres.value / Time.from_minutes(10).value)
+        self.solarThermal.flow_rate = Length(self.heatPump.litres.value / Time.from_minutes(10).value)
+        # print('SolarThermal Flow Rate', self.solarThermal.flow_rate.format_litre())
 
     def heat_loss(self, outside) -> Energy:
         energy_sum = Energy(0)
@@ -140,9 +147,16 @@ class House(object):
         for room in self.rooms:
             room.step(step_of_the_day, absolute_step, algorithms, verbosity)
 
-        #weight, temperature = self.water_buffer.take_water(self.solarThermal.litres)
-        #self.solarThermal.input_water(self.solarThermal.litres, temperature)
-        #self.solarThermal.get_solar_thermal_data()
+
+
+        #weight, temperature_buffer = self.water_buffer.take_water(self.solarThermal.litres)
+        #self.solarThermal.input_water(self.solarThermal.litres, temperature_buffer)
+        #temperature_solar_thermal, power = self.solarThermal.get_solar_thermal_data(absolute_step, temperature_buffer)  # litres/s
+        #if power.value < 0: # As nothing ever happened
+        #    self.water_buffer.add_water(self.solarThermal.litres, temperature_buffer)
+        #else:
+        #    self.water_buffer.add_water(self.solarThermal.litres, temperature_solar_thermal)
+        #    print((power * Time.from_minutes(10)).format_watt_seconds())
         # Send water to SolarThermal
         # if hotter than 80
         # then to WaterBuffer
@@ -158,7 +172,7 @@ class House(object):
             weight, temperature = self.water_buffer.take_water(self.heatPump.litres)
             self.heatPump.input_water(self.heatPump.litres, temperature)
             self.heatPump.activate()
-            energy_demand_heat_pump += self.heatPump.step(step_of_the_day, absolute_step, verbosity)
+            energy_demand_heat_pump = Energy(self.heatPump.step(step_of_the_day, absolute_step, verbosity).value)
             energy_demand += energy_demand_heat_pump
             weight, temperature = self.heatPump.output_water()
             self.water_buffer.add_water(self.heatPump.litres, temperature)
@@ -231,7 +245,8 @@ class House(object):
             'sold': self.grid.sold,
             'bought': self.grid.bought,
             'sell': self.grid.selling,
-            'buy': self.grid.buying
+            'buy': self.grid.buying,
+            'diff': self.grid.diff
         }
         self.co2 += to_co2(self.grid.buying)
         response['co2'] = self.co2  # TODO bought gas
