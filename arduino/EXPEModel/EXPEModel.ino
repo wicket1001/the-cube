@@ -47,65 +47,65 @@ int prevIndices[SEGMENTS] = {100, 100, 100, 100, 200, 200, 200, 200, 200, 200, 2
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(totalNum, pin, NEO_GRB + NEO_KHZ800);
 
 int forwardBlink(int start, int N, int prevN, int num, int red, int green, int blue) {
-  prevN = N - 1;
-  if (N == start && currentTime > 0) {
-    prevN = start + num - 1;
-  }
-  LED_move(prevN, N, red, green, blue);
-  N++;
-  if (N == num + start) {
-    N = start;
-  }
-  return N;
+    prevN = N - 1;
+    if (N == start && currentTime > 0) {
+        prevN = start + num - 1;
+    }
+    LED_move(prevN, N, red, green, blue);
+    N++;
+    if (N == num + start) {
+        N = start;
+    }
+    return N;
 }
 
 
 int backwardBlink(int start, int N, int prevN, int num, int red, int green, int blue) {
-  prevN = N + 1;
-  if (N == start && currentTime > 0) {
-    prevN = start - num + 1;
-  }
-  LED_move(prevN, N, red, green, blue);
-  N--;
-  if (N == start - num) {
-    N = start;
-  }
-  return N;
+    prevN = N + 1;
+    if (N == start && currentTime > 0) {
+        prevN = start - num + 1;
+    }
+    LED_move(prevN, N, red, green, blue);
+    N--;
+    if (N == start - num) {
+        N = start;
+    }
+    return N;
 }
 
 void LED_move(int prevN, int N, int red, int green, int blue) {
-  pixels.setPixelColor(N, pixels.Color(red, green, blue));
-  pixels.setPixelColor(prevN, pixels.Color(0, 0, 0));
-  //pixels.show();
+    pixels.setPixelColor(N, pixels.Color(red, green, blue));
+    pixels.setPixelColor(prevN, pixels.Color(0, 0, 0));
+    //pixels.show();
 }
 
 void setup() {
-  // put your setup code here, to run once:
-  Serial.begin(9600);
-  // Initialize the NeoPixel library.
-  pixels.begin();
-  for (int i = 0; i < SEGMENTS; i++) {
-    pixels.setPixelColor(firstIndices[i], pixels.Color(redColors[i], greenColors[i], blueColors[i]));
-  }
-  // defineInterval();
+    // put your setup code here, to run once:
+    Serial.begin(9600);
+    // Initialize the NeoPixel library.
+    pixels.begin();
+    for (int i = 0; i < SEGMENTS; i++) {
+        pixels.setPixelColor(firstIndices[i], pixels.Color(redColors[i], greenColors[i], blueColors[i]));
+    }
+    // defineInterval();
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
-  currentTime = millis();
-  for (int i = 0; i < SEGMENTS; i++) {
-    if (newPeriods[i] == true) {
-      periodStarts[i] = currentTime;
-      newPeriods[i] = false;
+    // put your main code here, to run repeatedly:
+    currentTime = millis();
+    for (int i = 0; i < SEGMENTS; i++) {
+        if (newPeriods[i] == true) {
+            periodStarts[i] = currentTime;
+            newPeriods[i] = false;
+        }
+        if (currentTime - periodStarts[i] > intervals[i]) {
+            if (directions[i] == 0) {
+                currentIndices[i] = backwardBlink(firstIndices[i], currentIndices[i], prevIndices[i], numLEDS[i], redColors[i], greenColors[i], blueColors[i]);
+            } else {
+                currentIndices[i] = forwardBlink(firstIndices[i], currentIndices[i], prevIndices[i], numLEDS[i], redColors[i], greenColors[i], blueColors[i]);
+            }
+            newPeriods[i] = true;
+        }
     }
-    if (currentTime - periodStarts[i] > intervals[i]) {
-      if (directions[i] == 0) {
-        currentIndices[i] = backwardBlink(firstIndices[i], currentIndices[i], prevIndices[i], numLEDS[i], redColors[i], greenColors[i], blueColors[i]);
-      } else {
-        currentIndices[i] = forwardBlink(firstIndices[i], currentIndices[i], prevIndices[i], numLEDS[i], redColors[i], greenColors[i], blueColors[i]);
-      }
-      newPeriods[i] = true;
-    }
-  }
-  pixels.show();
+    pixels.show();
 }

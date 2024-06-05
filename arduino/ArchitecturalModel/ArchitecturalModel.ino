@@ -53,8 +53,8 @@
 #define   GREEN pixels.ColorHSV(120 * CONVERTER, 255, 128)
 int colors[10];
 int color[] = {0xFF0000, 0xFF0000, 0xFF0000, 0xFF0000, 0xFF0000, 0xFF0000, 0xFF0000, 0xFF0000, 0xFF0000, 0xFF0000,
-0xFF0000, 0xFF0000, 0xFF0000, 0xFF0000, 0xFF0000, 0xFF0000, 0xFF0000, 0xFF0000, 0xFF0000, 0xFF0000,
-0xFF0000, 0xFF0000, 0xFF0000, 0xFF0000, 0xFF0000, 0xFF0000};
+               0xFF0000, 0xFF0000, 0xFF0000, 0xFF0000, 0xFF0000, 0xFF0000, 0xFF0000, 0xFF0000, 0xFF0000, 0xFF0000,
+               0xFF0000, 0xFF0000, 0xFF0000, 0xFF0000, 0xFF0000, 0xFF0000};
 int h[] = {0, 0, 0, 120 * CONVERTER, 60 * CONVERTER, 180 * CONVERTER, 300 * CONVERTER, 0, 60 * CONVERTER, 120 * CONVERTER};
 int s[] = {0, 0, 255, 255, 255, 255, 255, 255, 255, 255};
 int v[] = {0, 255, 255, 255, 255, 255, 255, 192, 128, 128};
@@ -77,7 +77,7 @@ int numLEDS[] = {5, 7, 35, 34, 36, 9, 9, 6, 9, 9, 6, 9, 9, 6, 9, 9, 16, 8, 7, 6,
 int firstIndices[] = {0, 11, 46, 47, 116, 125, 126, 140, 149, 150, 164, 173, 174, 188, 197, 198, 222, 223, 231, 238, 244, 247, 267, 274, 294, 300};
 int currentIndices[] = {0, 11, 46, 47, 116, 125, 126, 140, 149, 150, 164, 173, 174, 188, 197, 198, 222, 223, 231, 238, 244, 247, 267, 274, 294, 300};
 int prevIndices[] = {100, 100, 100, 100, 200, 200, 200, 200, 200, 200, 200, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300};
-bool on[] = {true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true};
+int on[] = {2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
 
 bool showing = false;
 
@@ -151,7 +151,7 @@ int forwardOff(int start, int N, int prevN, int num, int h, int s, int v) {
     pixels.setPixelColor(start - (start - N + 0 + num) % num, pixels.ColorHSV(0, 0, 0));
     pixels.setPixelColor(start - (start - N + 1 + num) % num, pixels.ColorHSV(0, 0, 0));
     pixels.setPixelColor(start - (start - N + 2 + num) % num, pixels.ColorHSV(0, 0, 0));
-    pixels.setPixelColor(start - (start - N + 3 + num) % num, pixels.ColorHSV(0, 0, 0));  
+    pixels.setPixelColor(start - (start - N + 3 + num) % num, pixels.ColorHSV(0, 0, 0));
     return N;
 }
 
@@ -217,66 +217,72 @@ static byte ndx = 0;
 void loop() {
     char rc;
     if (Serial.available() > 0 && newData == false) {
-      rc = Serial.read();
-      if (rc != endMarker) {
-        receivedChars[ndx] = rc;
-        ndx ++;
-        if (ndx >= numChars) {
-          ndx = numChars - 1;
+        rc = Serial.read();
+        if (rc != endMarker) {
+            receivedChars[ndx] = rc;
+            ndx ++;
+            if (ndx >= numChars) {
+                ndx = numChars - 1;
+            }
+        } else {
+            receivedChars[ndx] = '\0';
+            ndx = 0;
+            newData = true;
         }
-      } else {
-        receivedChars[ndx] = '\0';
-        ndx = 0;
-        newData = true;
-      }
     }
     if (newData) {
-      String data = String(receivedChars);
-      //Serial.println(data);
-            name = data.substring(0, 2); // 2
-            color_str = data.substring(3, 5); // 2
-            percent_str = data.substring(6, 12); // 6
-            check_str = data.substring(13, 14); // 1
+        String data = String(receivedChars);
+        //Serial.println(data);
+        name = data.substring(0, 2); // 2
+        color_str = data.substring(3, 5); // 2
+        percent_str = data.substring(6, 12); // 6
+        check_str = data.substring(13, 14); // 1
 
-            if (check_str.equals("x")) {
+        if (check_str.equals("x")) {
 
-              int index = name.toInt();
-              percent = percent_str.toFloat();
-              int color_index = color_str.toInt();
-  
-              on[index] = true;
-              if (percent == 1) {
+            int index = name.toInt();
+            percent = percent_str.toFloat();
+            int color_index = color_str.toInt();
+
+            on[index] = 2;
+            if (percent == 1) {
                 // TODO current index off
-                on[index] = false;
+                on[index] = 0;
                 percent = 1;
-              }
-              else if (percent > 0) {
+            }
+            else if (percent > 0) {
                 if (percent < MIN_SPEED) {
-                  percent = MIN_SPEED;
+                    percent = MIN_SPEED;
                 }
                 //directions[index] = 1;
-              } else if (percent < 0) {
+            } else if (percent < 0) {
                 if (percent > -MIN_SPEED) {
-                  percent = -MIN_SPEED;
+                    percent = -MIN_SPEED;
                 }
                 //directions[index] = -1;
-              } else { // if (percent == 0) {
+            } else { // if (percent == 0) {
                 // TODO current index off
                 // period auf infinity
                 percent = 10;
-              }
-  
-              intervals[index] = percent * 1000.0;
-              Serial.println("Putting |" + String(index) + "| speeding |" + percent_str + "| to (" + String(percent) + ") |" + String(color_index) + "|" + intervals[index]);
-  
-              strip[index] = color_index;
-            } else {
-              // the serial connection mangled
-              // TODO maybe set every timer up
             }
 
-            newData = false;
+            if (index == 15) {
+                if (percent > 0.15) {
+                    on[index] = 0;
+                }
+            } else {
+                intervals[index] = percent * 1000.0;
+            }
+            Serial.println("Putting |" + String(index) + "| speeding |" + percent_str + "| to (" + String(percent) + ") |" + String(color_index) + "|" + intervals[index]);
+
+            strip[index] = color_index;
+        } else {
+            // the serial connection mangled
+            // TODO maybe set every timer up
         }
+
+        newData = false;
+    }
     currentTime = millis();
     showing = false;
     for (int i = 0; i < SEGMENTS; i++) {
@@ -296,30 +302,40 @@ void loop() {
                 }
             }*/
             if (directions[i] == -1) {
-              if (on[i]) {
-                if (numLEDS[i] >= 6) {
-                    currentIndices[i] = backwardStrip(firstIndices[i], currentIndices[i], prevIndices[i], numLEDS[i], hueColors[i], saturationColors[i], valueColors[i]);
+                if (on[i] > 0) {
+                    if (numLEDS[i] >= 6) {
+                        if (on[i] == 2) {
+                            currentIndices[i] = backwardStrip(firstIndices[i], currentIndices[i], prevIndices[i], numLEDS[i], hueColors[i], saturationColors[i], valueColors[i]);
+                        } else {
+                            backwardOff(firstIndices[i], currentIndices[i], prevIndices[i], numLEDS[i], h[strip[i]], s[strip[i]], v[strip[i]]);
+                            currentIndices[i] = backwardBlink_HSV(firstIndices[i], currentIndices[i], prevIndices[i], numLEDS[i], h[strip[i]], s[strip[i]], v[strip[i]]);
+                        }
+                    } else {
+                        currentIndices[i] = backwardBlink_HSV(firstIndices[i], currentIndices[i], prevIndices[i], numLEDS[i], h[strip[i]], s[strip[i]], v[strip[i]]);
+                    }
                 } else {
-                    currentIndices[i] = backwardBlink_HSV(firstIndices[i], currentIndices[i], prevIndices[i], numLEDS[i], h[strip[i]], s[strip[i]], v[strip[i]]);
+                    backwardOff(firstIndices[i], currentIndices[i], prevIndices[i], numLEDS[i], h[strip[i]], s[strip[i]], v[strip[i]]);
                 }
-              } else {
-                backwardOff(firstIndices[i], currentIndices[i], prevIndices[i], numLEDS[i], h[strip[i]], s[strip[i]], v[strip[i]]);
-              }
             } else {
-              if (on[i]) {
-                if (numLEDS[i] >= 6) {
-                    currentIndices[i] = forwardStrip(firstIndices[i], currentIndices[i], prevIndices[i], numLEDS[i], hueColors[i], saturationColors[i], valueColors[i]);
+                if (on[i] > 0) {
+                    if (numLEDS[i] >= 6) {
+                        if (on[i] == 2) {
+                            currentIndices[i] = forwardStrip(firstIndices[i], currentIndices[i], prevIndices[i], numLEDS[i], hueColors[i], saturationColors[i], valueColors[i]);
+                        } else {
+                            forwardOff(firstIndices[i], currentIndices[i], prevIndices[i], numLEDS[i], h[strip[i]], s[strip[i]], v[strip[i]]);
+                            currentIndices[i] = forwardBlink_HSV(firstIndices[i], currentIndices[i], prevIndices[i], numLEDS[i], h[strip[i]], s[strip[i]], v[strip[i]]);
+                        }
+                    } else {
+                        currentIndices[i] = forwardBlink_HSV(firstIndices[i], currentIndices[i], prevIndices[i], numLEDS[i], h[strip[i]], s[strip[i]], v[strip[i]]);
+                    }
                 } else {
-                    currentIndices[i] = forwardBlink_HSV(firstIndices[i], currentIndices[i], prevIndices[i], numLEDS[i], h[strip[i]], s[strip[i]], v[strip[i]]);
+                    forwardOff(firstIndices[i], currentIndices[i], prevIndices[i], numLEDS[i], h[strip[i]], s[strip[i]], v[strip[i]]);
                 }
-              } else {
-                forwardOff(firstIndices[i], currentIndices[i], prevIndices[i], numLEDS[i], h[strip[i]], s[strip[i]], v[strip[i]]);                
-              }
             }
             newPeriods[i] = true;
         }
     }
     if (showing) {
-            pixels.show();
+        pixels.show();
     }
 }
