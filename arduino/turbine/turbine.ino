@@ -3,7 +3,7 @@ int outputValue = 1;
 bool newPeriod = true;
 unsigned long periodStart;
 unsigned long currentTime;  // running time for program
-int interval = `;
+int interval = 2000;
 
 void setup() {
   pinMode(9, OUTPUT);

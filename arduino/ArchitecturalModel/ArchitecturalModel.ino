@@ -58,7 +58,7 @@ int color[] = {0xFF0000, 0xFF0000, 0xFF0000, 0xFF0000, 0xFF0000, 0xFF0000, 0xFF0
 int h[] = {0, 0, 0, 120 * CONVERTER, 60 * CONVERTER, 180 * CONVERTER, 300 * CONVERTER, 0, 60 * CONVERTER, 120 * CONVERTER};
 int s[] = {0, 0, 255, 255, 255, 255, 255, 255, 255, 255};
 int v[] = {0, 255, 255, 255, 255, 255, 255, 192, 128, 128};
-int strip[] = {6, 4, 5, 5, 5, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 2, 2, 2, 2, 2, 2, 2, 2}; // Color
+int strip[] = {6, 4, 3, 5, 2, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 2, 2, 2, 2, 2, 2, 2, 2}; // Color
 
 int pin = 5;                // input pin Neopixel is attached to
 int totalNum = 350;         // number of neopixels in whole strip
@@ -263,14 +263,20 @@ void loop() {
               strip[index] = color_index;
               if (percent == 1) {
                 on[index] = 0;
+
+                on[17] = 0;
               } else if (percent > 0) { // Charge battery
                 on[index] = 2;
                 firstIndices[index] = 5;
                 directions[index] = 1;
+
+                on[17] = 2; // Charge ThermalBattery with excess electricity
               } else { // Take from battery
                 on[index] = 2;
                 firstIndices[index] = 11;
                 directions[index] = -1;
+
+                on[17] = 0;
               }
             } else if (index == 2) {
               on[index] = 1;
@@ -328,13 +334,21 @@ void loop() {
                     on[23] = 0;
                     on[24] = 0;
                     on[25] = 0;
+
+                    on[16] = 0; // Heat with HeatPump
+                    on[18] = 0; // Heat from ThermalBattery to WaterBuffer
+                    on[19] = 0; // Heat from HeatPump to WaterBuffer
               } else {
-                    on[20] = 2;
-                    on[21] = 2;
-                    on[22] = 2;
-                    on[23] = 2;
-                    on[24] = 2;
-                    on[25] = 2;
+                    on[20] = 1;
+                    on[21] = 1;
+                    on[22] = 1;
+                    on[23] = 1;
+                    on[24] = 1;
+                    on[25] = 1;
+
+                    on[16] = 2; // Heat with HeatPump
+                    on[18] = 2; // Heat from ThermalBattery to WaterBuffer
+                    on[19] = 2; // Heat from HeatPump to WaterBuffer
               }
             }
         } else {
@@ -357,7 +371,7 @@ void loop() {
                 if (on[i] > 0) {
                     if (numLEDS[i] >= 6) {
                         if (on[i] == 1) {
-                            currentIndices[i] = backwardStrip(firstIndices[i], currentIndices[i], prevIndices[i], numLEDS[i], h[i], s[i], v[i]);
+                            currentIndices[i] = backwardStrip(firstIndices[i], currentIndices[i], prevIndices[i], numLEDS[i], h[strip[i]], s[strip[i]], v[strip[i]]);
                         } else {
                             currentIndices[i] = backwardBlink_HSV(firstIndices[i], currentIndices[i], prevIndices[i], numLEDS[i], h[strip[i]], s[strip[i]], v[strip[i]]);
                         }
@@ -371,7 +385,7 @@ void loop() {
                 if (on[i] > 0) {
                     if (numLEDS[i] >= 6) {
                         if (on[i] == 1) {
-                            currentIndices[i] = forwardStrip(firstIndices[i], currentIndices[i], prevIndices[i], numLEDS[i], h[i], s[i], v[i]);
+                            currentIndices[i] = forwardStrip(firstIndices[i], currentIndices[i], prevIndices[i], numLEDS[i], h[strip[i]], s[strip[i]], v[strip[i]]);
                         } else {
                             currentIndices[i] = forwardBlink_HSV(firstIndices[i], currentIndices[i], prevIndices[i], numLEDS[i], h[strip[i]], s[strip[i]], v[strip[i]]);
                         }
