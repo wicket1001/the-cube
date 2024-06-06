@@ -5,7 +5,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import urlparse, parse_qs
 import serial
 
-from utils import get_house, read_csv, Strips, Colors, mapper, get_boundaries
+from utils import get_house, read_csv, Strips, Colors, mapper, get_boundaries, get_comparisons
 from DebugLevel import DebugLevel
 from Physics import SIEncoder, Temperature, Length, Energy
 from algorithm_utils import Algorithms
@@ -25,9 +25,10 @@ except serial.serialutil.SerialException as e:
 
 absolute_step = 0
 benchmark_house = get_house()
-decision_house = get_house()
+# decision_house = get_house()
 weather = read_csv(DebugLevel.INFORMATIONAL)
 max_boundaries, min_boundaries = get_boundaries()
+noBatMoney, noWindMoney, noPVMoney, noBatCO2, noWindCO2, noPVCO2 = get_comparisons()
 cache = []
 cache_size = 144
 
@@ -56,7 +57,7 @@ class RestAPI(BaseHTTPRequestHandler):
     def do_GET(self):
         global absolute_step
         global benchmark_house
-        global decision_house
+        # global decision_house
         global weather
         global cache
 
@@ -112,7 +113,7 @@ class RestAPI(BaseHTTPRequestHandler):
     def do_POST(self):
         global absolute_step
         global benchmark_house
-        global decision_house
+        # global decision_house
         global cache
         url = urlparse(self.path)
         parameters = parse_qs(url.query)
@@ -139,7 +140,7 @@ class RestAPI(BaseHTTPRequestHandler):
     def do_PATCH(self):
         global absolute_step
         global benchmark_house
-        global decision_house
+        # global decision_house
         global cache
         url = urlparse(self.path)
         parameters = parse_qs(url.query)
@@ -154,7 +155,7 @@ class RestAPI(BaseHTTPRequestHandler):
         if url.path == '/environment':
             if 'outer_temperature' in body.keys():
                 benchmark_house.patch_outer_temperature(body['outer_temperature'])
-                decision_house.patch_outside_temperature(body['outer_temperature'])
+                # decision_house.patch_outside_temperature(body['outer_temperature'])
 
                 self.send_empty_response()
                 return
@@ -188,10 +189,22 @@ class RestAPI(BaseHTTPRequestHandler):
                         response['environment']['temperatures'] = Temperature.from_celsius(response['environment']['temperatures'])
 
                 benchmark = benchmark_house.step(step, absolute_step, Algorithms.BENCHMARK, weather, DebugLevel.INFORMATIONAL)
-                decision = decision_house.step(step, absolute_step, Algorithms.DECISION_TREE, weather, DebugLevel.INFORMATIONAL)
+                # decision = decision_house.step(step, absolute_step, Algorithms.DECISION_TREE, weather, DebugLevel.INFORMATIONAL)
 
                 response['benchmark'] = benchmark
-                response['decision'] = decision
+                # response['decision'] = decision
+                response['noBat'] = {
+                    'money': noBatMoney[absolute_step],
+                    'co2': noBatCO2[absolute_step]
+                }
+                response['noWind'] = {
+                    'money': noWindMoney[absolute_step],
+                    'co2': noWindCO2[absolute_step]
+                }
+                response['noPV'] = {
+                    'money': noPVMoney[absolute_step],
+                    'co2': noPVCO2[absolute_step]
+                }
 
                 cache.append(response)
 
@@ -327,23 +340,25 @@ class RestAPI(BaseHTTPRequestHandler):
 
 
 def setup():
+    global absolute_step
     global benchmark_house
-    global decision_house
+    # global decision_house
     global weather
     global cache
+    absolute_step = 0
     cache = []
     benchmark_house = get_house()
-    decision_house = get_house()
+    # decision_house = get_house()
 
     benchmark_house.solarPanel.save_weather(weather['radiations'])
     benchmark_house.windturbine.save_weather(weather['winds'], weather['wind_directions'])
     benchmark_house.solarThermal.save_weather(weather['radiations'], weather['winds'], weather['temperatures'])
-    decision_house.solarPanel.save_weather(weather['radiations'])
-    decision_house.windturbine.save_weather(weather['winds'], weather['wind_directions'])
-    decision_house.solarThermal.save_weather(weather['radiations'], weather['winds'], weather['temperatures'])
+    # decision_house.solarPanel.save_weather(weather['radiations'])
+    # decision_house.windturbine.save_weather(weather['winds'], weather['wind_directions'])
+    # decision_house.solarThermal.save_weather(weather['radiations'], weather['winds'], weather['temperatures'])
 
     benchmark_house.solarThermal.input_water(Length.from_litre(1_000_000), Temperature.from_celsius(7))
-    decision_house.solarThermal.input_water(Length.from_litre(1_000_000), Temperature.from_celsius(7))
+    # decision_house.solarThermal.input_water(Length.from_litre(1_000_000), Temperature.from_celsius(7))
 
 
 if __name__ == "__main__":

@@ -75,6 +75,35 @@ def read_mat(verbosity: DebugLevel):
 
 
 boundaries_file = 'res/boundaries.csv'
+comparisons_file = 'res/comparisons.csv'
+#comparisons_f = open(comparisons_file, 'w')
+comparisons_f = None
+# with open(comparisons_file, 'w') as f:
+#    comparisons_f = f
+
+
+def write_comparisons(*values):
+    comparisons_f.write((';'.join(format(x, ".3f") for x in values)) + '\n')  # map(str, values)
+
+
+def get_comparisons():
+    noBatMoney = []
+    noWindMoney = []
+    noPVMoney = []
+    noBatCO2 = []
+    noWindCO2 = []
+    noPVCO2 = []
+    with open(comparisons_file) as csvfile:
+        reader = csv.reader(csvfile, delimiter=';')
+        for row in reader:
+            noBatMoney.append(float(row[0]))
+            noWindMoney.append(float(row[1]))
+            noPVMoney.append(float(row[2]))
+            noBatCO2.append(float(row[3]))
+            noWindCO2.append(float(row[4]))
+            noPVCO2.append(float(row[5]))
+    return noBatMoney, noWindMoney, noPVMoney, noBatCO2, noWindCO2, noPVCO2
+
 
 def write_boundaries(keys, maxis, minis):
     all = [e.name for e in Strips]

@@ -3,10 +3,14 @@ import math
 import time
 
 import utils
+from Battery import Battery
 from DebugLevel import DebugLevel
 from Physics import *
+from SolarPanel import SolarPanel
+from SolarThermal import SolarThermal
+from Windturbine import Windturbine
 from algorithm_utils import Algorithms
-from utils import get_house, Strips, Colors, mapper, write_boundaries
+from utils import get_house, Strips, Colors, mapper, write_boundaries, write_comparisons
 
 STEPS_PER_DAY = int((24 * 60) / 10)
 
@@ -32,6 +36,8 @@ def peaks(strip: Strips, value: float):
 
 gridding = {'pos': Energy(0), 'neg': Energy(0), 'neutral': Energy(0)}
 gridding2 = {'pos': 0, 'neg': 0, 'neutral': 0}
+co2 = {'OMNI': 0, 'noBat': 0, 'noWind': 0, 'noPV': 0}
+money = {'OMNI': 0, 'noBat': 0, 'noWind': 0, 'noPV': 0}
 
 def serial_control(response: dict):
     value = mapper(response['benchmark']['grid']['diff'].value, Energy.from_watt_hours(10).value, Energy.from_watt_hours(5).value, -1, 1)
@@ -114,8 +120,6 @@ def main():
             f'{name:>30}, {maxi:2}, {max_boundaries[maxi].format_watt_hours():>20}, {min_boundaries[maxi].format_watt_hours():>20}')
 
     benchmark_house = get_house()
-
-
     benchmark_house.solarPanel.save_weather(weather['radiations'])
     benchmark_house.windturbine.save_weather(weather['winds'], weather['wind_directions'])
     benchmark_house.solarThermal.save_weather(weather['radiations'], weather['winds'], weather['temperatures'])
@@ -125,10 +129,35 @@ def main():
     decision_house.windturbine.save_weather(weather['winds'], weather['wind_directions'])
     decision_house.solarThermal.save_weather(weather['radiations'], weather['winds'], weather['temperatures'])
 
+    noBat = get_house()
+    noBat.battery = Battery(Energy(0))
+    noBat.solarPanel.save_weather(weather['radiations'])
+    noBat.windturbine.save_weather(weather['winds'], weather['wind_directions'])
+    noBat.solarThermal.save_weather(weather['radiations'], weather['winds'], weather['temperatures'])
+    noBat.solarThermal.input_water(Length.from_litre(1_000_000), Temperature.from_celsius(7))
+
+    noWind = get_house()
+    noWind.battery = Battery(Energy(0))
+    noWind.windturbine = Windturbine(0, 0)
+    noWind.solarPanel.save_weather(weather['radiations'])
+    noWind.windturbine.save_weather(weather['winds'], weather['wind_directions'])
+    noWind.solarThermal.save_weather(weather['radiations'], weather['winds'], weather['temperatures'])
+    noWind.solarThermal.input_water(Length.from_litre(1_000_000), Temperature.from_celsius(7))
+
+    noPV = get_house()
+    noPV.battery = Battery(Energy(0))
+    noPV.windturbine = Windturbine(0, 0)
+    noPV.solarPanel = SolarPanel(0)
+    noPV.solarThermal = SolarThermal(0)
+    noPV.solarPanel.save_weather(weather['radiations'])
+    noPV.windturbine.save_weather(weather['winds'], weather['wind_directions'])
+    noPV.solarThermal.save_weather(weather['radiations'], weather['winds'], weather['temperatures'])
+    noPV.solarThermal.input_water(Length.from_litre(1_000_000), Temperature.from_celsius(7))
+
     benchmark_house.solarThermal.input_water(Length.from_litre(1_000_000), Temperature.from_celsius(7))
     decision_house.solarThermal.input_water(Length.from_litre(1_000_000), Temperature.from_celsius(7))
 
-    trying = 365
+    trying = 365 * 3
     start = time.time()
     print(maxi_value)
     print(mini_value)
@@ -158,6 +187,11 @@ def main():
 
             benchmark = benchmark_house.step(i, absolute_step, Algorithms.BENCHMARK, weather, verbosity)
             decision = decision_house.step(i, absolute_step, Algorithms.DECISION_TREE, weather, verbosity)
+            noBatValues = noBat.step(i, absolute_step, Algorithms.BENCHMARK, weather, verbosity)
+            noWindValues = noWind.step(i, absolute_step, Algorithms.BENCHMARK, weather, verbosity)
+            noPVValues = noPV.step(i, absolute_step, Algorithms.BENCHMARK, weather, verbosity)
+            #write_comparisons(noBatValues['money'].value, noWindValues['money'].value, noPVValues['money'].value,
+            #                  noBatValues['co2'], noWindValues['co2'], noPVValues['co2'])
 
             response['benchmark'] = benchmark
             response['decision'] = decision
@@ -184,16 +218,22 @@ def main():
     end = time.time()
     print(end - start, 's')
     print('\n---------')
-    benchmark_house.grid.print_statistics(verbosity)
+    #benchmark_house.grid.print_statistics(verbosity)
     # benchmark_house.electricHeater.print_statistics()
-    benchmark_house.solarPanel.print_statistics()
-    benchmark_house.windturbine.print_statistics()
+    #benchmark_house.solarPanel.print_statistics()
+    #benchmark_house.windturbine.print_statistics()
     #benchmark_house.equipment.print_statistics()
     #benchmark_house.lights.print_statistics()
-    print(f'Money: {benchmark_house.money}') # 4,18
+    print(f'OMNI Money: {benchmark_house.money}') # 4,18
+    print(f'NoBat Money: {noBat.money}')
+    print(f'NoWind Money: {noWind.money}')
+    print(f'NoPV Money: {noPV.money}')
 
-    print(f'CO2: {benchmark_house.co2}')
-    print(f'CO2: {decision_house.co2}')
+    print(f'OMNI CO2: {benchmark_house.co2}')
+    #print(f'CO2: {decision_house.co2}')
+    print(f'NoBat CO2: {noBat.co2}')
+    print(f'NoWind CO2: {noWind.co2}')
+    print(f'NoPV CO2: {noPV.co2}')
 
 
 #     print("""
