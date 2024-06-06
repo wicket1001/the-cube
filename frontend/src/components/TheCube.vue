@@ -25,7 +25,9 @@ import { Energy, Money, Temperature } from '@/@types/physics'
 import VueDatePicker from '@vuepic/vue-datepicker';
 import '@vuepic/vue-datepicker/dist/main.css'
 import { getMonth, addMonths, addMinutes, differenceInMinutes } from 'date-fns'
+import { enUS, de } from 'date-fns/locale'
 import { type ISimulation, Simulation } from '@/@types/simulation'
+import type { Locale } from 'date-fns/locale/types'
 
 
 const INITIAL_HEAT = 21;
@@ -50,6 +52,10 @@ let inside = ref(new Temperature(0));
 let dataFetched: Ref<boolean> = ref(false);
 let stepped = true;
 let playBtn = ref('Play')
+
+let radiation_val = ref(0);
+let precipitation_val = ref(0);
+let wind_val = ref();
 
 let dates: Date[] = [];
 let dates_view: Date[] = [];
@@ -156,6 +162,7 @@ let cubeColor = ref('hsl(90, 100%, 50%)');
 
 const pause = defineModel();
 const rolling = defineModel('rolling', {default: true});
+const extended = defineModel('extended', {default: false});
 
 const temperatureBtn = defineModel('temperatureBtn', {default: 'mdi-weather-cloudy'});
 const windBtn = defineModel('windBtn', {default: 'mdi-weather-cloudy'});
@@ -165,7 +172,7 @@ const radiationBtn = defineModel('radiationBtn', {default: 'mdi-weather-cloudy'}
 const timer = defineModel('timer', {default: -1});
 const lookback = 144
 
-let lang = defineModel('lang', {default: 'de'});
+let lang = defineModel('lang', {default: 'en'});
 
 onMounted(() => {
   let begin: Date = presetDates.value[0].value;
@@ -265,15 +272,17 @@ function show_cube_temperature(inner_temperature: number) {
 function add_simulation_raw(res: Simulation, update: boolean) {
   let absolute_step = res['absolute_step']
   let date = res['environment']['dates']
-  current_time.value = date.toLocaleTimeString('de-DE')
-  current_date.value = date.toLocaleDateString('de-DE')
+  current_time.value = date.toLocaleTimeString(locale())
+  current_date.value = date.toLocaleDateString(locale())
   dates.push(date)
   future.value = date
 
   let precipitation = res['environment']['precipitations']
+  precipitation_val.value = precipitation;
   precipitations.push(precipitation)
 
   let radiation = res['environment']['radiations']
+  radiation_val.value = radiation;
   radiations.push(radiation)
 
   let temperature = res['environment']['temperatures']
@@ -282,6 +291,7 @@ function add_simulation_raw(res: Simulation, update: boolean) {
   temperatures_graph['Outside'].push(temperature);
 
   let wind = res['environment']['winds']
+  wind_val.value = wind;
   wind_direction.value = res['environment']['wind_directions']
   winds.push(wind)
 
@@ -327,7 +337,7 @@ function add_simulation_raw(res: Simulation, update: boolean) {
   total.usage = total.usage.add(res['benchmark']['HeatPump'].usage)
   demand['Equipment'].push(equipment)
   demand['Lights'].push(lights)
-  console.log(res['benchmark']['HeatPump'])
+  // console.log(res['benchmark']['HeatPump'])
   demand['HeatPump'].push(res['benchmark']['HeatPump'])
   demand['Total'].push(total)
   let total1 = new Generator({ name: 'Total', supply: 0, generation: 0 })
@@ -477,6 +487,66 @@ function update_weather(step: number, temperature: Temperature, wind: number, pr
   }
 }
 
+function get_language() {
+  if (lang.value == 'de') {
+    return 'German';
+  } else if (lang.value == 'en') {
+    return 'English';
+  } else {
+    return '';
+  }
+}
+
+function locale() {
+  if (lang.value == 'de') {
+    return 'de-DE';
+  } else if (lang.value == 'en') {
+    return 'en-US';
+  } else {
+    return 'de';
+  }
+}
+
+function cancel() {
+  if (lang.value == 'de') {
+    return 'Abbrechen';
+  } else if (lang.value == 'en') {
+    return 'Cancel';
+  } else {
+    return 'Cancel';
+  }
+}
+
+function choose() {
+  if (lang.value == 'de') {
+    return 'Auswählen';
+  } else if (lang.value == 'en') {
+    return 'Choose';
+  } else {
+    return 'Choose';
+  }
+}
+
+function format_locale(): Locale {
+  if (lang.value == 'de') {
+    return de;
+  } else if (lang.value == 'en') {
+    return enUS;
+  } else {
+    return enUS;
+  }
+}
+
+function get_mode() {
+  if (lang.value == 'de') {
+    return 'Mode.EURO';
+  } else if (lang.value == 'en') {
+    return 'Mode.DOLLAR';
+  } else {
+    return 'Mode.DOLLAR';
+  }
+}
+
 function get_field(bucket, field: string, index: string) {
   return bucket[field].map<Energy>(item => item[index]);
 }
@@ -501,13 +571,35 @@ function extract_keys(bucket, indexes: string[]) {
       <v-btn class="mx-1" density="default" aria-label="Fast" icon="mdi-fast-forward" :disabled="timer !== -1" @click="fast()"></v-btn>
       <v-btn class="mx-1" density="default" aria-label="Reset" icon="mdi-replay" @click="reset_sim()"></v-btn>
     </div>
-    <div>
-      <v-switch
-        v-model="rolling"
-        :label="`Rolling: ${rolling.toString()}`"
-        hide-details
-        inset
-      ></v-switch>
+    <div class="v-container">
+      <div class="v-row">
+        <div class="v-col">
+          <v-switch
+            v-model="rolling"
+            :label="`Rolling: ${rolling.toString()}`"
+            hide-details
+            inset
+          ></v-switch>
+        </div>
+        <div class="v-col">
+          <v-switch
+            v-model="extended"
+            :label="`Extended view: ${extended.toString()}`"
+            hide-details
+            inset
+          ></v-switch>
+        </div>
+        <div class="v-col">
+          <v-switch
+            v-model="lang"
+            :label="get_language()"
+            false-value="de"
+            true-value="en"
+            hide-details
+            inset
+          ></v-switch>
+        </div>
+      </div>
     </div>
     <!--
     <div class="d-inline">
@@ -533,8 +625,10 @@ function extract_keys(bucket, indexes: string[]) {
         :max-date="presetDates[2].value"
         minutes-increment="10"
         minutes-grid-increment="10"
-        select-text="Auswählen"
-        cancel-text="Abbrechen">
+        :select-text="choose()"
+        :cancel-text="cancel()"
+        :locale="locale()"
+        :format-locale="format_locale()">
           <!--locale="de"
           :filter="filter"
           :is-24="false"
@@ -547,94 +641,74 @@ function extract_keys(bucket, indexes: string[]) {
   </div>
   <div id="weather" class="v-container">
     <div class="v-row align-center justify-center">
-      <div class="v-col">
+      <div class="v-col text-center">
         Temperature
       </div>
-      <div class="v-col">
+      <div class="v-col text-center">
         Wind speed
       </div>
-      <div class="v-col">
+      <div class="v-col text-center">
         Precipitation
       </div>
-      <div class="v-col">
+      <div class="v-col text-center">
         Sun intensity
       </div>
     </div>
     <div class="v-row align-center justify-center">
-      <div class="v-col">
+      <div class="v-col text-center">
         <v-btn id="btn-temperature" density="default" :icon="temperatureBtn"></v-btn>
       </div>
-      <div class="v-col">
+      <div class="v-col text-center">
         <v-btn id="btn-wind" density="default" :icon="windBtn"></v-btn>
       </div>
-      <div class="v-col">
+      <div class="v-col text-center">
         <v-btn id="btn-precipitation" density="default" :icon="precipitationBtn"></v-btn>
       </div>
-      <div class="v-col">
+      <div class="v-col text-center">
         <v-btn id="btn-radiation" density="default" :icon="radiationBtn"></v-btn>
       </div>
     </div>
     <div class="v-row align-center justify-center">
-      <div class="v-col align-center justify-center">
-        {{ outside.format_celsius() }}
+      <div class="v-col text-center">
+        {{ lang === 'de' ? outside.format_celsius() : outside.format_fahrenheit() }}
       </div>
-      <div class="v-col align-center justify-center">
-        3
+      <div class="v-col text-center">
+        {{ wind_val }} m/s
       </div>
-      <div class="v-col align-center justify-center">
-        5
+      <div class="v-col text-center">
+        {{ precipitation_val }} mm
       </div>
-      <div class="v-col align-center justify-center">
-        7
+      <div class="v-col text-center">
+        {{ radiation_val }} W/m²
       </div>
     </div>
   </div>
-  <div class="mt-16">
+  <div class="mt-5">
     <div class="charts">
       <div class="singleChart">
         <LinesChart v-if="dataFetched"
                     id="co2_plot"
+                    :title="'CO2 Comparison'"
                     :key="currentIndex"
                     :keys="dates_view"
                     :axes="['Benchmark CO2', 'Decision CO2']"
+                    :mode="'Mode.KILO_GRAMM'"
                     :values="[co2_view['benchmark'], co2_view['decision']]"/>
       </div>
       <div class="singleChart">
         <LinesChart v-if="dataFetched"
                     id="money_plot"
+                    :title="'Money Comparison'"
                     :key="currentIndex"
                     :keys="dates_view"
                     :axes="['Money']"
+                    :mode="get_mode()"
                     :values="[money_view]"/>
       </div>
-      <!--
-      <div class="singleChart">
-        <LinesChart v-if="dataFetched"
-                    id="temperature_plot"
-                    :key="currentIndex"
-                    :keys="dates_view"
-                    :axes="Object.keys(temperatures_graph)"
-                    :values="extract_keys(temperatures_graph_view, Object.keys(temperatures_graph))"/>
-      </div>-->
-      <!--<div class="singleChart">
-        <LinesChart v-if="dataFetched"
-                    id="precipitation_plot"
-                    :key="currentIndex"
-                    :keys="dates_view"
-                    :axes="['Precipitation']"
-                    :values="[precipitations_view]"/>
-      </div>-->
-      <!--<div class="singleChart">
-        <LinesChart v-if="dataFetched"
-                    id="radiation_plot"
-                    :key="currentIndex"
-                    :keys="dates_view"
-                    :axes="['Radiation']"
-                    :values="[radiations_view]"/>
-      </div>-->
       <div class="singleChart">
         <LinesChart v-if="dataFetched"
                     id="solar_plot"
+                    :title="'Current Generation'"
                     :key="currentIndex"
                     :keys="dates_view"
                     :axes="['Solar generation', 'Windturbine generation', 'SolarThermal generation', 'Total']"
@@ -646,6 +720,7 @@ function extract_keys(bucket, indexes: string[]) {
       <div class="singleChart">
         <LinesChart v-if="dataFetched"
                     id="sum_generators"
+                    :title="'Total Generation since 2021'"
                     :key="currentIndex"
                     :keys="dates_view"
                     :axes="['Solar generation', 'Windturbine generation', 'SolarThermal generation', 'Total']"
@@ -655,14 +730,6 @@ function extract_keys(bucket, indexes: string[]) {
                       get_field(generation_view, 'SolarThermal', 'generation'),
                       get_field(generation_view, 'Total', 'generation')]"/>
       </div>
-      <!--<div class="singleChart">
-        <LinesChart v-if="dataFetched"
-                    id="wind_plot"
-                    :key="currentIndex"
-                    :keys="dates_view"
-                    :axes="['Wind']"
-                    :values="[winds_view]"/>
-      </div>-->
       <!--<div class="singleChart">
         <WindComponent v-if="dataFetched"
                        id="wind_direction"
@@ -674,9 +741,10 @@ function extract_keys(bucket, indexes: string[]) {
       <div class="singleChart">
         <LinesChart v-if="dataFetched"
                     id="appliances_plot"
+                    :title="'Current Demand'"
                     :key="currentIndex"
                     :keys="dates_view"
-                    :axes="['Equipment', 'Lights', 'HeatPump', 'Total']"
+                    :axes="['Equipment', 'Base Load', 'HeatPump', 'Total']"
                     :values="[get_field(demand_view, 'Equipment', 'demand'),
                       get_field(demand_view, 'Lights', 'demand'),
                       get_field(demand_view, 'HeatPump', 'demand'),
@@ -685,9 +753,10 @@ function extract_keys(bucket, indexes: string[]) {
       <div class="singleChart">
         <LinesChart v-if="dataFetched"
                     id="sum_appliances"
+                    :title="'Total Demand since 2021'"
                     :key="currentIndex"
                     :keys="dates_view"
-                    :axes="['Equipment', 'Lights', 'HeatPump', 'Total']"
+                    :axes="['Equipment', 'Base Load', 'HeatPump', 'Total']"
                     :mode="'Mode.KILO_WATT_HOURS'"
                     :values="[get_field(demand_view, 'Equipment', 'usage'),
                       get_field(demand_view, 'Lights', 'usage'),
@@ -697,6 +766,7 @@ function extract_keys(bucket, indexes: string[]) {
       <div class="singleChart">
         <LinesChart v-if="dataFetched"
                     id="grid_cur_plot"
+                    :title="'Current Grid Usage'"
                     :key="currentIndex"
                     :keys="dates_view"
                     :axes="['Grid buying', 'Grid selling']"
@@ -705,6 +775,7 @@ function extract_keys(bucket, indexes: string[]) {
       <div class="singleChart">
         <LinesChart v-if="dataFetched"
                     id="grid_plot"
+                    :title="'Total Grid Usage since 2021'"
                     :key="currentIndex"
                     :keys="dates_view"
                     :axes="['Grid bought', 'Grid sold']"
@@ -714,10 +785,43 @@ function extract_keys(bucket, indexes: string[]) {
       <div class="singleChart">
         <LinesChart v-if="dataFetched"
                     id="battery_plot"
+                    :title="'Battery Storage Status'"
                     :key="currentIndex"
                     :keys="dates_view"
                     :axes="['Battery Level']"
                     :values="[battery_level_view]"/>
+      </div>
+      <div class="singleChart" v-if="extended">
+        <LinesChart v-if="dataFetched"
+                    id="temperature_plot"
+                    :key="currentIndex"
+                    :keys="dates_view"
+                    :axes="Object.keys(temperatures_graph)"
+                    :values="extract_keys(temperatures_graph_view, Object.keys(temperatures_graph))"/>
+      </div>
+      <div class="singleChart" v-if="extended">
+        <LinesChart v-if="dataFetched"
+                    id="precipitation_plot"
+                    :key="currentIndex"
+                    :keys="dates_view"
+                    :axes="['Precipitation']"
+                    :values="[precipitations_view]"/>
+      </div>
+      <div class="singleChart" v-if="extended">
+        <LinesChart v-if="dataFetched"
+                    id="radiation_plot"
+                    :key="currentIndex"
+                    :keys="dates_view"
+                    :axes="['Radiation']"
+                    :values="[radiations_view]"/>
+      </div>
+      <div class="singleChart" v-if="extended">
+        <LinesChart v-if="dataFetched"
+                    id="wind_plot"
+                    :key="currentIndex"
+                    :keys="dates_view"
+                    :axes="['Wind']"
+                    :values="[winds_view]"/>
       </div>
     </div>
     <p v-if="!dataFetched">Loading...</p>
@@ -831,6 +935,16 @@ input[type="range"] {
 .singleChart {
   flex-grow: 0;
   flex-shrink: 0;
-  width: 45vw;
+  width: min(45vw, 576px);
 }
+
+@media (min-width: 1920px) {
+  .singleChart {
+    flex-grow: 0;
+    flex-shrink: 0;
+    width: 422px;
+    min-width: 422px;
+  }
+}
+
 </style>

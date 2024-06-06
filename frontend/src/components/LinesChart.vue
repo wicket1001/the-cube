@@ -35,7 +35,7 @@ export default {
     // eslint-disable-next-line vue/no-reserved-component-names
     Line
   },
-  props: ['keys', 'axes', 'values', 'mode'],
+  props: ['keys', 'axes', 'values', 'mode', 'title'],
   data() {
     return {
       data: {
@@ -71,6 +71,10 @@ export default {
           legend: {
             display: true,
             position: 'bottom'
+          },
+          title: {
+            display: true,
+            text: this.title
           }
         }
       },
@@ -97,10 +101,17 @@ function transformData(axes: string[], values: [number[] | Energy[] | Money[]], 
       backgroundColor: colors[i % colors.length],
       data: values[i].map<number>(item => {
           if (typeof item === 'number') {
-            formatAxis = function(value: number) {
-              return `${value}`;
+            if (mode && mode === 'Mode.KILO_GRAMM') {
+              formatAxis = function(value: number) {
+                return `${value} kg`;
+              }
+              return item / 1000.0;
+            } else {
+              formatAxis = function(value: number) {
+                return `${value}`;
+              }
+              return item;
             }
-            return item;
           } else if (item instanceof Energy) {
             if (mode && mode === 'Mode.KILO_WATT_HOURS') {
               formatAxis = function(value: number) {
@@ -114,10 +125,17 @@ function transformData(axes: string[], values: [number[] | Energy[] | Money[]], 
               return item.get_watt_hours();
             }
           } else if (item instanceof Money) {
-            formatAxis = function(value: number) {
-              return `${value} €`;
+            if (mode && mode === 'Mode.EURO') {
+              formatAxis = function(value: number) {
+                return `${value} €`;
+              }
+              return item.value;
+            } else {
+              formatAxis = function(value: number) {
+                return `${value} $`;
+              }
+              return item.value;
             }
-            return item.value;
           } else if (item instanceof Temperature) {
             formatAxis = function(value: number) {
               return `${value} °C`;
