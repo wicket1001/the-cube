@@ -479,9 +479,9 @@ function update_weather(step: number, temperature: Temperature, wind: number, pr
   if (step < 6 * 6 || step > 20 * 6) {
     radiationBtn.value = 'mdi-weather-night';
   } else if (radiation < 250) {
-    radiationBtn.value = 'mdi-weather-partly-cloudy';
+    radiationBtn.value = 'mdi-weather-cloudy';
   } else if (radiation < 500) {
-    radiationBtn.value = 'mdi-weather-hazy';
+    radiationBtn.value = 'mdi-weather-partly-cloudy';
   } else {
     radiationBtn.value = 'mdi-weather-sunny';
   }
@@ -691,7 +691,7 @@ function extract_keys(bucket, indexes: string[]) {
                     :title="'CO2 Comparison'"
                     :key="currentIndex"
                     :keys="dates_view"
-                    :axes="['Benchmark CO2', 'Decision CO2']"
+                    :axes="['OMNI CO2', 'Decision CO2']"
                     :mode="'Mode.KILO_GRAMM'"
                     :values="[co2_view['benchmark'], co2_view['decision']]"/>
       </div>
@@ -711,10 +711,10 @@ function extract_keys(bucket, indexes: string[]) {
                     :title="'Current Generation'"
                     :key="currentIndex"
                     :keys="dates_view"
-                    :axes="['Solar generation', 'Windturbine generation', 'SolarThermal generation', 'Total']"
-                    :values="[get_field(generation_view, 'SolarPanel', 'supply'),
+                    :axes="['SolarThermal generation', 'Solar generation', 'Windturbine generation', 'Total']"
+                    :values="[get_field(generation_view, 'SolarThermal', 'supply'),
+                      get_field(generation_view, 'SolarPanel', 'supply'),
                       get_field(generation_view, 'Windturbine', 'supply'),
-                      get_field(generation_view, 'SolarThermal', 'supply'),
                       get_field(generation_view, 'Total', 'supply')]"/>
       </div>
       <div class="singleChart">
@@ -723,11 +723,11 @@ function extract_keys(bucket, indexes: string[]) {
                     :title="'Total Generation since 2021'"
                     :key="currentIndex"
                     :keys="dates_view"
-                    :axes="['Solar generation', 'Windturbine generation', 'SolarThermal generation', 'Total']"
+                    :axes="['SolarThermal generation', 'Solar generation', 'Windturbine generation', 'Total']"
                     :mode="'Mode.KILO_WATT_HOURS'"
-                    :values="[get_field(generation_view, 'SolarPanel', 'generation'),
+                    :values="[get_field(generation_view, 'SolarThermal', 'generation'),
+                      get_field(generation_view, 'SolarPanel', 'generation'),
                       get_field(generation_view, 'Windturbine', 'generation'),
-                      get_field(generation_view, 'SolarThermal', 'generation'),
                       get_field(generation_view, 'Total', 'generation')]"/>
       </div>
       <!--<div class="singleChart">
