@@ -6,11 +6,12 @@ from Battery import Battery
 from DebugLevel import DebugLevel
 from ElectricHeater import ElectricHeater
 from Equipment import Equipment
+from Grid import Grid
 from HeatPump import HeatPump
 from House import House
 from Lights import Lights
 from Occupancy import Occupancy
-from Physics import Length, Energy, Temperature
+from Physics import Length, Energy, Temperature, Money
 from Radiator import Radiator
 from Room import Room
 from SandBattery import SandBattery
@@ -249,4 +250,7 @@ def get_house():
     house.battery = Battery(Energy.from_kilo_watt_hours(200))
     house.sand_battery = SandBattery(1, 1, 1)
     house.water_buffer = WaterBuffer(Length.from_litre(1000), Temperature.from_celsius(80))
+    house.grid = Grid()
+    house.money = Money(0)
+    house.co2 = 0
     return house

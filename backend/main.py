@@ -180,7 +180,7 @@ def main():
         except IndexError:
             name = maxi
         print(f'{name:>30}, {maxi:2}, {Energy(maxi_value[maxi]).format_watt_hours():>20}, {Energy(mini_value[maxi]).format_watt_hours():>20}')
-    write_boundaries(maxi, maxi_value, mini_value)
+    # write_boundaries(maxi, maxi_value, mini_value)
     end = time.time()
     print(end - start, 's')
     print('\n---------')

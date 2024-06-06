@@ -78,7 +78,7 @@ class TestComponents(unittest.TestCase):
             print(names[k], rgb_to_hsv(redColors[k], greenColors[k], blueColors[k]))
             if color not in distinct:
                 distinct[color] = [redColors[i], greenColors[i], blueColors[i]]
-        print(distinct)
+        # print(distinct)
 
     def test_colors(self):
         for color in colors:

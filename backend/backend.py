@@ -16,7 +16,7 @@ serverPort = 8080
 try:
     arduino = serial.Serial(
         port='/dev/serial/by-id/usb-Arduino__www.arduino.cc__0042_44238313938351E04290-if00',
-        baudrate=9600,
+        baudrate=115200,
         timeout=1)
     arduino_found = True
 except serial.serialutil.SerialException as e:
@@ -224,20 +224,20 @@ class RestAPI(BaseHTTPRequestHandler):
 
     def serial_control(self, response: dict):
         diff = response['benchmark']['grid']['diff']
-        if diff.value < 0:
-            pass
-            #self.send_info(Strips.GRID, Colors.MAGENTA, diff / min_boundaries[Strips.GRID], True)
+        if diff.value == 0:
+            self.send_info(Strips.GRID, Colors.MAGENTA, 0, True)
+        elif diff.value < 0:
+            self.send_info(Strips.GRID, Colors.GREEN, -0.5, False) # diff / min_boundaries[Strips.GRID]
         else:
-            pass
-            #self.send_info(Strips.GRID, Colors.BLACK, diff / max_boundaries[Strips.GRID], True)
+            self.send_info(Strips.GRID, Colors.MAGENTA, 0.5, True) # diff / max_boundaries[Strips.GRID]
 
         diff = response['benchmark']['battery']['diff']
-        if diff.value < 0:
-            pass
-            # self.send_info(Strips.BATTERY, Colors.GREEN, diff / min_boundaries[Strips.BATTERY], True)
-        else:
-            pass
-            # self.send_info(Strips.BATTERY, Colors.RED, diff / max_boundaries[Strips.BATTERY], True)
+        if diff.value == 0:
+            self.send_info(Strips.BATTERY, Colors.YELLOW, 0, True)
+        elif diff.value < 0:  # Take from battery
+            self.send_info(Strips.BATTERY, Colors.YELLOW, -0.5, False)
+        else:  # Charge battery
+            self.send_info(Strips.BATTERY, Colors.YELLOW, 0.5, True)
         for generator in response['benchmark']['generators']:
             if generator['name'] == 'Windturbine':
                 self.send_info(Strips.WIND_TURBINE, Colors.LIME, generator['supply'] / max_boundaries[Strips.WIND_TURBINE], True)
@@ -252,6 +252,11 @@ class RestAPI(BaseHTTPRequestHandler):
         room_index = 0
         demand = response['benchmark']['rooms'][2]['demand']
         self.send_info(Strips.FIRST_LEFT, Colors.YELLOW, demand / max_boundaries[Strips.FIRST_LEFT], True)
+        rad = response['environment']['temperatures']
+        if rad < Temperature.from_celsius(17):
+            self.send_info(Strips.FIRST_UP_RADIATORS, Colors.RED, 0.5, True)
+        else:
+            self.send_info(Strips.FIRST_UP_RADIATORS, Colors.RED, 0, True)
         # for i in range(len(response['benchmark']['rooms']) - 1, -1, -1):  # 0 is on purpose as there is no FIRST UP
         #     room_info = response['benchmark']['rooms'][i]
         #     demand = room_info['demand']
