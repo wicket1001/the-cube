@@ -242,7 +242,7 @@ class RestAPI(BaseHTTPRequestHandler):
             if generator['name'] == 'Windturbine':
                 self.send_info(Strips.WIND_TURBINE, Colors.LIME, generator['supply'] / max_boundaries[Strips.WIND_TURBINE], True)
             elif generator['name'] == 'SolarPanel':
-                self.send_info(Strips.SOLAR_PANEL, Colors.LIME, generator['supply'] / max_boundaries[Strips.SOLAR_PANEL], True)
+                self.send_info(Strips.SOLAR_PANEL, Colors.YELLOW, generator['supply'] / max_boundaries[Strips.SOLAR_PANEL], True)
             elif generator['name'] == 'SolarThermal':
                 pass
                 # self.send_info(Strips.SOLAR_THERMAL_WATER, Colors.RED, generator['supply'] / max_boundaries[Strips.SOLAR_THERMAL_WATER], True)

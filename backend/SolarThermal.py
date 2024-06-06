@@ -8,7 +8,7 @@ from Physics import Length, Energy, Power, Time, SpecificHeatCapacity, Density, 
 
 
 class SolarThermal(Generator):
-    EFFICIENCY = 0.2 * 0.54
+    EFFICIENCY = 0.21 * 0.54
     WATER_EFFICIENCY = 0.85
 
     iterations = 0

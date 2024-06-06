@@ -13,7 +13,7 @@ class SolarPanel(Generator):
     # 576m^2 Solarpanel
     # 0.003009 MW pro Panel pro Tag
     # 3009 W pro Panel pro Tag
-    EFFICIENCY = 0.2 * 0.54
+    EFFICIENCY = 0.19 * 0.54
     # JOULE_TO_KWH = 0.000000278
 
     watt_sum = Power(0)
