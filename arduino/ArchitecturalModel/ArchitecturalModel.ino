@@ -93,6 +93,9 @@ float maxi;
 float value;
 float percent;
 
+#define TURBINE 9
+bool turbine_on = false;
+
 int forwardBlink_HSV(int start, int N, int prevN, int num, int h, int s, int v) {
     prevN = N - 1;
     if (N == start && currentTime > 0) {
@@ -176,12 +179,11 @@ void setup() {
     // put your setup code here, to run once:
     Serial.begin(115200);
     Serial.setTimeout(1);
-    // Initialize the NeoPixel library.
     pixels.begin();
     for (int i = 0; i < SEGMENTS; i++) {
         pixels.setPixelColor(firstIndices[i], pixels.ColorHSV(hueColors[i], saturationColors[i], valueColors[i]));
     }
-    // defineInterval();
+    pinMode(TURBINE, OUTPUT);
     for (int i = 0; i < SEGMENTS; i++) {
         intervals[i] = 1000;
         hueColors[i] *= 182;
@@ -290,6 +292,7 @@ void loop() {
               if (percent > 0.99) {
                 on[index] = 0;
               }
+              turbine_on = percent > 0.99;
               intervals[index] = percent * 1000.0;
             } else if (index == 15) {
               if (percent > 0.4) {
@@ -378,6 +381,13 @@ void loop() {
                 } else {
                     forwardOff(firstIndices[i], currentIndices[i], prevIndices[i], numLEDS[i], h[strip[i]], s[strip[i]], v[strip[i]]);
                 }
+            }
+            if (i == 3) {
+              if (turbine_on) {
+                digitalWrite(TURBINE, HIGH);
+              } else {
+                digitalWrite(TURBINE, LOW);
+              }
             }
             newPeriods[i] = true;
         }
