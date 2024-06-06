@@ -64,7 +64,7 @@ let mock_dates: Date[] = [];
 let temperatures_graph: {
   'Outside': Temperature[],
   'Benchmark First Inside': Temperature[],
-  'Decision First Inside': Temperature[],
+//  'Decision First Inside': Temperature[],
   'Cellar left': Temperature[],
   'Cellar right': Temperature[],
   'First left': Temperature[],
@@ -78,7 +78,7 @@ let temperatures_graph: {
 } = {
   'Outside': [],
   'Benchmark First Inside': [],
-  'Decision First Inside': [],
+//  'Decision First Inside': [],
   'Cellar left': [],
   'Cellar right': [],
   'First left': [],
@@ -93,7 +93,7 @@ let temperatures_graph: {
 let temperatures_graph_view: Ref<{
   'Outside': Temperature[],
   'Benchmark First Inside': Temperature[],
-  'Decision First Inside': Temperature[],
+//  'Decision First Inside': Temperature[],
   'Cellar left': Temperature[],
   'Cellar right': Temperature[],
   'First left': Temperature[],
@@ -107,7 +107,7 @@ let temperatures_graph_view: Ref<{
 }> = ref({
   'Outside': [],
   'Benchmark First Inside': [],
-  'Decision First Inside': [],
+//  'Decision First Inside': [],
   'Cellar left': [],
   'Cellar right': [],
   'First left': [],
@@ -130,13 +130,15 @@ let winds: number[] = [];
 let winds_view: Ref<number[]> = ref([]);
 let wind_direction = ref(0);
 
-let co2: {'benchmark': number[], 'decision': number[]} =
-  {'benchmark': [], 'decision': []};
-let co2_view: Ref<{'benchmark': number[], 'decision': number[]}> =
-  ref({'benchmark': [], 'decision': []});
+let co2: {'benchmark': number[], 'noBat': number[], 'noWind': number[], 'noPV': number[]} =
+  {'benchmark': [], 'noBat': [], 'noWind': [], 'noPV': []};
+let co2_view: Ref<{'benchmark': number[], 'noBat': number[], 'noWind': number[], 'noPV': number[]}> =
+  ref({'benchmark': [], 'noBat': [], 'noWind': [], 'noPV': []});
 
-let money: Money[] = [];
-let money_view: Ref<Money[]> = ref([]);
+let money: {'benchmark': Money[], 'noBat': Money[], 'noWind': Money[], 'noPV': Money[]} =
+  {'benchmark': [], 'noBat': [], 'noWind': [], 'noPV': []};
+let money_view: Ref<{'benchmark': Money[], 'noBat': Money[], 'noWind': Money[], 'noPV': Money[]}> =
+  ref({'benchmark': [], 'noBat': [], 'noWind': [], 'noPV': []});
 
 let demand: {"Equipment": Appliance[], "Lights": Appliance[], "ElectricHeater": Appliance[], "HeatPump": Appliance[], "Total": Appliance[]} =
   {"Equipment": [], "Lights": [], "ElectricHeater": [], "HeatPump": [], "Total": []};
@@ -306,14 +308,14 @@ function add_simulation_raw(res: Simulation, update: boolean) {
     temperatures_graph[rooms_named[i] as keyof IRooms].push(res['benchmark']['rooms'][i]['temperature']);
   }
   temperatures_graph['Benchmark First Inside'].push(res['benchmark']['rooms'][2]['temperature']);
-  temperatures_graph['Decision First Inside'].push(res['decision']['rooms'][2]['temperature']);
+  //temperatures_graph['Decision First Inside'].push(res['decision']['rooms'][2]['temperature']);
 
   for (const algorithm of algorithms_named) {
     co2[algorithm as keyof Algorithms].push(res[algorithm as keyof Algorithms]['co2'])
   }
-
-  let money_value = res['benchmark']['money']
-  money.push(money_value)
+  for (const algorithm of algorithms_named) {
+    money[algorithm as keyof Algorithms].push(res[algorithm as keyof Algorithms]['money'])
+  }
 
   let total = new Appliance({ name: 'Total', 'demand': 0, 'usage': 0, 'on': false })
   let equipment = new Appliance({name: 'Equipment', 'demand': 0, 'usage': 0, 'on': false});
@@ -393,8 +395,8 @@ function add_simulation_raw(res: Simulation, update: boolean) {
     }
     for (const algorithm of algorithms_named) {
       co2_view.value[algorithm as keyof Algorithms] = co2[algorithm as keyof Algorithms].slice(begin, end)
+      money_view.value[algorithm as keyof Algorithms] = money[algorithm as keyof Algorithms].slice(begin, end)
     }
-    money_view.value = money.slice(begin, end)
   }
   // TODO cache cleanup
 }
@@ -691,9 +693,9 @@ function extract_keys(bucket, indexes: string[]) {
                     :title="'CO2 Comparison'"
                     :key="currentIndex"
                     :keys="dates_view"
-                    :axes="['OMNI CO2', 'Decision CO2']"
+                    :axes="['OMNI CO2', 'No Battery', 'No Windturbine', 'No PV']"
                     :mode="'Mode.KILO_GRAMM'"
-                    :values="[co2_view['benchmark'], co2_view['decision']]"/>
+                    :values="[co2_view['benchmark'], co2_view['noBat'], co2_view['noWind'], co2_view['noPV']]"/>
       </div>
       <div class="singleChart">
         <LinesChart v-if="dataFetched"
@@ -701,9 +703,9 @@ function extract_keys(bucket, indexes: string[]) {
                     :title="'Money Comparison'"
                     :key="currentIndex"
                     :keys="dates_view"
-                    :axes="['Money']"
+                    :axes="['OMNI Money', 'No Battery', 'No Windturbine', 'No PV']"
                     :mode="get_mode()"
-                    :values="[money_view]"/>
+                    :values="[money_view['benchmark'], money_view['noBat'], money_view['noWind'], money_view['noPV']]"/>
       </div>
       <div class="singleChart">
         <LinesChart v-if="dataFetched"

@@ -2,11 +2,28 @@ import { Energy, Money, Temperature } from '@/@types/physics'
 
 export class Algorithms {
   "benchmark": Algorithm;
-  "decision": Algorithm;
+  "noBat": MockAlgorithm;
+  "noWind": MockAlgorithm;
+  "noPV": MockAlgorithm;
+  // "decision": Algorithm;
 }
 export interface IAlgorithms extends Algorithms {}
 export type TAlgorithms = Array<keyof IAlgorithms>;
 export const algorithms_named: TAlgorithms = Object.keys(new Algorithms()) as TAlgorithms;
+
+export class MockAlgorithm {
+  "co2": number;
+  "money": Money;
+
+  constructor({co2, money}: IMockAlgorithm) {
+    this.co2 = co2;
+    this.money = new Money(money);
+  }
+}
+export interface IMockAlgorithm {
+  "co2": number;
+  "money": number;
+}
 
 export class Algorithm {
   "co2": number;
