@@ -7,9 +7,9 @@
   font-weight: normal;
 }
 
-@media (min-width: 1920px) {
+@media (min-width: 3200px) {
   #app {
-    max-width: 1920px;
+    max-width: 3200px;
   }
 }
 

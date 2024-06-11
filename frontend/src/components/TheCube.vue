@@ -693,7 +693,7 @@ function extract_keys(bucket, indexes: string[]) {
                     :title="'CO2 Comparison'"
                     :key="currentIndex"
                     :keys="dates_view"
-                    :axes="['OMNI CO2', 'No Battery', 'No Windturbine', 'No PV']"
+                    :axes="['OMNI CO2', 'No Batteries', 'No Windturbine', 'No PV']"
                     :mode="'Mode.KILO_GRAMM'"
                     :values="[co2_view['benchmark'], co2_view['noBat'], co2_view['noWind'], co2_view['noPV']]"/>
       </div>
@@ -703,7 +703,7 @@ function extract_keys(bucket, indexes: string[]) {
                     :title="'Money Comparison'"
                     :key="currentIndex"
                     :keys="dates_view"
-                    :axes="['OMNI Money', 'No Battery', 'No Windturbine', 'No PV']"
+                    :axes="['OMNI Money', 'No Batteries', 'No Windturbine', 'No PV']"
                     :mode="get_mode()"
                     :values="[money_view['benchmark'], money_view['noBat'], money_view['noWind'], money_view['noPV']]"/>
       </div>
@@ -722,7 +722,7 @@ function extract_keys(bucket, indexes: string[]) {
       <div class="singleChart">
         <LinesChart v-if="dataFetched"
                     id="sum_generators"
-                    :title="'Total Generation since 2021'"
+                    :title="'Total Generation ytd'"
                     :key="currentIndex"
                     :keys="dates_view"
                     :axes="['SolarThermal generation', 'Solar generation', 'Windturbine generation', 'Total']"
@@ -755,7 +755,7 @@ function extract_keys(bucket, indexes: string[]) {
       <div class="singleChart">
         <LinesChart v-if="dataFetched"
                     id="sum_appliances"
-                    :title="'Total Demand since 2021'"
+                    :title="'Total Demand ytd'"
                     :key="currentIndex"
                     :keys="dates_view"
                     :axes="['Equipment', 'Base Load', 'HeatPump', 'Total']"
@@ -777,7 +777,7 @@ function extract_keys(bucket, indexes: string[]) {
       <div class="singleChart">
         <LinesChart v-if="dataFetched"
                     id="grid_plot"
-                    :title="'Total Grid Usage since 2021'"
+                    :title="'Total Grid Usage ytd'"
                     :key="currentIndex"
                     :keys="dates_view"
                     :axes="['Grid bought', 'Grid sold']"
@@ -944,8 +944,8 @@ input[type="range"] {
   .singleChart {
     flex-grow: 0;
     flex-shrink: 0;
-    width: 422px;
-    min-width: 422px;
+    width: 720px;
+    min-width: 720px;
   }
 }
 
