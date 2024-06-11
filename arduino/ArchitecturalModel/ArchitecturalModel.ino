@@ -298,7 +298,7 @@ void loop() {
               if (percent > 0.99) {
                 on[index] = 0;
               }
-              turbine_on = percent > 0.99;
+              turbine_on = percent <= 0.99;
               intervals[index] = percent * 1000.0;
             } else if (index == 15) {
               if (percent > 0.4) {
